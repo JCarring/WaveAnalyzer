@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-5.2.3.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-javadoc-5.2.3.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-examples-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-excelant-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-javadoc-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-ooxml-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-ooxml-full-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-ooxml-lite-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/poi-bin-5.2.3/poi-scratchpad-5.2.3.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/OpenCSV/opencsv-5.8.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-beanutils-1.9.4.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-collections4-4.4.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-lang3-3.13.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-text-1.10.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-io-2.13.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/log4j-core-2.20.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/log4j-api-2.20.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/commons-math3-3.6.1/commons-math3-3.6.1-tools.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/commons-math3-3.6.1/commons-math3-3.6.1.jar"/>
+	<classpathentry kind="lib" path="miglayout15-swing.jar" sourcepath="miglayout-src.zip"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-compress-1.23.0/commons-compress-1.23.0.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/commons-compress-1.23.0/commons-compress-1.23.0-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/Apache/xmlbeans-5.1.1/lib/xmlbeans-5.1.1.jar"/>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/ECG-Viewer"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/jfreechart-1.0.19 2/lib/jcommon-1.0.23.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/batik-1.17/lib/batik-all-1.17.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/xml-commons-external-1.4.01/xml-apis-ext.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/xml-commons-external-1.4.01/xml-apis.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/xmlgraphics-commons-2.9/build/xmlgraphics-commons-2.9.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/xmlgraphics-commons-2.9/lib/commons-io-2.11.0.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/xmlgraphics-commons-2.9/lib/commons-logging-1.0.4.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-17">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/jfreechart-1.5.4.jar"/>
+	<classpathentry kind="lib" path="/Users/justincarrington/Documents/Development/NewEclipseDepend/jfreesvg-3.3.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>

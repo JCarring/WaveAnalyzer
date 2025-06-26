@@ -1,0 +1,29 @@
+<html>
+<h2>Beat Selection Help</h2>
+<div style='width: 700px; font-size: 12px'>
+Below is the sample that you have uploaded, with flow offset as you specified on the main frame. Here you can select beats to be 
+ensemble averaged (3 more more beats is recommended, but at least 2 are required).
+
+<br><br>
+To navigate the graph:
+
+<ul>
+<li>Use the mouse wheel to scroll in and out (does not work well with track pads)</li>
+<li>Click and drag to pan forward and backward on the graph (once you have zoomed in)</li>
+</ul>
+<br>
+You can select waves manually, or automatically if there was R peak data in the data you uploaded (i.e. column of data 
+with 1 indicating peak, 0 or empty for no peak):
+
+<ul>
+<li><b>Manual:</b> Find the beginning of the R wave upstroke on the chart, hovering your mouse somewhere vertically over this point, then press "1". Find 
+the end of the beat cycle and press "2". Then press "3" to record the beat. Beats can be deleted at the bottom.</li>
+<li><b>Automatic:</b> If your raw data contained R peak indicators, you can automatically select beats. Click the checkbox at the bottom to sync 
+clicks with the nearest R wave markers. Then simply press 1, 2, or 3 with mouse hovering somewhere between the beat (vertical position does not matter). It 
+is recommended that you zoom in to verify the proper positioning of the r wave markers.
+</ul>
+<br>
+Click accept when you are done. you may also reset all of your selections using the reset button at the bottom right.
+the graphs.<br>
+</div>
+</html>

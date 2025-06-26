@@ -1,0 +1,9 @@
+src/com/carrington/WIA/OtherTemporary/
+target/
+bin/
+RnD/*
+*.swp
+*.class
+!plugins/*.class
+!ECGViewer/plugins/*.class
+data/*
