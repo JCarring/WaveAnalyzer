@@ -1,0 +1,29 @@
+<html>
+<h2>Waves Help</h2>
+<p style='width: 700px; font-size: 12px'>
+Select waves in the top panel to the left. Hover over the graph with your mouse, and a vertical line will appear 
+showing position of the mouse related to the axis.
+
+<br><br>
+When you have the vertical bar aligned at the beginning of the wave, press the "a" key. Move to the end of the wave 
+and repeat the process. Press the "r" key to reset. Once you have found start and end points to the waves, add the wave 
+by pressing the "a" key again. You will be prompted to select one of the common wave names, or create your own. Labels 
+will then display on the graph indicating your selection.
+
+<br><br>
+To add waves faster, you can select the beginning of wave, end of wave, and finalize the wave selection using the following 
+keys (in accordance with the natural ordering of waves, systole to diastole, proximal then distal):
+</p>
+<ul style='font-size: 12px'>
+<li>"1" for Forward Compression Wave (FCW)</li>
+<li>"2" for Forward Decompression Wave (FDW)</li>
+<li>"3" for Late Forward Compression Wave (FCW2)</li>
+<li>"4" for Early Backward Compression Wave (BCWearly)</li>
+<li>"5" for Late Backward Compression Wave (BCWlate)</li>
+<li>"6" for Backward Decompression Wave (BEW)</li>
+</ul>
+<p style='width: 700px; font-size: 12px'>
+You can delete waves on the right sided panel by clicking the "x". The reset button at the bottom right will delete all waves.
+</p>
+<br>
+</html>
