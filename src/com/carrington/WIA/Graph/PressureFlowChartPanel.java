@@ -1,0 +1,948 @@
+package com.carrington.WIA.Graph;
+
+import java.awt.BasicStroke;
+import java.awt.Canvas;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.font.TextAttribute;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.lang.reflect.Field;
+import java.text.AttributedString;
+
+import javax.swing.AbstractAction;
+import javax.swing.InputMap;
+import javax.swing.JComponent;
+import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
+
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.plot.Plot;
+import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.ui.RectangleInsets;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+import com.carrington.WIA.Utils;
+import com.carrington.WIA.DataStructures.HemoData;
+import com.carrington.WIA.DataStructures.WIAData;
+import com.carrington.WIA.IO.Header;
+
+public class PressureFlowChartPanel extends ChartPanel {
+
+	private static final long serialVersionUID = 5158158439696012597L;
+
+	public static final Color standardPressureLineColor = new Color(123, 178, 224, 255);
+	public static final Color darkerPressureLineColor = new Color(0, 82, 153, 255);
+
+	public static final Color standardFlowLineColor = new Color(239, 111, 90, 255);
+	public static final Color darkerFlowLineColor = new Color(239, 32, 0, 255);
+	public static final int MODE_NONE = 0;
+	public static final int MODE_SYS_DIAS = 1;
+	public static final int MODE_ALIGN_PEAK = 2;
+	public static final int MODE_ALIGN_MANUAL = 3;
+
+	private Double timeXSystole = null;
+	private ValueMarker timeXSystoleMarker = null;
+	private Double timeXDiastole = null;
+	private ValueMarker timeXDiastoleMarker = null;
+
+	private Double timeXPressureAlign = null;
+	private ValueMarker timeXPressureAlignMarker = null;
+	private Double timeXFlowAlign = null;
+	private ValueMarker timeXFlowAlignMarker = null;
+
+	private WIAData wiaData = null;
+
+	private int mode = MODE_NONE;
+
+	private PFPickListener cyclePickListener;
+	
+	private final Font fontCustom;
+
+	public static PressureFlowChartPanel generate(WIAData data, Font font) {
+		// create the chart panel
+
+		// TODO: if align switches, need to erase waves, erase systolic / diastolic
+		return new PressureFlowChartPanel(PressureFlowChart.generate(data, font), data, font);
+	}
+
+	private PressureFlowChartPanel(PressureFlowChart chart, WIAData wiaData, Font font) {
+		super(chart);
+		this.wiaData = wiaData;
+		this.fontCustom = font;
+
+		if (this.wiaData.getData().getHeaderByFlag(HemoData.TYPE_PRESSURE).isEmpty()) {
+			throw new IllegalArgumentException("No pressure data - developer error");
+		} else if (this.wiaData.getData().getHeaderByFlag(HemoData.TYPE_FLOW).isEmpty()) {
+			throw new IllegalArgumentException("No flow data - developer error");
+		}
+
+		setMouseZoomable(false);
+		setMouseWheelEnabled(true);
+		setDomainZoomable(true);
+		setRangeZoomable(false);
+		// setZoomTriggerDistance(Integer.MAX_VALUE); may need this
+		setFillZoomRectangle(false);
+
+		// for max quality
+		setMaximumDrawHeight(5000);
+		setMaximumDrawWidth(5000);
+		setMinimumDrawHeight(80);
+		setMinimumDrawWidth(80);
+		setHorizontalAxisTrace(false);
+		setVerticalAxisTrace(false);
+
+		try {
+			Field mask = ChartPanel.class.getDeclaredField("panMask");
+			mask.setAccessible(true);
+			mask.set(this, 0);
+		} catch (NoSuchFieldException e) {
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		// addMouseWheelListener(arg0 -> restoreAutoRangeBounds());
+		this.setPreferredSize(new Dimension(380, 420)); // may not need
+
+		InputMap map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0, false), "SelectOne");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0, false), "SelectTwo");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, 0, false), "SelectOne");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0, false), "SelectTwo");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0, false), "Reset");
+
+		getActionMap().put("SelectOne", new AbstractAction() {
+			private static final long serialVersionUID = 6919077207718273427L;
+
+			public void actionPerformed(ActionEvent e) {
+				attemptSelect(1);
+			}
+		});
+		getActionMap().put("SelectTwo", new AbstractAction() {
+			private static final long serialVersionUID = 6919077207718273427L;
+
+			public void actionPerformed(ActionEvent e) {
+				attemptSelect(2);
+			}
+		});
+		getActionMap().put("Reset", new AbstractAction() {
+			private static final long serialVersionUID = 6919077207718273427L;
+
+			public void actionPerformed(ActionEvent e) {
+				resetAllSelections();
+			}
+		});
+
+		addMouseListener(new MouseListener() {
+
+			public void mouseClicked(MouseEvent e) {
+				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+			}
+
+			public void mousePressed(MouseEvent e) {
+				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+			}
+
+			public void mouseReleased(MouseEvent e) {
+				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+			}
+
+			public void mouseEntered(MouseEvent e) {
+				if (mode != MODE_NONE) {
+					setHorizontalAxisTrace(true);
+					setVerticalAxisTrace(true);
+					repaint();
+					setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+				}
+
+			}
+
+			public void mouseExited(MouseEvent e) {
+				setHorizontalAxisTrace(false);
+				setVerticalAxisTrace(false);
+				repaint();
+				setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+			}
+		});
+
+	}
+
+	public void displayExistingChoices() {
+		XYPlot plot = getChart().getXYPlot();
+		if (!Double.isNaN(wiaData.getSystoleTime())) {
+
+			ValueMarker vm = new ValueMarker(wiaData.getSystoleTime());
+			vm.setLabel("Systole");
+			int[] fontParams = Utils.getFontParams(Utils.getSmallTextFont(), "Systole");
+
+			vm.setLabelOffset(new RectangleInsets((2 * fontParams[0]), -1 * ((3.0 / 4.0) * fontParams[1]), 0, 0));
+			vm.setLabelFont(Utils.getSmallTextFont());
+			vm.setPaint(new Color(161, 0, 132, 255));
+			vm.setStroke(new BasicStroke(2f));
+			plot.addDomainMarker(vm);
+			this.timeXSystole = wiaData.getSystoleTime();
+			this.timeXSystoleMarker = vm;
+		}
+
+		if (!Double.isNaN(wiaData.getDiastoleTime())) {
+
+			ValueMarker vm = new ValueMarker(wiaData.getDiastoleTime());
+			vm.setLabel("Diastole");
+			int[] fontParams = Utils.getFontParams(Utils.getSmallTextFont(), "Diastole");
+
+			vm.setLabelOffset(new RectangleInsets((2 * fontParams[0]), ((3.0 / 4.0) * fontParams[1]), 0, 0));
+			vm.setLabelFont(Utils.getSmallTextFont());
+			vm.setPaint(new Color(161, 0, 132, 255));
+			vm.setStroke(new BasicStroke(2f));
+			plot.addDomainMarker(vm);
+			this.timeXDiastole = wiaData.getDiastoleTime();
+			this.timeXDiastoleMarker = vm;
+		}
+	}
+
+	/**
+	 * 
+	 * @param selectionType 1=pressure or systolic, 2=flow or diastolic,
+	 *                      3=reset
+	 */
+	private void attemptSelect(int selectionType) {
+
+		if (mode == MODE_NONE)
+			return;
+
+		if (selectionType == 3) {
+			resetAllSelections();
+			return;
+		}
+
+		
+		double[] xy;
+		if (mode == MODE_ALIGN_PEAK || mode == MODE_ALIGN_MANUAL) {
+			xy = getXYValueFromScreenPos(selectionType == 1 ? true
+					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false)));
+		} else {
+			xy = getXYValueFromScreenPos(true);
+		}
+
+		if (xy == null)
+			return;
+
+		double[] validTime = wiaData.getTime();
+
+		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
+			Utils.showError("Selection outside of valid range.", this);
+			return;
+		}
+
+		int xValueIndex = Utils.getClosestIndex(xy[0], validTime);
+		double xValueNearest = validTime[xValueIndex];
+		
+		if (mode == MODE_SYS_DIAS) {
+			
+			
+			
+			boolean systole = selectionType == 1 ? true
+					: (selectionType == 2 ? false : (timeXSystole == null ? true : false));
+
+			if (systole) {
+				if (this.timeXDiastole != null && xValueNearest > this.timeXDiastole) {
+					Utils.showWarning("Usually systole comes before diastole in these traces.", this);
+				}
+			} else {
+				if (this.timeXSystole != null && xValueNearest < this.timeXSystole) {
+					Utils.showWarning("Usually diastole comes after systole in these traces.", this);
+				}
+			}
+			
+			ValueMarker vm = new ValueMarker(xValueNearest);
+			Canvas c = new Canvas();
+			FontMetrics fm = c.getFontMetrics(Utils.getSmallTextFont());
+			vm.setLabel(systole ? "Systole" : "Diastole");
+			int height = fm.getAscent();
+			if (systole) {
+				int width = fm.stringWidth("Systole");
+				vm.setLabelOffset(new RectangleInsets((2 * height), -1 * ((3.0 / 4.0) * width), 0, 0));
+			} else {
+				int width = fm.stringWidth("Diastole");
+				vm.setLabelOffset(new RectangleInsets((2 * height), ((3.0 / 4.0) * width), 0, 0));
+
+			}
+			vm.setLabelFont(Utils.getSmallTextFont());
+			vm.setPaint(new Color(161, 0, 132, 255));
+			vm.setStroke(new BasicStroke(2f));
+
+			XYPlot plot = getChart().getXYPlot();
+
+			if (systole) {
+				if (timeXSystoleMarker != null) {
+					plot.removeDomainMarker(timeXSystoleMarker);
+				}
+				plot.addDomainMarker(vm);
+				this.timeXSystole = xValueNearest;
+				this.timeXSystoleMarker = vm;
+				this.wiaData.setSystoleByTimeIndex(xValueIndex);
+			} else {
+				if (timeXDiastoleMarker != null) {
+					plot.removeDomainMarker(timeXDiastoleMarker);
+				}
+				plot.addDomainMarker(vm);
+
+				this.timeXDiastole = xValueNearest;
+				this.timeXDiastoleMarker = vm;
+				this.wiaData.setDiastoleByTimeIndex(xValueIndex);
+			}
+
+			if (this.cyclePickListener != null) {
+				if (systole) {
+					this.cyclePickListener.setSystole(xValueNearest);
+
+				} else {
+					this.cyclePickListener.setDiastole(xValueNearest);
+				}
+			}
+
+		} else if (mode == MODE_ALIGN_PEAK) {
+
+			boolean pressure = selectionType == 1 ? true
+					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false));
+			
+			// Retrieve the dataset from the chart's plot
+			XYPlot plot = getChart().getXYPlot();
+			int seriesIndex = pressure ? 0 : 1;  
+
+			XYDataset dataset = plot.getDataset(seriesIndex);
+
+			// Create an array of y-values from the dataset
+			int itemCount = dataset.getItemCount(0);
+			double[] dataY = new double[itemCount];
+			for (int i = 0; i < itemCount; i++) {
+			    dataY[i] = dataset.getYValue(0, i);
+			}
+
+
+			if (xy[1] > dataY[xValueIndex]) {
+				// search for min
+				int indexUpper = -1;
+				int indexLower = -1;
+				int indexMin = -1;
+				// start at the selected x, going upwards, finding when the graph exceeds the
+				// selected y (mouse click)
+				for (int i = xValueIndex + 1; i < wiaData.getData().getXData().length; i++) {
+					if (dataY[i] > xy[1]) {
+						indexUpper = i;
+						break;
+					}
+				}
+
+				// start at the selected x, going downwards, finding when the graph exceeds the
+				// selected y (mouse click)
+				for (int i = xValueIndex - 1; i >= 0; i--) {
+					if (dataY[i] > xy[1]) {
+						indexLower = i;
+						break;
+					}
+				}
+
+				if (indexUpper != -1 && indexLower != -1) {
+					// upper and lower found, i.e. there is a point on graph above and below
+					// selected X that exceeds selected Y
+
+					indexMin = Utils.findMinMaxIndex(dataY, indexLower, indexUpper, true);
+				} else {
+					// upper or lower not found, change the strategy
+					// now look for essentially change in sign of derivative and break there
+
+					indexUpper = xValueIndex;
+					indexLower = xValueIndex;
+
+					for (int i = xValueIndex + 1; i < wiaData.getData().getXData().length; i++) {
+						if (dataY[i] <= dataY[indexUpper]) {
+							indexUpper = i;
+						} else {
+							break;
+						}
+					}
+					for (int i = xValueIndex - 1; i >= 0; i--) {
+						if (dataY[i] <= dataY[indexLower]) {
+							indexLower = i;
+						} else {
+							break;
+						}
+					}
+
+					if (indexUpper == indexLower) {
+						// would happen if the selected point is a local max and Y doesn't go down on
+						// either side (or there are no more points)
+						// UNLIKELY
+						indexMin = indexUpper;
+					} else {
+						indexMin = dataY[indexUpper] < dataY[indexLower] ? indexUpper : indexLower;
+					}
+				}
+
+				double minValue = wiaData.getData().getXData()[indexMin];
+				ValueMarker vm = new ValueMarker(minValue);
+				vm.setStroke(new BasicStroke(2f));
+
+				if (pressure) {
+					vm.setPaint(darkerPressureLineColor);
+					if (this.timeXPressureAlignMarker != null) {
+						plot.removeDomainMarker(this.timeXPressureAlignMarker);
+					}
+					plot.addDomainMarker(vm);
+					this.timeXPressureAlign = minValue;
+					this.timeXPressureAlignMarker = vm;
+				} else {
+					vm.setPaint(darkerFlowLineColor);
+					if (this.timeXFlowAlignMarker != null) {
+						plot.removeDomainMarker(this.timeXFlowAlignMarker);
+					}
+					plot.addDomainMarker(vm);
+					this.timeXFlowAlign = minValue;
+					this.timeXFlowAlignMarker = vm;
+				}
+
+			} else {
+				// search for max
+				
+				
+				int indexUpper = -1;
+				int indexLower = -1;
+
+				int indexMax = -1;
+				// start at the selected x, going upwards, finding when the graph drops below
+				// the selected y (mouse click)
+				for (int i = xValueIndex + 1; i < wiaData.getData().getXData().length; i++) {
+					if (dataY[i] < xy[1]) {
+						indexUpper = i;
+						break;
+					}
+				}
+
+				// start at the selected x, going downwards, finding when the graph drops below
+				// the selected y (mouse click)
+				for (int i = xValueIndex - 1; i >= 0; i--) {
+					if (dataY[i] < xy[1]) {
+						indexLower = i;
+						break;
+					}
+				}
+
+				if (indexUpper != -1 && indexLower != -1) {
+					// upper and lower found, i.e. there is a point on graph above and below
+					// selected X that drops below selected Y
+
+					indexMax = Utils.findMinMaxIndex(dataY, indexLower, indexUpper, false);
+				} else {
+					// upper or lower not found, change the strategy
+					// now look for essentially change in sign of derivative and break there
+
+					indexUpper = xValueIndex;
+					indexLower = xValueIndex;
+
+					for (int i = xValueIndex + 1; i < wiaData.getData().getXData().length; i++) {
+						if (dataY[i] >= dataY[indexUpper]) {
+							indexUpper = i;
+						} else {
+							break;
+						}
+					}
+					for (int i = xValueIndex - 1; i >= 0; i--) {
+						if (dataY[i] >= dataY[indexLower]) {
+							indexLower = i;
+						} else {
+							break;
+						}
+					}
+
+					if (indexUpper == indexLower) {
+						// would happen if the selected point is a local max and Y doesn't go down on
+						// either side (or there are no more points)
+						// UNLIKELY
+						indexMax = indexUpper;
+					} else {
+						indexMax = dataY[indexUpper] < dataY[indexLower] ? indexLower : indexUpper;
+					}
+				}
+
+				double maxValue = wiaData.getData().getXData()[indexMax];
+				ValueMarker vm = new ValueMarker(maxValue);
+				vm.setStroke(new BasicStroke(2f));
+
+				if (pressure) {
+					vm.setPaint(darkerPressureLineColor);
+					if (this.timeXPressureAlignMarker != null) {
+						plot.removeDomainMarker(this.timeXPressureAlignMarker);
+					}
+					plot.addDomainMarker(vm);
+					this.timeXPressureAlign = maxValue;
+					this.timeXPressureAlignMarker = vm;
+				} else {
+					vm.setPaint(darkerFlowLineColor);
+					if (this.timeXFlowAlignMarker != null) {
+						plot.removeDomainMarker(this.timeXFlowAlignMarker);
+					}
+					plot.addDomainMarker(vm);
+					this.timeXFlowAlign = maxValue;
+					this.timeXFlowAlignMarker = vm;
+				}
+
+			}
+
+			if (cyclePickListener != null) {
+				cyclePickListener.setReadyAlign(timeXPressureAlignMarker != null && timeXFlowAlignMarker != null);
+			}
+
+		} else if (mode == MODE_ALIGN_MANUAL) {
+
+			boolean pressure = selectionType == 1 ? true
+					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false));
+		
+			ValueMarker vm = new ValueMarker(xValueNearest);
+			XYPlot plot = getChart().getXYPlot();
+			vm.setStroke(new BasicStroke(2f));
+
+			if (pressure) {
+				vm.setPaint(darkerPressureLineColor);
+				if (this.timeXPressureAlignMarker != null) {
+					plot.removeDomainMarker(this.timeXPressureAlignMarker);
+				}
+				plot.addDomainMarker(vm);
+				this.timeXPressureAlign = xValueNearest;
+				this.timeXPressureAlignMarker = vm;
+			} else {
+				vm.setPaint(darkerFlowLineColor);
+				if (this.timeXFlowAlignMarker != null) {
+					plot.removeDomainMarker(this.timeXFlowAlignMarker);
+				}
+				plot.addDomainMarker(vm);
+				this.timeXFlowAlign = xValueNearest;
+				this.timeXFlowAlignMarker = vm;
+			}
+
+			if (cyclePickListener != null) {
+				cyclePickListener.setReadyAlign(timeXPressureAlignMarker != null && timeXFlowAlignMarker != null);
+			}
+		}
+
+	}
+
+	/**
+	 * @return the time marked by the user as being systole. Will be NULL if the
+	 *         user did not select a value.
+	 */
+	public Double getSystole() {
+		return this.timeXSystole;
+	}
+
+	/**
+	 * @return the time marked by the user as being diastole. Will be NULL if the
+	 *         user did not select a value.
+	 */
+	public Double getDiastole() {
+		return this.timeXDiastole;
+	}
+
+	/**
+	 * @return the x value for aligning flow, or null if not set
+	 */
+	public Double getFlowAlignTime() {
+		return timeXFlowAlign;
+	}
+
+	/**
+	 * @return the x value for aligning pressure, or null if not set
+	 */
+	public Double getPressureAlignTime() {
+		return timeXPressureAlign;
+	}
+
+	/**
+	 * Resets systole and diastole, as well as align selections, reflexes call to
+	 * the {@link PFPickListener}
+	 */
+	public void resetAllSelections() {
+
+		if (timeXSystole != null) {
+			timeXSystole = null;
+			getChart().getXYPlot().removeDomainMarker(timeXSystoleMarker);
+			timeXSystoleMarker = null;
+		}
+		if (timeXDiastole != null) {
+			timeXDiastole = null;
+			getChart().getXYPlot().removeDomainMarker(timeXDiastoleMarker);
+			timeXDiastoleMarker = null;
+		}
+		if (timeXPressureAlign != null) {
+			timeXPressureAlign = null;
+			getChart().getXYPlot().removeDomainMarker(timeXPressureAlignMarker);
+			timeXPressureAlignMarker = null;
+		}
+		if (timeXFlowAlign != null) {
+			timeXFlowAlign = null;
+			getChart().getXYPlot().removeDomainMarker(timeXFlowAlignMarker);
+			timeXFlowAlignMarker = null;
+		}
+
+		this.wiaData.setSystoleByTimeIndex(-1);
+		this.wiaData.setDiastoleByTimeIndex(-1);
+
+		if (cyclePickListener != null) {
+			cyclePickListener.resetSystole();
+			cyclePickListener.resetDiastole();
+			cyclePickListener.setReadyAlign(false);
+		}
+
+	}
+
+	/**
+	 * Resets systole only, reflexes call to the {@link PFPickListener}
+	 */
+	public void resetSystole() {
+
+		if (timeXSystole != null) {
+			timeXSystole = null;
+			getChart().getXYPlot().removeDomainMarker(timeXSystoleMarker);
+			timeXSystoleMarker = null;
+		}
+
+		this.wiaData.setSystoleByTimeIndex(-1);
+
+		if (cyclePickListener != null) {
+			cyclePickListener.resetSystole();
+		}
+	}
+
+	/**
+	 * Resets diastole only, reflexes call to the {@link PFPickListener}
+	 */
+	public void resetDiastole() {
+
+		if (timeXDiastole != null) {
+			timeXDiastole = null;
+			getChart().getXYPlot().removeDomainMarker(timeXDiastoleMarker);
+			timeXDiastoleMarker = null;
+		}
+
+		this.wiaData.setDiastoleByTimeIndex(-1);
+
+		if (cyclePickListener != null) {
+			cyclePickListener.resetDiastole();
+		}
+	}
+	
+	/**
+	 * Resets align selections
+	 */
+	public void resetAlignSelections() {
+		if (timeXPressureAlign != null) {
+			timeXPressureAlign = null;
+			getChart().getXYPlot().removeDomainMarker(timeXPressureAlignMarker);
+			timeXPressureAlignMarker = null;
+		}
+		if (timeXFlowAlign != null) {
+			timeXFlowAlign = null;
+			getChart().getXYPlot().removeDomainMarker(timeXFlowAlignMarker);
+			timeXFlowAlignMarker = null;
+		}
+	}
+
+	/**
+	 * Used to determine if mouse pointer is over the chart
+	 */
+	private boolean pointIsOverChart(Point p) {
+		Rectangle2D chartrect = getScreenDataArea();
+		Point parentUp = getLocationOnScreen();
+		Rectangle newRect = new Rectangle(parentUp.x + (int) chartrect.getX(), parentUp.y + (int) chartrect.getY(),
+				(int) chartrect.getWidth(), (int) chartrect.getHeight());
+
+		return (newRect.contains(p));
+
+	}
+
+	/**
+	 * Return the xValue at which the mouse pointer is over vertically on the graph.
+	 * 
+	 * It will return null if the mouse point was not actually over the graph.
+	 * 
+	 * This does not actually confirm the xValue actually has any data.
+	 */
+	public double[] getXYValueFromScreenPos(Boolean pressureAxis) {
+
+		Point mousePoint = MouseInfo.getPointerInfo().getLocation();
+
+		if (!pointIsOverChart(mousePoint)) {
+			return null;
+		}
+		
+		
+		SwingUtilities.convertPointFromScreen(mousePoint, this); // edits in place without return
+		Point2D point2d = translateScreenToJava2D(mousePoint);
+
+		Rectangle2D plotArea = getScreenDataArea();
+		XYPlot plot = (XYPlot) getChart().getPlot(); // your plot
+
+		double xVal = plot.getDomainAxis().java2DToValue(point2d.getX(), plotArea, plot.getDomainAxisEdge());
+		double yVal;
+
+		if (pressureAxis == null) pressureAxis = true;
+
+		if (pressureAxis) {
+			yVal = plot.getRangeAxis(0).java2DToValue(point2d.getY(), plotArea, plot.getRangeAxisEdge());
+
+		} else {
+			yVal = plot.getRangeAxis(1).java2DToValue(point2d.getY(), plotArea, plot.getRangeAxisEdge());
+
+		}
+		return new double[] { xVal, yVal };
+	}
+
+	public void setCyclePickListener(PFPickListener listener) {
+		this.cyclePickListener = listener;
+	}
+
+	/**
+	 * Sets the selection mode
+	 * 
+	 * @param mode 0 = no selection, 1 = systolic / diastolic, 2 = alignment (1,2),
+	 *             3 = align manual
+	 */
+	public void setSelectMode(int mode) {
+		this.mode = mode;
+		setHorizontalAxisTrace(mode != 0);
+		setVerticalAxisTrace(mode != 0);
+
+		if (mode != 2 && mode != 3) {
+			if (timeXPressureAlign != null) {
+				timeXPressureAlign = null;
+				getChart().getXYPlot().removeDomainMarker(timeXPressureAlignMarker);
+				timeXPressureAlignMarker = null;
+			}
+			if (timeXFlowAlign != null) {
+				timeXFlowAlign = null;
+				getChart().getXYPlot().removeDomainMarker(timeXFlowAlignMarker);
+				timeXFlowAlignMarker = null;
+			}
+			if (cyclePickListener != null) {
+				cyclePickListener.setReadyAlign(false);
+			}
+		}
+		repaint();
+
+	}
+
+	/**
+	 * 
+	 * This method validates the new data, clears any previous selections/markers,
+	 * updates the internal data reference, generates a new chart using the new
+	 * data, and repaints the panel.
+	 * 
+	 * @param newData the new WIAData instance to display
+	 */
+	public void resetWIAData(WIAData newData) {
+
+		if (newData.getData().getHeaderByFlag(HemoData.TYPE_PRESSURE).isEmpty()) {
+			throw new IllegalArgumentException("No pressure data in new WIAData file.");
+		}
+		if (newData.getData().getHeaderByFlag(HemoData.TYPE_FLOW).isEmpty()) {
+			throw new IllegalArgumentException("No flow data in new WIAData file.");
+		}
+
+		// Clear any existing selections and markers
+		resetAllSelections();
+
+		// Update the data
+		this.wiaData = newData;
+
+		// Generate a new chart based on the new data and update the ChartPanel
+		JFreeChart newChart = PressureFlowChart.generate(newData, fontCustom);
+		setChart(newChart);
+
+		// Repaint the panel to reflect the new data
+		repaint();
+	}
+
+	public interface PFPickListener {
+
+		public void setSystole(double timeSystole);
+
+		public void setDiastole(double timeDiastole);
+
+		public void resetSystole();
+
+		public void resetDiastole();
+
+		public void setReadyAlign(boolean ready);
+
+	}
+
+	public static class PressureFlowChart extends JFreeChart {
+
+		private static final long serialVersionUID = 1822270300297602851L;
+
+		protected static PressureFlowChart generate(WIAData data, Font font) {
+			return new PressureFlowChart(_createPlot(false, font, data), font);
+
+		}
+
+		private PressureFlowChart(Plot plot, Font font) {
+
+			super("Pressure and Flow", new Font(font.getFamily(), Font.BOLD, (int) (font.getSize() * 1.2)), plot, true);
+
+			setBorderVisible(false);
+			setBorderPaint(new Color(0, 0, 0, 0));
+			getXYPlot().setDomainPannable(true);
+			getXYPlot().setRangePannable(false);
+
+		}
+
+		public static XYPlot _createPlot(boolean printable, WIAData data) {
+			return _createPlot(printable, Utils.getTextFont(false), data);
+		}
+
+		public static XYPlot _createPlot(boolean printable, Font textFont, WIAData data) {
+			XYPlot plot = new XYPlot();
+
+			int textFontSize = textFont.getSize();
+			float tickStroke = Math.max(textFontSize / 8.0f, 1.5f);
+			double[] time = data.getTime();
+
+			BasicStroke strokeDotted = new BasicStroke(tickStroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1f,
+					new float[] { 6f, 6f }, 0.0f);
+
+			BasicStroke strokeThickSolid = new BasicStroke(tickStroke);
+
+			// DOMAIN AXIS
+			NumberAxis domainAxis = new AutoRangeLimitedValueAxis("Time (ms)");
+			domainAxis.setAutoRange(true);
+			domainAxis.setAutoRangeIncludesZero(false);
+
+			domainAxis.setLabelFont(textFont);
+			domainAxis.setTickLabelFont(textFont);
+			domainAxis.setAutoTickUnitSelection(false);
+			domainAxis.setTickUnit(new NumberTickUnit(Utils.findOptimalTickInterval(time[0], time[time.length - 1], false)));
+			domainAxis.setTickMarkStroke(strokeThickSolid);
+			domainAxis.setTickMarkInsideLength(textFontSize / 2);
+			domainAxis.setTickMarkPaint(Color.BLACK);
+			domainAxis.setTickMarkOutsideLength(Math.round(-1.0f * (tickStroke / 2.0f)));
+			domainAxis.setAxisLineStroke(strokeThickSolid);
+			domainAxis.setAxisLinePaint(Color.BLACK);
+
+			plot.setDomainAxis(domainAxis);
+
+			// RANGE AXES
+
+			XYSeries pressureSeries = new XYSeries("Pressure");
+			XYSeries flowSeries = new XYSeries("Velocity");
+
+			double[] pressure = convertPressureUnits(data.getData());
+			double[] flow = data.getRawFlow();
+
+			for (int i = 0; i < time.length; i++) {
+				pressureSeries.add(time[i], pressure[i]);
+				flowSeries.add(time[i], flow[i]);
+			}
+
+			XYSeriesCollection datasetPressure = new XYSeriesCollection();
+			XYSeriesCollection datasetFlow = new XYSeriesCollection();
+			datasetPressure.addSeries(pressureSeries);
+			datasetFlow.addSeries(flowSeries);
+
+			plot.setDataset(0, datasetPressure);
+			plot.setDataset(1, datasetFlow);
+			XYLineAndShapeRenderer rendererPressure = new XYLineAndShapeRenderer();
+			XYLineAndShapeRenderer rendererFlow = new XYLineAndShapeRenderer();
+
+			// pressure
+			rendererPressure.setSeriesPaint(0, standardPressureLineColor);
+			rendererPressure.setSeriesStroke(0, strokeThickSolid, false);
+			rendererPressure.setAutoPopulateSeriesShape(false);
+			rendererPressure.setSeriesShapesVisible(0, false);
+
+			// flow
+			rendererFlow.setSeriesPaint(0, standardFlowLineColor);
+			rendererFlow.setSeriesStroke(0, strokeDotted, true);
+			rendererFlow.setAutoPopulateSeriesShape(false);
+			rendererFlow.setSeriesShapesVisible(0, false);
+			rendererFlow.setDrawSeriesLineAsPath(true);
+
+			plot.setRenderer(0, rendererPressure);
+			plot.setRenderer(1, rendererFlow);
+
+			plot.setOutlineVisible(false);
+
+			NumberAxis rangeAxisPressure = new NumberAxis("BP (mm Hg)");
+			rangeAxisPressure.setLabelFont(textFont);
+			rangeAxisPressure.setAutoRange(true);
+			rangeAxisPressure.setAutoRangeIncludesZero(false);
+			rangeAxisPressure.setAutoTickUnitSelection(true);
+			rangeAxisPressure.setTickMarkStroke(strokeThickSolid);
+			rangeAxisPressure.setTickMarkInsideLength(textFontSize / 2);
+
+			NumberAxis rangeAxisFlow = new NumberAxis("Velocity (m s-1)");
+			rangeAxisFlow.setLabelFont(textFont);
+			rangeAxisFlow.setAutoRange(true);
+			rangeAxisFlow.setAutoRangeIncludesZero(false);
+			rangeAxisFlow.setAutoTickUnitSelection(true);
+			rangeAxisFlow.setTickMarkStroke(strokeThickSolid);
+			rangeAxisFlow.setTickMarkInsideLength(textFontSize / 2);
+
+			AttributedString as = new AttributedString("Velocity (m s-1)");
+			as.addAttribute(TextAttribute.SUPERSCRIPT, TextAttribute.SUPERSCRIPT_SUPER, 13, 15);
+			as.addAttribute(TextAttribute.SIZE, textFont.getSize());
+			as.addAttribute(TextAttribute.FAMILY, textFont.getFamily());
+			rangeAxisFlow.setAttributedLabel(as);
+
+			rangeAxisPressure.setTickLabelFont(textFont);
+			rangeAxisFlow.setTickLabelFont(textFont);
+			rangeAxisPressure.setTickMarkPaint(Color.BLACK);
+			rangeAxisFlow.setTickMarkPaint(Color.BLACK);
+			rangeAxisPressure.setTickMarkOutsideLength(Math.round(-1.0f * (tickStroke / 2.0f)));
+			rangeAxisFlow.setTickMarkOutsideLength(Math.round(-1.0f * (tickStroke / 2.0f)));
+			rangeAxisPressure.setAxisLineStroke(strokeThickSolid);
+			rangeAxisFlow.setAxisLineStroke(strokeThickSolid);
+			rangeAxisPressure.setAxisLinePaint(Color.BLACK);
+			rangeAxisFlow.setAxisLinePaint(Color.BLACK);
+
+			plot.setRangeAxis(0, rangeAxisPressure);
+			plot.setRangeAxis(1, rangeAxisFlow);
+			plot.mapDatasetToRangeAxis(0, 0);
+			plot.mapDatasetToRangeAxis(1, 1);
+			plot.setDomainGridlinesVisible(false);
+			plot.setRangeGridlinesVisible(false);
+			plot.setDomainCrosshairPaint(Color.BLACK);
+
+			return plot;
+		}
+
+		private static double[] convertPressureUnits(HemoData hd) {
+
+			Header pressHeader = hd.getHeaderByFlag(HemoData.TYPE_PRESSURE).get(0);
+			double[] data = hd.getYData(pressHeader);
+
+			if (hd.hasFlag(pressHeader, HemoData.UNIT_PASCAL)) {
+				data = Utils.convertPascalsToMMHG(data);
+			}
+			return data;
+		}
+
+	}
+
+}
