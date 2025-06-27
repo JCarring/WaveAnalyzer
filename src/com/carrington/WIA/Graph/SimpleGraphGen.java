@@ -23,16 +23,37 @@ import org.jfree.data.xy.XYSeriesCollection;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.IO.Header;
 
+/**
+ * A utility class for generating simple {@link JFreeChart} graphs and displaying them in a JDialog.
+ * Provides methods for creating plots with multiple y-axes or a single shared y-axis.
+ */
 public class SimpleGraphGen {
 	
 	
 	/**
-	 * Generates a simple graph
+	 * Generates and displays a simple graph in a non-modal dialog.
+	 * This is a convenience method that calls the main generateGraph method.
+	 *
+	 * @param title   The title of the chart.
+	 * @param xHeader The {@link Header} information for the x-axis.
+	 * @param xVals   The data points for the x-axis.
+	 * @param yAxes   A map of {@link Header} information and data points for one or more y-axes.
+	 * @param spline  The number of points to use for the spline renderer; if null, a standard line renderer is used.
 	 */
 	public static void generateGraph(String title, Header xHeader, double[] xVals, LinkedHashMap<Header, double[]> yAxes, Integer spline) {
 		generateGraph(title, xHeader, xVals, yAxes, spline, false);
 	}
 	
+	/**
+	 * Generates and displays a simple graph with multiple, separate y-axes.
+	 *
+	 * @param title   The title of the chart.
+	 * @param xHeader The {@link Header} information for the x-axis.
+	 * @param xVals   The data points for the x-axis.
+	 * @param yAxes   A map of {@link Header} information and data points for each y-axis.
+	 * @param spline  The number of points for the spline renderer; if null, a standard line renderer is used.
+	 * @param modal   If true, the dialog will be modal.
+	 */
 	public static void generateGraph(String title, Header xHeader, double[] xVals, LinkedHashMap<Header, double[]> yAxes, Integer spline, boolean modal) {
 		
 	    XYPlot plot = new XYPlot();
@@ -117,6 +138,16 @@ public class SimpleGraphGen {
 		
 	}
 	
+	/**
+	 * Generates and displays a simple graph where all y-series are plotted against a single y-axis.
+	 *
+	 * @param title   The title of the chart.
+	 * @param yHeader The {@link Header} for the single y-axis.
+	 * @param xHeader The {@link Header} for the x-axis.
+	 * @param xVals   The data points for the x-axis.
+	 * @param yAxes   A map containing the data for each series to be plotted.
+	 * @param spline  The number of points for the spline renderer; if null, a standard line renderer is used.
+	 */
 	public static void generateGraphOneDataset(String title, Header yHeader, Header xHeader, double[] xVals, LinkedHashMap<Header, double[]> yAxes, Integer spline) {
 		
 	    XYPlot plot = new XYPlot();
