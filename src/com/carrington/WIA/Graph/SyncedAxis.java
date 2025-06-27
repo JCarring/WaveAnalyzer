@@ -6,36 +6,54 @@ import org.jfree.data.Range;
 
 import com.carrington.WIA.GUIs.Components.KeyChecker;
 
+/**
+ * A custom {@link NumberAxis} that synchronizes its panning and zooming
+ * behavior with another SyncedAxis. This allows two separate charts to be
+ * navigated together. Panning can be locked to be synchronous or individual.
+ */
 public class SyncedAxis extends NumberAxis {
 	private static final long serialVersionUID = -4303533823977940696L;
 
 	// private Range sharedRange = null;
 	private SyncedAxis otherToSyncWith = null;
 
-	protected double offset = 0;
-	
-	public long lastZoom = System.currentTimeMillis();
+	private double offset = 0;
 
 	private boolean locked = false;
 
+	/**
+	 * Constructs a new SyncedAxis.
+	 * @param label The label for the axis.
+	 */
 	public SyncedAxis(String label) {
 		super(label);
 		KeyChecker.isShiftPressed();
 
 	}
 
+	/**
+	 * Sets the other axis that this axis should synchronize with.
+	 * @param otherToSyncWith The other {@link SyncedAxis}.
+	 */
 	public void setOtherToSyncWith(SyncedAxis otherToSyncWith) {
 		this.otherToSyncWith = otherToSyncWith;
 
 	}
-	
+
+
+	/**
+	 * Zooms in on the central value of the axis range by 10%
+	 */
 	public void zoomInCentrally() {
-		resizeRange2(0.9,getRange().getCentralValue());
+		resizeRange2(0.9, getRange().getCentralValue());
 
 	}
-	
+
+	/**
+	 * Zooms out from the central value of the axis range by 10%
+	 */
 	public void zoomOutCentrally() {
-		resizeRange2(1.1,getRange().getCentralValue());
+		resizeRange2(1.1, getRange().getCentralValue());
 
 	}
 
@@ -54,17 +72,16 @@ public class SyncedAxis extends NumberAxis {
 	 */
 	@Override
 	public void resizeRange2(double percent, double anchorValue) {
-		/*if ((System.currentTimeMillis() - lastZoom) < 50) {
-			return;
-		} else {
-			lastZoom = System.currentTimeMillis();
-		}*/
+		/*
+		 * if ((System.currentTimeMillis() - lastZoom) < 50) { return; } else { lastZoom
+		 * = System.currentTimeMillis(); }
+		 */
 		double left = anchorValue - getLowerBound();
 		double right = getUpperBound() - anchorValue;
 		Range adjusted = new Range(anchorValue - left * percent, anchorValue + right * percent);
 
 		setRange(adjusted);
-		
+
 		double otherAnchor = anchorValue - this.offset + otherToSyncWith.offset;
 
 		double left2 = otherAnchor - otherToSyncWith.getLowerBound();
@@ -75,8 +92,13 @@ public class SyncedAxis extends NumberAxis {
 
 	}
 
-
-
+	/**
+	 * Pans the axis by a given percentage. If Shift is pressed or the axis is locked,
+	 * it will also pan the synchronized axis by the same amount. Otherwise, it pans
+	 * individually and updates its internal offset.
+	 *
+	 * @param percent The percentage of the current range to pan by.
+	 */
 	@Override
 	public void pan(double percent) {
 		if (percent == 0.0d) {
@@ -84,7 +106,7 @@ public class SyncedAxis extends NumberAxis {
 		} else if (KeyChecker.isControlPressed()) {
 			return;
 		}
-		
+
 		// shift (sync) or sync pan is enabled
 		if (KeyChecker.isShiftPressed() || locked) {
 			Range r1 = getRange();
@@ -112,20 +134,35 @@ public class SyncedAxis extends NumberAxis {
 		return;
 
 	}
-	
+
+	/**
+	 * Pans the axis so that its new central value is the one specified.
+	 * 
+	 * @param xValueCenter The desired new central value of the axis range.
+	 * @param defaultRange The default range of the axis, used for context (currently unused).
+	 */
 	public void setPan(double xValueCenter, Range defaultRange) {
-		//offset = xValueCenter - defaultRange.getCentralValue();
-		
+
 		Range currentRange = getRange();
 		double change = xValueCenter - currentRange.getCentralValue();
 		offset = offset + change;
 		setRange(Range.shift(currentRange, change));
 	}
-	
+
+	/**
+	 * Locks or unlocks synchronized panning.
+	 * 
+	 * @param locked True to lock panning, false to unlock.
+	 */
 	public void setLocked(boolean locked) {
 		this.locked = locked;
 	}
-	
+
+	/**
+	 * Checks if the axis panning is locked.
+	 * 
+	 * @return True if locked, false otherwise.
+	 */
 	public boolean isLocked() {
 		return this.locked;
 	}

@@ -53,12 +53,18 @@ import com.carrington.WIA.Cardio.Wave;
 import com.carrington.WIA.Cardio.WaveClassification;
 import com.carrington.WIA.DataStructures.WIAData;
 
+/**
+ * An interactive {@link ChartPanel} for displaying and selecting separated
+ * (forward and backward) wave intensity data. Users can select wave boundaries
+ * and classify them. It can operate in a full interaction mode or a
+ * preview-only mode.
+ */
 public class SepWavePanel extends ChartPanel {
+
+	private static final long serialVersionUID = 3212824059614453595L;
 
 	private static final BasicStroke markerStroke = new BasicStroke(2f);
 
-
-	// ValueMarker array will always be of size 2. Index 0 is
 	private final WaveBound[] currentBounds = new WaveBound[2];
 	private final Map<Wave, XYAnnotation[]> waveAnnotations = new HashMap<Wave, XYAnnotation[]>();
 
@@ -68,9 +74,16 @@ public class SepWavePanel extends ChartPanel {
 	private final Font fontCustom;
 	private boolean trace = false;
 
-
-	private static final long serialVersionUID = 3212824059614453595L;
-
+	/**
+	 * Factory method to generate a {@link SepWavePanel} instance.
+	 * 
+	 * @param wiaData       The wave intensity data to display.
+	 * @param font          The font for styling chart elements.
+	 * @param isPreviewOnly If true, the panel operates in a limited, preview-only
+	 *                      mode.
+	 * 
+	 * @return A new {@link SepWavePanel} instance.
+	 */
 	public static SepWavePanel generate(WIAData wiaData, Font font, boolean isPreviewOnly) {
 		// create the chart panel
 
@@ -80,6 +93,14 @@ public class SepWavePanel extends ChartPanel {
 		return new SepWavePanel(WavePickerChart.generate(false, font, wiaData), wiaData, font, isPreviewOnly);
 	}
 
+	/**
+	 * Private constructor for the panel.
+	 * 
+	 * @param chart         The {@link WavePickerChart} to display.
+	 * @param wiaData       The associated wave data.
+	 * @param font          The font for styling.
+	 * @param isPreviewOnly If true, sets up the panel for limited interaction.
+	 */
 	private SepWavePanel(WavePickerChart chart, WIAData wiaData, Font font, boolean isPreviewOnly) {
 		super(chart);
 		this.wiaData = wiaData;
@@ -90,7 +111,6 @@ public class SepWavePanel extends ChartPanel {
 		setMouseWheelEnabled(true);
 		setDomainZoomable(true);
 		setRangeZoomable(false);
-		// setZoomTriggerDistance(Integer.MAX_VALUE); may need this
 		setFillZoomRectangle(false);
 
 		// for max quality
@@ -99,8 +119,6 @@ public class SepWavePanel extends ChartPanel {
 		setMinimumDrawHeight(80);
 		setMinimumDrawWidth(80);
 
-		
-		
 		try {
 			Field mask = ChartPanel.class.getDeclaredField("panMask");
 			mask.setAccessible(true);
@@ -110,8 +128,7 @@ public class SepWavePanel extends ChartPanel {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		}
-		// addMouseWheelListener(arg0 -> restoreAutoRangeBounds());
-		
+
 		this.setPreferredSize(new Dimension(380, 420)); // may not need
 
 		if (!isPreviewOnly) {
@@ -227,19 +244,21 @@ public class SepWavePanel extends ChartPanel {
 				}
 			});
 		}
-		
-		
+
 		addMouseListener(new MouseListener() {
 
 			public void mouseClicked(MouseEvent e) {
 				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 			}
+
 			public void mousePressed(MouseEvent e) {
 				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 			}
+
 			public void mouseReleased(MouseEvent e) {
 				setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 			}
+
 			public void mouseEntered(MouseEvent e) {
 				if (trace) {
 					setHorizontalAxisTrace(true);
@@ -253,22 +272,29 @@ public class SepWavePanel extends ChartPanel {
 				repaint();
 				setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
 			}
-			}
-		);
+		});
 
 		Utils.unfocusButtons(this);
-		
 
 	}
-	
+
+	/**
+	 * Renders annotations for waves that already exist in the WIAData object.
+	 */
 	public void displayExistingChoices() {
 		attemptSelectPreexisting();
 	}
-	
+
+	/**
+	 * Enables or disables the vertical trace line that follows the mouse cursor.
+	 * 
+	 * @param trace True to enable the trace, false to disable.
+	 */
 	public void setTrace(boolean trace) {
 		this.trace = trace;
 		setHorizontalAxisTrace(trace);
 	}
+
 	/**
 	 * Used to determine if mouse pointer is over the chart
 	 */
@@ -282,12 +308,20 @@ public class SepWavePanel extends ChartPanel {
 
 	}
 
+	/**
+	 * Adds a listener to be notified of wave selection events.
+	 * 
+	 * @param listener The listener to add.
+	 */
 	public void setWavePickListener(WavePickListener listener) {
 		this.waveListener = listener;
 	}
-	
-	public void attemptSelectPreexisting() {
-		
+
+	/**
+	 * Renders annotations for all pre-existing waves in the dataset.
+	 */
+	private void attemptSelectPreexisting() {
+
 		XYPlot plot = getChart().getXYPlot();
 		for (Wave wave : wiaData.getWaves()) {
 
@@ -301,7 +335,8 @@ public class SepWavePanel extends ChartPanel {
 			XYBoxAnnotation highlightAnnotation = new XYBoxAnnotation(xRange.getLowerBound(), yLow,
 					xRange.getUpperBound(), yHigh, null, null, wave.getType().getColor());
 
-			XYTextAnnotation textAnnotation = new XYTextAnnotation(wave.getAbbrev(), xRange.getCentralValue(), yForLabel);
+			XYTextAnnotation textAnnotation = new XYTextAnnotation(wave.getAbbrev(), xRange.getCentralValue(),
+					yForLabel);
 			textAnnotation.setFont(Utils.getSmallTextFont());
 			textAnnotation.setPaint(Utils.getDarkerColor(wave.getType().getColor()));
 			textAnnotation.setOutlinePaint(Utils.getDarkerColor(wave.getType().getColor()));
@@ -312,10 +347,13 @@ public class SepWavePanel extends ChartPanel {
 			this.waveAnnotations.put(wave, new XYAnnotation[] { textAnnotation, highlightAnnotation });
 		}
 	}
-	
-	public void attemptDummySelection() {
-		if (!isPreviewOnly) return;
-		
+
+	/**
+	 * Handles a wave boundary selection in the preview-only mode.
+	 */
+	private void attemptDummySelection() {
+		if (!isPreviewOnly)
+			return;
 
 		double[] xy = getXYValueFromScreenPos();
 
@@ -331,16 +369,14 @@ public class SepWavePanel extends ChartPanel {
 		}
 
 		boolean isProx = (xy[1] >= 0);
-		
-		Range yRange = getChart().getXYPlot().getRangeAxis().getRange();
-		
-		XYLineAnnotation line = new XYLineAnnotation(
-			     xy[0], 0, xy[0], isProx ? yRange.getUpperBound() : yRange.getLowerBound(), 
-			    		 markerStroke, new Color(161, 0, 132, 255));
 
+		Range yRange = getChart().getXYPlot().getRangeAxis().getRange();
+
+		XYLineAnnotation line = new XYLineAnnotation(xy[0], 0, xy[0],
+				isProx ? yRange.getUpperBound() : yRange.getLowerBound(), markerStroke, new Color(161, 0, 132, 255));
 
 		WaveBound bound = new WaveBound(xy[0], isProx, line);
-		
+
 		if (currentBounds[0] == null) {
 			currentBounds[0] = bound;
 			getChart().getXYPlot().addAnnotation(line);
@@ -358,7 +394,7 @@ public class SepWavePanel extends ChartPanel {
 				return;
 			}
 
-			double[] time = wiaData.getData().getXData(); 
+			double[] time = wiaData.getData().getXData();
 			int index1 = Utils.getClosestIndex(currentBounds[0].xVal, time);
 			int index2 = Utils.getClosestIndex(currentBounds[1].xVal, time);
 			int indexStart = Math.min(index1, index2);
@@ -369,7 +405,7 @@ public class SepWavePanel extends ChartPanel {
 				resetCurrWaveSelection();
 				return;
 			}
-			
+
 			XYPlot plot = getChart().getXYPlot();
 			plot.addAnnotation(line);
 
@@ -382,10 +418,11 @@ public class SepWavePanel extends ChartPanel {
 
 			plot.getRenderer().addAnnotation(highlightAnnotation, Layer.BACKGROUND);
 
-			Wave wave = new Wave("Preview", WaveClassification.OTHER, time[indexStart], time[indexEnd], indexStart, indexEnd, this.currentBounds[0].isProx);
+			Wave wave = new Wave("Preview", WaveClassification.OTHER, time[indexStart], time[indexEnd], indexStart,
+					indexEnd, this.currentBounds[0].isProx);
 			wiaData.calculateWavePeaksAndSum(wave);
 			if (waveListener != null) {
-				waveListener.updateDisplayForAddedWave(wave); // TODO
+				waveListener.updateDisplayForAddedWave(wave); 
 			}
 		} else {
 			resetCurrWaveSelection();
@@ -402,10 +439,11 @@ public class SepWavePanel extends ChartPanel {
 	/**
 	 * Attempts to select a wave point. Will display error message if needed.
 	 */
-	public void attemptSelection(WaveClassification waveType) {
-		
-		if (isPreviewOnly) return;
-		
+	private void attemptSelection(WaveClassification waveType) {
+
+		if (isPreviewOnly)
+			return;
+
 		if (this.currentBounds[0] != null && this.currentBounds[1] != null) {
 			// two bounds were already picked. Now we need to add the wave.
 
@@ -433,7 +471,8 @@ public class SepWavePanel extends ChartPanel {
 			String abbrev;
 
 			if (selectedWaveType == null) {
-				selectedWaveType = Utils.promptSelection(WaveClassification.valuesOtherFirst(), "Select Wave Name", -1, this);
+				selectedWaveType = Utils.promptSelection(WaveClassification.valuesOtherFirst(), "Select Wave Name", -1,
+						this);
 				if (selectedWaveType == null) {
 					// did not select name, cancelled
 					return;
@@ -461,7 +500,8 @@ public class SepWavePanel extends ChartPanel {
 				}
 			}
 
-			Wave wave = new Wave(abbrev, selectedWaveType, time[indexStart], time[indexEnd], indexStart, indexEnd, this.currentBounds[0].isProx);
+			Wave wave = new Wave(abbrev, selectedWaveType, time[indexStart], time[indexEnd], indexStart, indexEnd,
+					this.currentBounds[0].isProx);
 			wiaData.calculateWavePeaksAndSum(wave);
 
 			if (wiaData.containsMatchingWave(wave)) {
@@ -519,11 +559,9 @@ public class SepWavePanel extends ChartPanel {
 
 		boolean isProx = (xy[1] >= 0);
 
-
 		Range yRange = getChart().getXYPlot().getRangeAxis().getRange();
-		XYLineAnnotation line = new XYLineAnnotation(
-			     xy[0], 0, xy[0], isProx ? yRange.getUpperBound() : yRange.getLowerBound(), 
-			    		 markerStroke, new Color(161, 0, 132, 255));
+		XYLineAnnotation line = new XYLineAnnotation(xy[0], 0, xy[0],
+				isProx ? yRange.getUpperBound() : yRange.getLowerBound(), markerStroke, new Color(161, 0, 132, 255));
 
 		getChart().getXYPlot().addAnnotation(line);
 
@@ -540,7 +578,7 @@ public class SepWavePanel extends ChartPanel {
 	 * sends call back to listener
 	 */
 	public void resetCurrWaveSelection() {
-				
+
 		XYPlot plot = getChart().getXYPlot();
 		if (currentBounds[0] != null) {
 			plot.removeAnnotation(currentBounds[0].boundMarker);
@@ -552,43 +590,46 @@ public class SepWavePanel extends ChartPanel {
 		currentBounds[0] = null;
 		currentBounds[1] = null;
 	}
-	
-    /**
-     * This method clears any existing wave selections and annotations,
-     * updates the internal WIAData reference, generates a new chart based on the new data,
-     * and repaints the panel.
-     *
-     * @param newData the new WIAData instance to display.
-     */
-    public void resetWIAData(WIAData newData) {
-
-    	
-        if (newData == null) {
-            throw new IllegalArgumentException("New WIAData file cannot be null.");
-        }
-        
-        // Clear any current wave selections and annotations.
-        resetCurrWaveSelection();
-        removeAllWaves();
-        
-        // Update the internal data reference.
-        this.wiaData = newData;
-        
-        // Generate a new chart using the new data and update the ChartPanel.
-        JFreeChart newChart = WavePickerChart.generate(false, fontCustom, newData);
-        setChart(newChart);
-        
-        // Repaint the panel to reflect the new data.
-        repaint();
-    }
 
 	/**
-	 * does not send call back to listener
+	 * This method clears any existing wave selections and annotations, updates the
+	 * internal WIAData reference, generates a new chart based on the new data, and
+	 * repaints the panel.
+	 *
+	 * @param newData the new WIAData instance to display.
+	 */
+	public void resetWIAData(WIAData newData) {
+
+		if (newData == null) {
+			throw new IllegalArgumentException("New WIAData file cannot be null.");
+		}
+
+		// Clear any current wave selections and annotations.
+		resetCurrWaveSelection();
+		removeAllWaves();
+
+		// Update the internal data reference.
+		this.wiaData = newData;
+
+		// Generate a new chart using the new data and update the ChartPanel.
+		JFreeChart newChart = WavePickerChart.generate(false, fontCustom, newData);
+		setChart(newChart);
+
+		// Repaint the panel to reflect the new data.
+		repaint();
+	}
+
+	/**
+	 * Removes the specified wave and its associated annotations from the chart.
+	 * This does not notify the {@link WavePickListener}.
+	 * 
+	 * @param wave The {@link Wave} to remove.
 	 */
 	public void removeWave(Wave wave) {
-		
-		if (isPreviewOnly) return;
-		
+
+		if (isPreviewOnly)
+			return;
+
 		wiaData.removeWave(wave);
 		XYAnnotation[] annotations = this.waveAnnotations.get(wave);
 		if (annotations != null) {
@@ -599,12 +640,14 @@ public class SepWavePanel extends ChartPanel {
 	}
 
 	/**
-	 * does not send call back to listener
+	 * Removes all {@link Wave} and their annotations from the chart. This does not
+	 * notify the WavePickListener.
 	 */
 	public void removeAllWaves() {
-		
-		if (isPreviewOnly) return;
-		
+
+		if (isPreviewOnly)
+			return;
+
 		XYItemRenderer render = getChart().getXYPlot().getRenderer();
 		for (Entry<Wave, XYAnnotation[]> waveEn : this.waveAnnotations.entrySet()) {
 			wiaData.removeWave(waveEn.getKey());
@@ -617,17 +660,32 @@ public class SepWavePanel extends ChartPanel {
 		wiaData.clearWaves();
 	}
 
+	/**
+	 * Enables the difference renderer, which fills the area between the wave
+	 * intensity line and the zero baseline.
+	 */
 	public void disableDifferencing() {
 		((WavePickerChart) getChart()).disableDifferencing();
 
 	}
 
+
+	/**
+	 * Disables the difference renderer, showing only the wave intensity line.
+	 */
 	public void enableDifferencing() {
 		((WavePickerChart) getChart()).enableDifferencing();
 
 	}
 
-	public double getYForTopPos(Font font) {
+	/**
+	 * Calculates the Y-coordinate value for placing text at the top of the plot
+	 * area.
+	 * 
+	 * @param font The font of the text, used to calculate height.
+	 * @return The Y-coordinate value.
+	 */
+	private double getYForTopPos(Font font) {
 
 		Canvas c = new Canvas();
 		FontMetrics fm = c.getFontMetrics(font);
@@ -640,7 +698,14 @@ public class SepWavePanel extends ChartPanel {
 
 	}
 
-	public double getYForBottomPos(Font font) {
+	/**
+	 * Calculates the Y-coordinate value for placing text at the bottom of the plot
+	 * area.
+	 * 
+	 * @param font The font of the text, used to calculate height.
+	 * @return The Y-coordinate value.
+	 */
+	private double getYForBottomPos(Font font) {
 		Canvas c = new Canvas();
 		FontMetrics fm = c.getFontMetrics(font);
 		int size = fm.getAscent();
@@ -679,11 +744,37 @@ public class SepWavePanel extends ChartPanel {
 		return new double[] { xVal, yVal };
 	}
 
+	/**
+	 * Saves the current chart view as an SVG file.
+	 * 
+	 * @param file The file to save the SVG to.
+	 * @return An error message string if saving fails, otherwise null.
+	 */
+	public String saveChartAsSVG(File file) {
+		try {
+			ComboChartSaver.saveAsSVG(getChart(), file, this.getWidth(), this.getHeight());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Could not save wave selection display as SVG. System error message: " + e.getMessage();
+		}
+		return null;
+	}
+
+	/**
+	 * A private helper class to store information about a selected wave boundary.
+	 */
 	private class WaveBound {
 		private final double xVal;
 		private final boolean isProx;
 		private final XYLineAnnotation boundMarker;
 
+		/**
+		 * Constructs a WaveBound object.
+		 * 
+		 * @param xVal   The x-coordinate (time) of the boundary.
+		 * @param isProx True if the boundary is for a proximal (forward) wave.
+		 * @param marker The annotation marker displayed on the chart for this bound.
+		 */
 		private WaveBound(double xVal, boolean isProx, XYLineAnnotation marker) {
 			this.xVal = xVal;
 			this.isProx = isProx;
@@ -691,6 +782,9 @@ public class SepWavePanel extends ChartPanel {
 		}
 	}
 
+	/**
+	 * An interface for listeners that need to respond to wave creation events.
+	 */
 	public interface WavePickListener {
 
 		/**
@@ -700,10 +794,13 @@ public class SepWavePanel extends ChartPanel {
 		 * @param wave the {@link Wave} added
 		 */
 		public void updateDisplayForAddedWave(Wave wave);
-				
 
 	}
 
+	/**
+	 * A custom {@link JFreeChart} class for displaying separated wave intensity,
+	 * with logic to toggle between filled (difference) and simple line renderers.
+	 */
 	private static class WavePickerChart extends JFreeChart {
 
 		private static final long serialVersionUID = -1372038490696834353L;
@@ -715,12 +812,26 @@ public class SepWavePanel extends ChartPanel {
 		private XYLineAndShapeRenderer rendererPositive = null;
 		private XYLineAndShapeRenderer rendererNegative = null;
 
+		/**
+		 * Factory method to generate a {@link WavePickerChart}
+		 * 
+		 * @param printable If true, configures the chart for printing.
+		 * @param font The font for styling.
+		 * @param wiaData The data to be plotted.
+		 * @return A new {@link WavePickerChart} instance.
+		 */
 		private static WavePickerChart generate(boolean printable, Font font, WIAData wiaData) {
 
 			return new WavePickerChart(_createPlot(printable, font, wiaData), font);
 
 		}
 
+		/**
+		 * Constructor for the chart.
+		 * 
+		 * @param plot The fully configured {@link XYPlot}.
+		 * @param font The font for styling.
+		 */
 		private WavePickerChart(Plot plot, Font font) {
 			super("Separated Wave Intensity", new Font(font.getFamily(), Font.BOLD, (int) (font.getSize() * 1.2)), plot,
 					true);
@@ -754,17 +865,31 @@ public class SepWavePanel extends ChartPanel {
 
 		}
 
-		public void disableDifferencing() {
+		/**
+		 * Disables the difference renderer, showing only the data lines.
+		 */
+		private void disableDifferencing() {
 			getXYPlot().setRenderer(0, rendererPositive, true);
 			getXYPlot().setRenderer(1, rendererNegative, true);
 
 		}
 
-		public void enableDifferencing() {
+		/**
+		 * Enables the difference renderer, filling the area between the lines and the zero axis.
+		 */
+		private void enableDifferencing() {
 			getXYPlot().setRenderer(0, rendererPositiveDiff, true);
 			getXYPlot().setRenderer(1, rendererNegativeDiff, true);
 		}
 
+		/**
+		 * Creates and configures the {@link XYPlot} for the separated wave intensity chart.
+		 * 
+		 * @param printable If true, configures the plot for printing.
+		 * @param textFont The font for text elements.
+		 * @param wiaData The data to be plotted.
+		 * @return A fully configured XYPlot.
+		 */
 		private static XYPlot _createPlot(boolean printable, Font textFont, WIAData wiaData) {
 
 			double[] time = wiaData.getTime();
@@ -792,7 +917,8 @@ public class SepWavePanel extends ChartPanel {
 			domainAxis.setTickLabelFont(textFont);
 			domainAxis.setAutoTickUnitSelection(false);
 
-			domainAxis.setTickUnit(new NumberTickUnit(Utils.findOptimalTickInterval(time[0], time[time.length - 1], false)));
+			domainAxis.setTickUnit(
+					new NumberTickUnit(Utils.findOptimalTickInterval(time[0], time[time.length - 1], false)));
 			domainAxis.setTickMarkStroke(new BasicStroke(tickStroke));
 			domainAxis.setTickMarkInsideLength(textFontSize / 2);
 			domainAxis.setTickMarkPaint(Color.BLACK);
@@ -910,8 +1036,7 @@ public class SepWavePanel extends ChartPanel {
 			rangeAxis.setAutoTickUnitSelection(false);
 			double min = Utils.min(waveForward, waveBackward);
 			double max = Utils.max(waveForward, waveBackward);
-			rangeAxis.setTickUnit(
-					new NumberTickUnit(Utils.findOptimalTickInterval(min, max, false)));
+			rangeAxis.setTickUnit(new NumberTickUnit(Utils.findOptimalTickInterval(min, max, false)));
 			rangeAxis.setTickMarkStroke(new BasicStroke(tickStroke));
 			rangeAxis.setTickMarkInsideLength(textFontSize / 2);
 			rangeAxis.setTickMarkPaint(Color.BLACK);
@@ -935,16 +1060,6 @@ public class SepWavePanel extends ChartPanel {
 
 		}
 
-	}
-	
-	public String saveChartAsSVG(File file) {
-		try {
-			ComboChartSaver.saveAsSVG(getChart(), file, this.getWidth(), this.getHeight());
-		} catch (Exception e) {
-			e.printStackTrace();
-			return "Could not save wave selection display as SVG. System error message: " + e.getMessage();
-		}
-		return null;
 	}
 
 }
