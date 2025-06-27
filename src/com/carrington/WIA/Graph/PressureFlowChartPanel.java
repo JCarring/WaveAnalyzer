@@ -44,18 +44,36 @@ import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.DataStructures.WIAData;
 import com.carrington.WIA.IO.Header;
 
+/**
+ * An interactive {@link ChartPanel} for displaying pressure and flow data from
+ * a {@link WIAData} object. It provides different modes for user interaction,
+ * such as selecting systole/diastole points and aligning the pressure and flow
+ * waveforms.
+ */
 public class PressureFlowChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = 5158158439696012597L;
 
+	
+	/** The standard color for the pressure line, light blue. */
 	public static final Color standardPressureLineColor = new Color(123, 178, 224, 255);
+	/** A darker color for the pressure line, used for highlighting, blue. */
 	public static final Color darkerPressureLineColor = new Color(0, 82, 153, 255);
 
+	
+	/** The standard color for the flow line, light orange-red. */
 	public static final Color standardFlowLineColor = new Color(239, 111, 90, 255);
+	/** A darker color for the flow line, used for highlighting, red. */
 	public static final Color darkerFlowLineColor = new Color(239, 32, 0, 255);
+	
+	
+	/** Mode indicating no selection is active. */
 	public static final int MODE_NONE = 0;
+	/** Mode for selecting systole and diastole points. */
 	public static final int MODE_SYS_DIAS = 1;
+	/** Mode for aligning waveforms by selecting their peaks. */
 	public static final int MODE_ALIGN_PEAK = 2;
+	/** Mode for aligning waveforms by manually selecting points. */
 	public static final int MODE_ALIGN_MANUAL = 3;
 
 	private Double timeXSystole = null;
@@ -73,16 +91,29 @@ public class PressureFlowChartPanel extends ChartPanel {
 	private int mode = MODE_NONE;
 
 	private PFPickListener cyclePickListener;
-	
+
 	private final Font fontCustom;
 
+	/**
+	 * Factory method to generate a {@link PressureFlowChartPanel} instance.
+	 *
+	 * @param data The {@link WIAData} containing the pressure and flow data.
+	 * @param font The font to be used for chart labels and titles.
+	 * @return A new {@link PressureFlowChartPanel} instance.
+	 */
 	public static PressureFlowChartPanel generate(WIAData data, Font font) {
-		// create the chart panel
 
-		// TODO: if align switches, need to erase waves, erase systolic / diastolic
 		return new PressureFlowChartPanel(PressureFlowChart.generate(data, font), data, font);
+	
 	}
 
+	/**
+	 * Constructor to initialize the chart panel.
+	 * 
+	 * @param chart The {@link PressureFlowChart} to be displayed.
+	 * @param wiaData The data associated with the chart.
+	 * @param font The font used for styling.
+	 */
 	private PressureFlowChartPanel(PressureFlowChart chart, WIAData wiaData, Font font) {
 		super(chart);
 		this.wiaData = wiaData;
@@ -98,7 +129,6 @@ public class PressureFlowChartPanel extends ChartPanel {
 		setMouseWheelEnabled(true);
 		setDomainZoomable(true);
 		setRangeZoomable(false);
-		// setZoomTriggerDistance(Integer.MAX_VALUE); may need this
 		setFillZoomRectangle(false);
 
 		// for max quality
@@ -118,7 +148,6 @@ public class PressureFlowChartPanel extends ChartPanel {
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		}
-		// addMouseWheelListener(arg0 -> restoreAutoRangeBounds());
 		this.setPreferredSize(new Dimension(380, 420)); // may not need
 
 		InputMap map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
@@ -184,6 +213,9 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 	}
 
+	/**
+	 * Renders markers on the chart for systole and diastole times if they already exist in the WIAData.
+	 */
 	public void displayExistingChoices() {
 		XYPlot plot = getChart().getXYPlot();
 		if (!Double.isNaN(wiaData.getSystoleTime())) {
@@ -218,9 +250,9 @@ public class PressureFlowChartPanel extends ChartPanel {
 	}
 
 	/**
+	 * Handles a user's selection attempt based on the current interaction mode.
 	 * 
-	 * @param selectionType 1=pressure or systolic, 2=flow or diastolic,
-	 *                      3=reset
+	 * @param selectionType 1 for pressure/systolic selection, 2 for flow/diastolic selection.
 	 */
 	private void attemptSelect(int selectionType) {
 
@@ -232,7 +264,6 @@ public class PressureFlowChartPanel extends ChartPanel {
 			return;
 		}
 
-		
 		double[] xy;
 		if (mode == MODE_ALIGN_PEAK || mode == MODE_ALIGN_MANUAL) {
 			xy = getXYValueFromScreenPos(selectionType == 1 ? true
@@ -253,11 +284,9 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		int xValueIndex = Utils.getClosestIndex(xy[0], validTime);
 		double xValueNearest = validTime[xValueIndex];
-		
+
 		if (mode == MODE_SYS_DIAS) {
-			
-			
-			
+
 			boolean systole = selectionType == 1 ? true
 					: (selectionType == 2 ? false : (timeXSystole == null ? true : false));
 
@@ -270,7 +299,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 					Utils.showWarning("Usually diastole comes after systole in these traces.", this);
 				}
 			}
-			
+
 			ValueMarker vm = new ValueMarker(xValueNearest);
 			Canvas c = new Canvas();
 			FontMetrics fm = c.getFontMetrics(Utils.getSmallTextFont());
@@ -322,10 +351,10 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 			boolean pressure = selectionType == 1 ? true
 					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false));
-			
+
 			// Retrieve the dataset from the chart's plot
 			XYPlot plot = getChart().getXYPlot();
-			int seriesIndex = pressure ? 0 : 1;  
+			int seriesIndex = pressure ? 0 : 1;
 
 			XYDataset dataset = plot.getDataset(seriesIndex);
 
@@ -333,9 +362,8 @@ public class PressureFlowChartPanel extends ChartPanel {
 			int itemCount = dataset.getItemCount(0);
 			double[] dataY = new double[itemCount];
 			for (int i = 0; i < itemCount; i++) {
-			    dataY[i] = dataset.getYValue(0, i);
+				dataY[i] = dataset.getYValue(0, i);
 			}
-
 
 			if (xy[1] > dataY[xValueIndex]) {
 				// search for min
@@ -421,8 +449,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 			} else {
 				// search for max
-				
-				
+
 				int indexUpper = -1;
 				int indexLower = -1;
 
@@ -514,7 +541,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 			boolean pressure = selectionType == 1 ? true
 					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false));
-		
+
 			ValueMarker vm = new ValueMarker(xValueNearest);
 			XYPlot plot = getChart().getXYPlot();
 			vm.setStroke(new BasicStroke(2f));
@@ -647,7 +674,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 			cyclePickListener.resetDiastole();
 		}
 	}
-	
+
 	/**
 	 * Resets align selections
 	 */
@@ -691,8 +718,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 		if (!pointIsOverChart(mousePoint)) {
 			return null;
 		}
-		
-		
+
 		SwingUtilities.convertPointFromScreen(mousePoint, this); // edits in place without return
 		Point2D point2d = translateScreenToJava2D(mousePoint);
 
@@ -702,7 +728,8 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double xVal = plot.getDomainAxis().java2DToValue(point2d.getX(), plotArea, plot.getDomainAxisEdge());
 		double yVal;
 
-		if (pressureAxis == null) pressureAxis = true;
+		if (pressureAxis == null)
+			pressureAxis = true;
 
 		if (pressureAxis) {
 			yVal = plot.getRangeAxis(0).java2DToValue(point2d.getY(), plotArea, plot.getRangeAxisEdge());
@@ -714,6 +741,11 @@ public class PressureFlowChartPanel extends ChartPanel {
 		return new double[] { xVal, yVal };
 	}
 
+	/**
+	 * Adds a listener to be notified of selection events.
+	 * 
+	 * @param listener The listener to add.
+	 */
 	public void setCyclePickListener(PFPickListener listener) {
 		this.cyclePickListener = listener;
 	}
@@ -779,29 +811,67 @@ public class PressureFlowChartPanel extends ChartPanel {
 		repaint();
 	}
 
+	/**
+	 * An interface for listeners that need to respond to selection events
+	 * on the PressureFlowChartPanel, such as picking systole and diastole times.
+	 */
 	public interface PFPickListener {
 
+		/**
+		 * Called when a systole time is selected.
+		 * @param timeSystole The selected time for systole.
+		 */
 		public void setSystole(double timeSystole);
 
+		/**
+		 * Called when a diastole time is selected.
+		 * @param timeDiastole The selected time for diastole.
+		 */
 		public void setDiastole(double timeDiastole);
 
+		/**
+		 * Called when the systole selection is reset.
+		 */
 		public void resetSystole();
 
+
+		/**
+		 * Called when the diastole selection is reset.
+		 */
 		public void resetDiastole();
 
+		/**
+		 * Called to indicate whether alignment points have been selected and alignment is ready.
+		 * @param ready True if both alignment points are set, false otherwise.
+		 */
 		public void setReadyAlign(boolean ready);
 
 	}
 
-	public static class PressureFlowChart extends JFreeChart {
+	/**
+	 * A custom JFreeChart class for displaying pressure and flow waveforms.
+	 */
+	private static class PressureFlowChart extends JFreeChart {
 
 		private static final long serialVersionUID = 1822270300297602851L;
 
-		protected static PressureFlowChart generate(WIAData data, Font font) {
+		/**
+		 * Factory method to generate a {@link PressureFlowChart}
+		 * 
+		 * @param data The {@link WIAData} for the chart.
+		 * @param font The font to use for styling.
+		 * @return A new {@link PressureFlowChart} instance.
+		 */
+		private static PressureFlowChart generate(WIAData data, Font font) {
 			return new PressureFlowChart(_createPlot(false, font, data), font);
 
 		}
 
+		/**
+		 * Private constructor for the chart.
+		 * @param plot The fully configured {@link XYPlot}.
+		 * @param font The font for styling.
+		 */
 		private PressureFlowChart(Plot plot, Font font) {
 
 			super("Pressure and Flow", new Font(font.getFamily(), Font.BOLD, (int) (font.getSize() * 1.2)), plot, true);
@@ -813,11 +883,15 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		}
 
-		public static XYPlot _createPlot(boolean printable, WIAData data) {
-			return _createPlot(printable, Utils.getTextFont(false), data);
-		}
-
-		public static XYPlot _createPlot(boolean printable, Font textFont, WIAData data) {
+		/**
+		 * Creates and configures the {@link XYPlot} for the chart with a specific font.
+		 * 
+		 * @param printable If true, configures the plot for printing.
+		 * @param textFont The font to use for all text elements.
+		 * @param data The {@link WIAData} to plot.
+		 * @return A configured {@link XYPlot}.
+		 */
+		private static XYPlot _createPlot(boolean printable, Font textFont, WIAData data) {
 			XYPlot plot = new XYPlot();
 
 			int textFontSize = textFont.getSize();
@@ -837,7 +911,8 @@ public class PressureFlowChartPanel extends ChartPanel {
 			domainAxis.setLabelFont(textFont);
 			domainAxis.setTickLabelFont(textFont);
 			domainAxis.setAutoTickUnitSelection(false);
-			domainAxis.setTickUnit(new NumberTickUnit(Utils.findOptimalTickInterval(time[0], time[time.length - 1], false)));
+			domainAxis.setTickUnit(
+					new NumberTickUnit(Utils.findOptimalTickInterval(time[0], time[time.length - 1], false)));
 			domainAxis.setTickMarkStroke(strokeThickSolid);
 			domainAxis.setTickMarkInsideLength(textFontSize / 2);
 			domainAxis.setTickMarkPaint(Color.BLACK);
@@ -932,6 +1007,12 @@ public class PressureFlowChartPanel extends ChartPanel {
 			return plot;
 		}
 
+		/**
+		 * Converts pressure data to mmHg if it is in Pascals.
+		 * 
+		 * @param hd The {@link HemoData} containing the pressure data.
+		 * @return The pressure data in mmHg.
+		 */
 		private static double[] convertPressureUnits(HemoData hd) {
 
 			Header pressHeader = hd.getHeaderByFlag(HemoData.TYPE_PRESSURE).get(0);

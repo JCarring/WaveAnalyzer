@@ -21,12 +21,22 @@ import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.data.xy.XYDataset;
 
+/**
+ * A specialized ChartPanel for displaying a {@link CustomLinesChart}.
+ * It provides enhanced interactivity, including mouse zooming, key-based zooming,
+ * and clicking on legend items to toggle series visibility.
+ */
 public class CustomLinesChartPanel extends ChartPanel {
 	
 	private static final long serialVersionUID = -1811610213414423374L;
 	
 	private final CustomLinesChart chartChart;
 
+	/**
+	 * Constructs a new panel to display the given {@link CustomLinesChart}.
+	 *
+	 * @param chart The {@link CustomLinesChart} to be displayed in this panel.
+	 */
 	public CustomLinesChartPanel(CustomLinesChart chart) {
 		super(chart.getChart());
 		this.chartChart = chart;
@@ -34,7 +44,6 @@ public class CustomLinesChartPanel extends ChartPanel {
 	    setMouseWheelEnabled(true);
 	    setDomainZoomable(true);
 	    setRangeZoomable(false);
-	    //setZoomTriggerDistance(Integer.MAX_VALUE);
 	    setFillZoomRectangle(false);
 	    setZoomOutlinePaint(new Color(0f, 0f, 0f, 0f));
 	    setZoomAroundAnchor(true);
@@ -96,22 +105,33 @@ public class CustomLinesChartPanel extends ChartPanel {
 	    setFocusable(true);
 	}
 	
+	/**
+	 * Overrides the parent method to define the preferred size of the chart panel.
+	 *
+	 * @return The preferred dimensions of the panel.
+	 */
 	@Override
     public Dimension getPreferredSize() {
 		return super.getPreferredSize();
-        //return new Dimension(1000, 100); // TODO: may need to re-enable
     }
 	
+	
+	/**
+	 * Returns the underlying chart instance associated with this panel.
+	 *
+	 * @return The {@link CustomLinesChart} instance.
+	 */
 	public CustomLinesChart getLinesChart() {
 		return this.chartChart;
 	}
 	
 	/**
 	 * Return the xValue at which the mouse pointer is over vertically on the graph.
-	 * 
-	 * It will return null if the mouse point was not actually over the graph.
-	 * 
+	 *	<p>
 	 * This does not actually confirm the xValue actually has any data.
+	 *
+	 * @return The domain (x-axis) value corresponding to the mouse pointer's
+	 * horizontal position, or null if the pointer is not over the plot area.
 	 */
 	public Double getXValueFromScreenPos() {
 		
@@ -131,7 +151,10 @@ public class CustomLinesChartPanel extends ChartPanel {
 	}
 	
 	/**
-	 * Used to determine if mouse pointer is over the chart
+	 * Used to determine if the mouse pointer is over the chart's data area.
+	 *
+	 * @param p The point to check, in screen coordinates.
+	 * @return True if the point is within the chart's screen data area, false otherwise.
 	 */
 	private boolean pointIsOverChart(Point p) {
 		Rectangle2D chartrect = getScreenDataArea();
@@ -143,6 +166,13 @@ public class CustomLinesChartPanel extends ChartPanel {
 
 	}
 	
+    /**
+     * Toggles the alpha component of a color between 0 (fully transparent) and 255 (fully opaque).
+     *
+     * @param original The original {@link Color}.
+     * @return A new {@link Color} instance with the toggled alpha value.
+     * @throws IllegalArgumentException if the original color is null.
+     */
     private static Color toggleAlpha(Color original) {
         if (original == null) {
             throw new IllegalArgumentException("Original color cannot be null.");
