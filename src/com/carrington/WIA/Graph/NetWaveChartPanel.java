@@ -23,6 +23,11 @@ import org.jfree.data.xy.XYSeriesCollection;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.WIAData;
 
+/**
+ * A specialized {@link ChartPanel} designed to display net wave intensity data from a
+ * {@link WIAData} object. It encapsulates a {@link NetWaveChart} and provides
+ * methods for its creation and manipulation.
+ */
 public class NetWaveChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = 5158158439696012597L;
@@ -31,7 +36,15 @@ public class NetWaveChartPanel extends ChartPanel {
 	
 	private final Font fontCustom;
 
-	// old contained time, waveIntenstiy, waveDeriv
+	 
+	/**
+	 * Factory method to create a {@link NetWaveChartPanel} instance.
+	 *
+	 * @param wiaData The {@link WIAData} to plot.
+	 * @param font The font to use for chart text and labels.
+	 * @return A new instance of {@link NetWaveChartPanel}.
+	 * @throws IllegalArgumentException if wave data is null.
+	 */
 	public static NetWaveChartPanel generate(WIAData wiaData, Font font) {
 		if (wiaData == null) {
 			throw new IllegalArgumentException("WIA data cannot be null.");
@@ -40,6 +53,13 @@ public class NetWaveChartPanel extends ChartPanel {
 		return new NetWaveChartPanel(NetWaveChart.generate(wiaData, font), font);
 	}
 
+	/**
+	 * Private constructor to create the chart panel.
+	 * Instantiation should be done via the static {@link #generate(WIAData, Font)} method.
+	 *
+	 * @param chart The custom {@link NetWaveChart} to display.
+	 * @param font The font to be used in the chart.
+	 */
 	private NetWaveChartPanel(NetWaveChart chart, Font font) {
 		super(chart);
 
@@ -71,10 +91,17 @@ public class NetWaveChartPanel extends ChartPanel {
 
 	}
 
+	/**
+	 * Enables the difference renderer, which fills the area between the wave
+	 * intensity line and the zero baseline.
+	 */
 	public void enableDifferencing() {
 		customChart.enableDifferencing();
 	}
 
+	/**
+	 * Disables the difference renderer, showing only the wave intensity line.
+	 */
 	public void disableDifferencing() {
 		customChart.disableDifferencing();
 	}
@@ -101,6 +128,11 @@ public class NetWaveChartPanel extends ChartPanel {
 		repaint();
 	}
 
+	/**
+	 * A custom {@link JFreeChart} class specifically for displaying Net Wave Intensity.
+	 * It handles the creation of the plot, renderers, and axes, and allows
+	 * for toggling between a standard line renderer and a difference renderer.
+	 */
 	public static class NetWaveChart extends JFreeChart {
 
 		private static final long serialVersionUID = -1372038490696834353L;
@@ -110,11 +142,19 @@ public class NetWaveChartPanel extends ChartPanel {
 		private XYDifferenceRenderer rendererDiff = null;
 		private XYLineAndShapeRenderer rendererNormal = null;
 
+		/**
+		 * Constructor for {@link NetWaveChart}.
+		 * Instantiation should be done via the static {@link #generate(WIAData, Font)} method.
+		 *
+		 * @param plot The fully configured {@link XYPlot} for the chart.
+		 * @param font The base font for chart elements.
+		 */
 		private static NetWaveChart generate(WIAData data, Font font) {
 			return new NetWaveChart(_createPlot(font, data), font);
 
 		}
 
+		
 		private NetWaveChart(Plot plot, Font font) {
 			super("Net Wave Intensity", new Font(font.getFamily(), Font.BOLD, (int) (font.getSize() * 1.2)), plot,
 					true);
@@ -138,19 +178,38 @@ public class NetWaveChartPanel extends ChartPanel {
 
 		}
 
+		/**
+		 * Disables the difference renderer and applies a normal line renderer.
+		 */
 		public void disableDifferencing() {
 			getXYPlot().setRenderer(0, rendererNormal, true);
 
 		}
 
+		/**
+		 * Enables the difference renderer to show filled areas.
+		 */
 		public void enableDifferencing() {
 			getXYPlot().setRenderer(0, rendererDiff, true);
 		}
 
+
+		/**
+		 * Returns this chart instance.
+		 *
+		 * @return the current {@link NetWaveChart} object.
+		 */
 		public NetWaveChart getChart() {
 			return this;
 		}
 
+		/**
+		 * Creates and configures the {@link XYPlot} for the net wave intensity chart.
+		 *
+		 * @param textFont The font to use for labels and titles.
+		 * @param wiaData The data to be plotted.
+		 * @return A fully configured {@link XYPlot}.
+		 */
 		private static XYPlot _createPlot(Font textFont, WIAData wiaData) {
 
 			XYPlot plot = new XYPlot();
