@@ -35,8 +35,14 @@ import com.carrington.WIA.DataStructures.WIAData;
 import com.carrington.WIA.GUIs.Components.JCButton;
 import com.carrington.WIA.GUIs.Components.JCLabel;
 import com.carrington.WIA.GUIs.Configs.ComboFileConfigGUI;
+import com.carrington.WIA.IO.NamingConvention;
 import com.carrington.WIA.IO.Saver;
 
+/**
+ * A graphical user interface for loading and modifying a previously saved Wave
+ * Intensity Analysis (.wia) file. This allows users to re-open a saved
+ * analysis, adjust the wave selections, and re-calculate and save the metrics.
+ */
 public class WIAModifierGUI extends JFrame implements WIACaller {
 
 	private static final long serialVersionUID = -989119673787391595L;
@@ -58,6 +64,13 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 	private volatile File currFile = null;
 	private JCButton btnSaveMetrics;
 
+	/**
+	 * Constructs the WIA Modifier GUI.
+	 *
+	 * @param frameToGoBackTo The parent frame to which this GUI will return.
+	 * @param backListener    The listener to be notified when the "back" action is
+	 *                        performed.
+	 */
 	public WIAModifierGUI(JFrame frameToGoBackTo, BackListener backListener) {
 		System.setProperty("apple.eawt.quitStrategy", "CLOSE_ALL_WINDOWS");
 
@@ -154,7 +167,11 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		setMinimumSize(getPreferredSize());
 	}
 
-	private synchronized void initPnlMain() {
+	/**
+	 * Initializes the main middle panel of the GUI, which contains the file
+	 * selection and file details sub-panels.
+	 */
+	private void initPnlMain() {
 		middlePanel = new JPanel();
 		middlePanel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 
@@ -185,6 +202,10 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		middlePanel.setLayout(gl_pnlMain);
 	}
 
+	/**
+	 * Initializes the file selection panel, including the "Browse..." button and
+	 * the text field for displaying the selected file path.
+	 */
 	private void initMiddleFileSelect() {
 
 		JCLabel titleSelect = new JCLabel("Input", JCLabel.LABEL_SUBTITLE);
@@ -204,6 +225,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		// Map the keystroke to an action
 		btnSelect.getActionMap().put("buttonBrowse", new AbstractAction() {
 			private static final long serialVersionUID = 1620869276363160741L;
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				btnSelect.doClick();
@@ -235,6 +257,10 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		pnlFileSelect.setLayout(gl_pnlMiddleFileSelect);
 	}
 
+	/**
+	 * Initializes the file details panel, which contains buttons to "Run Wave
+	 * Analysis" and "Save Metrics" for the loaded .wia file.
+	 */
 	private void initMiddleFileDetails() {
 
 		JCLabel titleDetails = new JCLabel("Details", JCLabel.LABEL_SUBTITLE);
@@ -255,6 +281,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		// Map the keystroke to an action
 		btnRunWIA.getActionMap().put("buttonRunWIA", new AbstractAction() {
 			private static final long serialVersionUID = -7785103215338161128L;
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				btnRunWIA.doClick();
@@ -272,7 +299,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 				String selName = wiaData.getSelectionName();
 				String[][] data = wiaData.toCSV(selName);
 
-				File fileToSave = getPrimaryDataWIASave(SeparateWireGUI.pathNameWIACSV, selName, true);
+				File fileToSave = getPrimaryDataWIASave(NamingConvention.PATHNAME_WIACSV, selName, true);
 				if (fileToSave == null)
 					return;
 				String errors = Saver.saveData(fileToSave, data);
@@ -292,6 +319,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		// Map the keystroke to an action
 		btnSaveMetrics.getActionMap().put("buttonSaveMetrics", new AbstractAction() {
 			private static final long serialVersionUID = -2945487034037281330L;
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				btnSaveMetrics.doClick();
@@ -327,6 +355,11 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		pnlFileDetails.setLayout(gl_pnlMiddleFileDetails);
 	}
 
+	/**
+	 * Handles the file opening process. It prompts the user to select a .wia file,
+	 * deserializes it into a {@link WIAData} object, and updates the GUI
+	 * accordingly.
+	 */
 	private void runFileOpen() {
 
 		reset(false);
@@ -354,8 +387,14 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 
 	}
 
+	/**
+	 * Launches the {@link WavePickerGUI} to allow the user to modify the wave
+	 * selections of the currently loaded {@link WIAData}. After modification, it
+	 * handles re-saving the serialized data and re-calculating the metrics.
+	 */
 	private void runWaveSelection() {
-		WavePickerGUI wavepickerGUI = new WavePickerGUI(wiaData.getSelectionName(), wiaData, config.getSaveSettingsChoices(), ref.get(), this);
+		WavePickerGUI wavepickerGUI = new WavePickerGUI(wiaData.getSelectionName(), wiaData,
+				config.getSaveSettingsChoices(), ref.get(), this);
 		wavepickerGUI.display();
 		// Hangs
 
@@ -363,16 +402,16 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 			config.writeProperties();
 			config.getSaveSettingsChoices().setChanged(false);
 		}
-		
+
 		if (wavepickerGUI.getStatus() == WavePickerGUI.CANCELLED) {
 			return;
 		}
-		
+
 		if (wavepickerGUI.serializeWIAData()) {
 			try {
 
-				File fileToSave = getPrimaryDataWIASave(CombowireGUI.pathNameWIASerialize, wiaData.getSelectionName(),
-						true);
+				File fileToSave = getPrimaryDataWIASave(NamingConvention.PATHNAME_WIASerialize,
+						wiaData.getSelectionName(), true);
 				if (fileToSave != null) {
 					WIAData.serialize(wiaData, fileToSave);
 				}
@@ -390,7 +429,11 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		wiaData.calculateResistance();
 	}
 
-	public void updateWIAFileDisplay() {
+	/**
+	 * Updates the state of the GUI components based on whether a {@link WIAData} object
+	 * is currently loaded. Enables or disables buttons like "Run" and "Save".
+	 */
+	private void updateWIAFileDisplay() {
 		if (wiaData == null) {
 			btnRunWIA.setEnabled(false);
 			btnSaveMetrics.setEnabled(false);
@@ -434,6 +477,11 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 
 	}
 
+	/**
+	 * Resets the GUI to its initial state, clearing the currently loaded file and data.
+	 *
+	 * @param warn If {@code true}, prompts the user for confirmation before resetting.
+	 */
 	public void reset(boolean warn) {
 		if (warn) {
 			if (!Utils.confirmAction("Confirm Reset", "Are you sure you want to reset to next files?", this)) {
@@ -447,13 +495,27 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		currFile = null;
 		updateWIAFileDisplay();
 		btnSaveMetrics.setIcon(null);
-		// TODO
 	}
 
+	/**
+	 * Gets the parent directory of the currently loaded .wia file. This is used as the
+	 * root folder for saving output files.
+	 *
+	 * @return A {@link File} object representing the parent directory.
+	 */
 	public File getPrimaryDataWIAFolder() {
 		return new File(currFile.getParent());
 	}
 
+	/**
+	 * Constructs a file path for saving WIA-related output within the primary data folder.
+	 * It handles naming conventions and can prompt the user to overwrite existing files.
+	 *
+	 * @param fileNameForm     The format string for the file name (e.g., "%s WIA.csv").
+	 * @param fileNameReplace  The string to insert into the format string (e.g., the selection name).
+	 * @param ignoreExisting If false, the user will be prompted to confirm overwriting an existing file.
+	 * @return A {@link File} object for the new file, or null if the operation is cancelled.
+	 */
 	public File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
 		if (currFile == null || fileNameForm == null) {
 			Utils.showError("No file to save to.", null);
@@ -484,19 +546,32 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		return file;
 	}
 
+	/**
+	 * Gets the save file path for the main WIA plot as an SVG image.
+	 * @return The {@link File} object for the SVG image.
+	 */
 	@Override
 	public File getWIAImageFileSVG() {
-		return getPrimaryDataWIASave(CombowireGUI.pathNameWIASVG, wiaData.getSelectionName(), true);
+		return getPrimaryDataWIASave(NamingConvention.PATHNAME_WIASVG, wiaData.getSelectionName(), true);
 	}
 
+	/**
+	 * Gets the primary output folder where TIFF images will be saved. This is the parent
+	 * directory of the loaded .wia file.
+	 * @return The {@link File} object for the output folder.
+	 */
 	@Override
 	public File getWIAImageFolderTIFF() {
 		return getPrimaryDataWIAFolder();
 	}
 
+	/**
+	 * Gets the save file path for the wave selections plot as an SVG image.
+	 * @return The {@link File} object for the SVG image.
+	 */
 	@Override
 	public File getWIAWaveSelectionsFileSVG() {
-		return getPrimaryDataWIASave(CombowireGUI.pathNameWaveSelectionsSVG, wiaData.getSelectionName(), true);
+		return getPrimaryDataWIASave(NamingConvention.PATHNAME_WaveSelectionsSVG, wiaData.getSelectionName(), true);
 	}
 
 }
