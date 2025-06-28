@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
@@ -14,7 +13,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -22,8 +20,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.swing.AbstractAction;
 import javax.swing.DefaultListCellRenderer;
@@ -59,20 +55,22 @@ import com.carrington.WIA.Graph.AlignChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel.BeatsChartPanelListener;
 import com.carrington.WIA.IO.Header;
-import com.carrington.WIA.IO.HeaderResult;
-import com.carrington.WIA.IO.SheetDataReader;
 import com.carrington.WIA.Math.FlowUnit;
 import com.carrington.WIA.Math.PressureUnit;
 
-public class BeatSelectorGUI extends JDialog implements SelectionTableListener,BeatsChartPanelListener {
+/**
+ * A dialog window for selecting heartbeats from a single hemodynamic data set.
+ * The user can visually inspect pressure, flow, and ECG tracings, select
+ * multiple beats, group them into named selections (e.g., "adenosine", "ach"),
+ * and ensemble average them.
+ */
+public class BeatSelectorGUI extends JDialog implements SelectionTableListener, BeatsChartPanelListener {
 
 	private static final long serialVersionUID = -8183475955290511152L;
 	private final JPanel contentPanel = new JPanel();
 
 	private static final Color pnlTopColor = new Color(169, 169, 169);
 	private static final Color pnlOtherColor = new Color(213, 213, 213);
-	public static final Color purple = new Color(161, 0, 132, 255);
-
 
 	private final WeakReference<BeatSelectorGUI> ref = new WeakReference<BeatSelectorGUI>(this);
 	private BeatsChartPanel pnlDisplay;
@@ -87,12 +85,15 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 	private JCButton btnAddSel;
 	private JCButton btnResetCurrSel;
 	private JSlider sliderOverlap;
-	
+
+	/** The header for the pressure data trace. */
 	private final Header headerPressure;
+	/** The header for the flow data trace. */
 	private final Header headerFlow;
-	
+
+	/** The parent component relative to which this dialog is positioned. */
 	private Component componentRelative;
-	
+
 	/**
 	 * One of {@link HemoData#ENSEMBLE_TRIM} or {@link HemoData#ENSEMBLE_SCALE}
 	 */
@@ -100,64 +101,30 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 	private final int trimSelection;
 	private SelectionResult alignResult;
 
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-
-					File fileInput = new File("/Users/justincarrington/Documents/School/Residency/Research/WIA Project/ComboWire Comparison/Alexander combo 13118093/Combo/Combo_13118093.txt");
-					// File fileSave = new
-					// File("/Users/justincarrington/Downloads/AA/EnsembledOuptut.csv");
-
-					SheetDataReader dataFandP = new SheetDataReader(fileInput, 1);
-					HeaderResult hr = dataFandP.readHeaders();
-
-					Header time = hr.headers.get(0);
-					Header pressure = hr.headers.get(2);
-					Header flow = hr.headers.get(4);
-					Header ecg = hr.headers.get(3);
-					Header rWave = hr.headers.get(6);
-
-					List<Header> headersToPull = new ArrayList<Header>();
-					headersToPull.add(time);
-					headersToPull.add(pressure);
-					headersToPull.add(flow);
-					headersToPull.add(ecg);
-					headersToPull.add(rWave);
-
-					HemoData hdData = dataFandP.readData(headersToPull, null).data;
-					hdData.addFlags(pressure, HemoData.TYPE_PRESSURE, HemoData.UNIT_MMHG); // will succeed or will
-																								// throw an error
-					hdData.addFlags(flow, HemoData.TYPE_FLOW, HemoData.UNIT_CMperS);
-					hdData.addFlags(ecg, HemoData.TYPE_ECG);
-					hdData.addFlags(rWave, HemoData.TYPE_R_WAVE);
-
-
-					BeatSelectorGUI frame = new BeatSelectorGUI(hdData, true, HemoData.ENSEMBLE_TRIM, null);
-					frame.setVisible(true);
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
 	/**
-	 * Create the dialog.
+	 * Create the beat selection dialog. * @param data The HemoData object
+	 * containing the tracings (must include pressure, flow, and ECG).
 	 * 
-	 * @throws OutOfMemoryError if the {@link HemoData} is too large - may need to trim
-	 * @throws IllegalArgumentException if there is not a flow and pressure trace contained in the hemo data
+	 * @param syncRWave    If true, the "Snap to R" feature is enabled by default.
+	 * @param ensembleType The ensembling method to use, either
+	 *                     {@link HemoData#ENSEMBLE_TRIM} or
+	 *                     {@link HemoData#ENSEMBLE_SCALE}.
+	 * @param parent       The parent component, used for positioning the dialog.
+	 * @throws OutOfMemoryError         if the {@link HemoData} is too large and may
+	 *                                  need to be trimmed.
+	 * @throws IllegalArgumentException if the HemoData does not contain the
+	 *                                  required pressure, flow, and ECG traces.
 	 */
 	@SuppressWarnings("serial")
-	public BeatSelectorGUI(HemoData data, boolean syncRWave, int ensembleType, Component parent) throws OutOfMemoryError, IllegalArgumentException {
-		
+	public BeatSelectorGUI(HemoData data, boolean syncRWave, int ensembleType, Component parent)
+			throws OutOfMemoryError, IllegalArgumentException {
+
 		this.componentRelative = parent;
 		this.trimSelection = ensembleType;
-		
+
 		if (data == null)
 			throw new IllegalArgumentException("Null inputs");
-		
+
 		if (data.isValid() != null) {
 			throw new IllegalStateException("Invalid state of input data");
 		}
@@ -167,12 +134,12 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			throw new IllegalArgumentException(
 					"For beat selection, pressure, flow, and ECG are the minimum requirements.");
 		}
-		
+
 		headerPressure = data.getHeaderByFlag(HemoData.TYPE_PRESSURE).get(0);
 		headerFlow = data.getHeaderByFlag(HemoData.TYPE_FLOW).get(0);
 
 		// make sure we have flow and pressure traces
-		
+
 		setModal(true);
 		setTitle("Pick Selections");
 		getContentPane().setLayout(new BorderLayout());
@@ -238,7 +205,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		chShowAlignLines.setSelected(false);
 		pnlDisplay.setAlignLines(false);
 
-
 		chAutoR = new JCheckBox("Snap to R");
 		chAutoR.setOpaque(false);
 		chAutoR.setFocusable(false);
@@ -276,7 +242,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			}
 		});
 		pnlDisplay.setAutoSnapToR(chAutoBeat.isSelected());
-		
+
 		chAutoDetect = new JCheckBox("Auto Detect");
 		chAutoDetect.setToolTipText("If selected, detect R waves, otherwise use file.");
 		chAutoDetect.setOpaque(false);
@@ -303,9 +269,9 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 				pnlDisplay.refresh();
 			}
 		});
-		
+
 		JCLabel lblPFOverlap = new JCLabel("Pressure / flow overlap:", JCLabel.LABEL_TEXT_PLAIN);
-		
+
 		sliderOverlap = new JSlider(0, 100, 100);
 		sliderOverlap.setOpaque(false);
 		sliderOverlap.setMajorTickSpacing(50);
@@ -319,11 +285,11 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			}
 		});
 
-        // Label table with custom markers
-        Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
-        labelTable.put(0, new JCLabel("None", JCLabel.LABEL_SMALL));
-        labelTable.put(100, new JCLabel("Full", JCLabel.LABEL_SMALL));
-        sliderOverlap.setLabelTable(labelTable);
+		// Label table with custom markers
+		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
+		labelTable.put(0, new JCLabel("None", JCLabel.LABEL_SMALL));
+		labelTable.put(100, new JCLabel("Full", JCLabel.LABEL_SMALL));
+		sliderOverlap.setLabelTable(labelTable);
 
 		JLabel lblDataTypes = new JLabel("Units");
 
@@ -355,8 +321,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			}
 		});
 
-		
-		
 		JLabel lblFlow = new JLabel("Flow:");
 		cbUnitsFlow = new JComboBox<FlowUnit>();
 		cbUnitsFlow.setEditable(false);
@@ -384,7 +348,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			}
 		});
 
-
 		JLabel lblSelections = new JLabel("Selections");
 
 		JLabel lblSelTime = new JLabel("# Beats:");
@@ -393,7 +356,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		txtBeats.setColumns(10);
 		txtBeats.setFocusable(false);
 		txtBeats.setEditable(false);
-
 
 		btnAddSel = new JCButton("Add (A)", JCButton.BUTTON_STANDARD);
 		btnAddSel.addActionListener(new ActionListener() {
@@ -419,74 +381,69 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		int width = Utils.getFontParams(Utils.getTextFont(false), "1000")[1];
 		int width2 = Utils.getFontParams(Utils.getTextFont(false), "Select trace... eee")[1];
 		GroupLayout gl_pnlSelections = new GroupLayout(pnlSelections);
-		gl_pnlSelections.setHorizontalGroup(gl_pnlSelections.createSequentialGroup().addGap(5).addGroup(gl_pnlSelections
-				.createParallelGroup(Alignment.LEADING)
-				.addComponent(lblDisplay, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-						Short.MAX_VALUE)
-				.addComponent(lblDataTypes, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-						Short.MAX_VALUE)
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(5)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
-								.addComponent(lblPressure)
-								.addComponent(lblFlow))
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
-								.addComponent(cbUnitsPressure, width2, width2, Short.MAX_VALUE)
-								.addComponent(cbUnitsFlow, width2, width2, Short.MAX_VALUE)))	
-				.addComponent(lblSelections, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-						Short.MAX_VALUE)
-				.addGroup(Alignment.LEADING,
-						gl_pnlSelections.createSequentialGroup().addGap(5)
+		gl_pnlSelections.setHorizontalGroup(gl_pnlSelections.createSequentialGroup().addGap(5)
+				.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
+						.addComponent(lblDisplay, Alignment.LEADING, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+						.addComponent(lblDataTypes, Alignment.LEADING, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(5)
+										.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
+												.addComponent(lblPressure).addComponent(lblFlow))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
+												.addComponent(cbUnitsPressure, width2, width2, Short.MAX_VALUE)
+												.addComponent(cbUnitsFlow, width2, width2, Short.MAX_VALUE)))
+						.addComponent(lblSelections, Alignment.LEADING, GroupLayout.DEFAULT_SIZE,
+								GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(5)
+										.addGroup(gl_pnlSelections
+												.createParallelGroup(Alignment.LEADING).addComponent(lblSelTime))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
+												.addComponent(txtBeats, GroupLayout.DEFAULT_SIZE, width, width)))
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(btnAddSel)
+										.addComponent(dummyLabel, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
+												Short.MAX_VALUE)
+										.addComponent(btnResetCurrSel))
+						.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(5)
 								.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
-										.addComponent(lblSelTime))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
-										.addComponent(txtBeats, GroupLayout.DEFAULT_SIZE, width, width)))
-				.addGroup(Alignment.LEADING,
-						gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(btnAddSel)
-								.addComponent(dummyLabel, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-										Short.MAX_VALUE)
-								.addComponent(btnResetCurrSel))
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(5)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING).addComponent(chShowAlignLines)
-								.addComponent(cbTraces).addComponent(chAutoR)))
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(15)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
-								.addComponent(chAutoBeat).addComponent(chAutoDetect)))
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(btnFitTrace))
-				.addGroup(gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(scrSelections,
-						GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(lblPFOverlap))
-				.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(15).addComponent(sliderOverlap).addGap(15)))
+										.addComponent(chShowAlignLines).addComponent(cbTraces).addComponent(chAutoR)))
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(15)
+										.addGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
+												.addComponent(chAutoBeat).addComponent(chAutoDetect)))
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(btnFitTrace))
+						.addGroup(gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(scrSelections,
+								GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+						.addGroup(Alignment.LEADING,
+								gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(lblPFOverlap))
+						.addGroup(Alignment.LEADING, gl_pnlSelections.createSequentialGroup().addGap(15)
+								.addComponent(sliderOverlap).addGap(15)))
 				.addContainerGap());
 		gl_pnlSelections.setVerticalGroup(gl_pnlSelections.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_pnlSelections.createSequentialGroup().addGap(5).addComponent(lblDisplay)
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addComponent(cbTraces, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 								GroupLayout.PREFERRED_SIZE)
-						.addComponent(chShowAlignLines)
-						.addComponent(chAutoR)
-						.addComponent(chAutoDetect)
-						.addComponent(chAutoBeat)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(lblPFOverlap)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(sliderOverlap)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(btnFitTrace)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(lblDataTypes)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblPressure)
+						.addComponent(chShowAlignLines).addComponent(chAutoR).addComponent(chAutoDetect)
+						.addComponent(chAutoBeat).addPreferredGap(ComponentPlacement.UNRELATED)
+						.addComponent(lblPFOverlap).addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(sliderOverlap).addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(btnFitTrace).addPreferredGap(ComponentPlacement.UNRELATED)
+						.addComponent(lblDataTypes).addPreferredGap(ComponentPlacement.RELATED)
+						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.BASELINE).addComponent(lblPressure)
 								.addComponent(cbUnitsPressure, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										GroupLayout.PREFERRED_SIZE))
 						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.BASELINE)
-								.addComponent(lblFlow)
+						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.BASELINE).addComponent(lblFlow)
 								.addComponent(cbUnitsFlow, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										GroupLayout.PREFERRED_SIZE))
-						
+
 						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblSelections)
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlSelections.createParallelGroup(Alignment.BASELINE).addComponent(lblSelTime)
@@ -531,14 +488,12 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 					}
 				}
 
-				
 				PressureUnit pressureUnits = (PressureUnit) cbUnitsPressure.getSelectedItem();
 				FlowUnit flowUnits = (FlowUnit) cbUnitsFlow.getSelectedItem();
-				
-				
+
 				if (pressureUnits == PressureUnit.NEITHER || flowUnits == FlowUnit.NEITHER) {
-					if (Utils.confirmAction("Confirm", "You need to select the pressure and trace units. Sure you want to exit?",
-							ref.get())) {
+					if (Utils.confirmAction("Confirm",
+							"You need to select the pressure and trace units. Sure you want to exit?", ref.get())) {
 						alignResult = null;
 						discard();
 						return;
@@ -546,23 +501,25 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 						return;
 					}
 				}
-				
+
 				// Make sure that all the Beats within BeatSelection have updated flags also
 				for (BeatSelection selection : getBeatSelections()) {
 					List<Beat> allBeats = selection.getBeats();
 					for (Beat beat : allBeats) {
 						if (beat.getData().hasHeader(headerPressure)) {
-							beat.getData().addFlags(headerPressure, pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
+							beat.getData().addFlags(headerPressure,
+									pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
 
 						}
 						if (beat.getData().hasHeader(headerFlow)) {
-							beat.getData().addFlags(headerFlow, flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
+							beat.getData().addFlags(headerFlow,
+									flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
 
 						}
 					}
-					
+
 				}
-				
+
 				alignResult = new SelectionResult(getBeatSelections(), ensembleType);
 
 				discard();
@@ -581,23 +538,22 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		btnHelp.setBorderPainted(false);
 		btnHelp.setBorder(null);
 
-
 		pnlTop.add(btnHelp);
 		Utils.setFont(Utils.getSmallTextFont(), chAutoBeat, chAutoDetect);
-		Utils.setFont(Utils.getTextFont(false), chShowAlignLines, cbTraces, chAutoR,
-				lblSelTime, lblPressure, lblFlow, cbUnitsFlow, cbUnitsPressure);
+		Utils.setFont(Utils.getTextFont(false), chShowAlignLines, cbTraces, chAutoR, lblSelTime, lblPressure, lblFlow,
+				cbUnitsFlow, cbUnitsPressure);
 		Utils.setFont(Utils.getSubTitleFont(), lblTopInstruction, lblDisplay, lblDataTypes, lblSelections);
 
 		Utils.unfocusButtons(contentPanel);
 		Utils.unfocusAll(pnlBottom);
 		Utils.unfocusAll(pnlTop);
-		 addMouseListener(new MouseAdapter() {
-             @Override
-             public void mouseClicked(MouseEvent e) {
-                 // Request focus on the frame, causing the JTextField to lose focus
-                 ref.get().requestFocusInWindow();
-             }
-         });
+		addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// Request focus on the frame, causing the JTextField to lose focus
+				ref.get().requestFocusInWindow();
+			}
+		});
 
 		setPreferredSize(new Dimension(1200, 800));
 
@@ -605,14 +561,13 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 				"zoomIn");
 		pnlDisplay.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
 				.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0, false), "zoomOut");
-		pnlDisplay.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, false),
-				"panLeft");
+		pnlDisplay.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+				.put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0, false), "panLeft");
 		pnlDisplay.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
 				.put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0, false), "panRight");
 		pnlDisplay.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_A, 0, false),
 				"addSel");
-		
-		
+
 		pnlDisplay.getActionMap().put("zoomIn", new AbstractAction() {
 
 			public void actionPerformed(ActionEvent e) {
@@ -638,7 +593,8 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 				if (Utils.doesTextFieldHaveFocus(ref.get())) {
 					return;
 				}
-				pnlDisplay.panByPercent(0.05);;
+				pnlDisplay.panByPercent(0.05);
+				;
 			}
 		});
 		pnlDisplay.getActionMap().put("panLeft", new AbstractAction() {
@@ -647,7 +603,8 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 				if (Utils.doesTextFieldHaveFocus(ref.get())) {
 					return;
 				}
-				pnlDisplay.panByPercent(-0.05);;
+				pnlDisplay.panByPercent(-0.05);
+				;
 			}
 		});
 		pnlDisplay.getActionMap().put("addSel", new AbstractAction() {
@@ -659,7 +616,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 				addSelection();
 			}
 		});
-		
 
 		pnlDisplay.grabFocus();
 		pnlDisplay.setFocusCycleRoot(true);
@@ -697,7 +653,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		contentPanel.setLayout(gl_contentPanel);
 
 		pack();
-		
+
 		Utils.unfocusAll(this);
 		pnlDisplay.setFocusable(true);
 		pnlDisplay.grabFocus();
@@ -706,8 +662,6 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		setLocationRelativeTo(null);
 
 	}
-
-
 
 	/**
 	 * display the jdialog
@@ -724,7 +678,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 		setVisible(false);
 		dispose();
 	}
-	
+
 	/**
 	 * 
 	 * @return if R wave sync is selected
@@ -732,18 +686,29 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 	public boolean getRWaveSync() {
 		return chAutoR.isSelected();
 	}
-	
+
 	/**
-	 * @return results from running this alignment, or null if user cancelled before adequate input was obtained
+	 * @return {@link SelectionResult} from running this alignment, or null if user
+	 *         cancelled before adequate input was obtained
 	 */
 	public SelectionResult getResult() {
 		return this.alignResult;
 	}
 
+	/**
+	 * Gets all beat selections made by the user from the table.
+	 * 
+	 * @return A set of {@link BeatSelection} objects.
+	 */
 	public Set<BeatSelection> getBeatSelections() {
 		return pnlDisplay.getAllSelections();
 	}
 
+	/**
+	 * Attempts to group the currently highlighted beats into a new
+	 * {@link BeatSelection}. If successful, the new selection is added to the
+	 * table, and the current beat counter is reset.
+	 */
 	public void addSelection() {
 		BeatSelection bs = pnlDisplay.attemptBeatGrouping();
 		if (bs != null) {
@@ -751,26 +716,31 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 			setNumBeats(0);
 		}
 	}
-	
+
 	/**
 	 * Performed if key press is triggered on the {@link AlignChartPanel}
 	 */
-	@Override 
+	@Override
 	public void triggerAddSelection() {
 		addSelection();
 	}
-	
 
+	/**
+	 * Sets the displayed number of currently selected beats. This is a callback
+	 * method from the {@link BeatsChartPanel}.
+	 * 
+	 * @param numberOfBeats The number of beats to display.
+	 */
 	@Override
 	public void setNumBeats(int numberOfBeats) {
 		this.txtBeats.setText(numberOfBeats + "");
 
-		
 	}
-	
+
 	/**
-	 * Called if a {@link BeatSelection} is removed from the selection table. Then makes sure
-	 * that the appropriate annotations on the {@link AlignChartPanel} are removed.
+	 * Called if a {@link BeatSelection} is removed from the selection table. Then
+	 * makes sure that the appropriate annotations on the {@link AlignChartPanel}
+	 * are removed.
 	 */
 	@Override
 	public void tableSelectionRemoved(BeatSelection selection) {
@@ -778,61 +748,71 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener,B
 	}
 
 	/**
-	 * Parses a user-entered time value into seconds. Integer number of seconds is returned.
+	 * A container for the results of the beat selection process. It holds the final
+	 * ensembled beats and provides access to associated data like screenshots of
+	 * the original selections.
 	 */
-	public static int parseTimeToSeconds(String time) {
-		Pattern pattern = Pattern.compile("^(?:(\\d+):)?(\\d{1,2}):(\\d{1,2})$");
-		Matcher matcher = pattern.matcher(time);
-
-		if (matcher.matches()) {
-			int hours = matcher.group(1) != null ? Integer.parseInt(matcher.group(1)) : 0;
-			int minutes = Integer.parseInt(matcher.group(2));
-			int seconds = Integer.parseInt(matcher.group(3));
-
-			return hours * 3600 + minutes * 60 + seconds;
-		} else {
-			throw new IllegalArgumentException("Invalid time format. Expected HH:MM:SS or MM:SS.");
-		}
-	}
-	
 	public static class SelectionResult {
-				
+
 		/**
-		 * Name of the beat selection can be acquired from the {@link Beat}
+		 * A map where each key is an ensembled {@link Beat} and the value is a list of
+		 * its constituent beat images.
 		 */
 		private Map<Beat, List<String>> ensembledBeats = new LinkedHashMap<Beat, List<String>>();
-		
+
+		/**
+		 * Private constructor to create a selection result. It processes the user's
+		 * beat selections to generate the final ensembled beats.
+		 * 
+		 * @param beatSelections The set of beat selections made by the user.
+		 * @param ensembleType   The ensembling method to use (e.g.,
+		 *                       {@link HemoData#ENSEMBLE_TRIM}).
+		 */
 		private SelectionResult(Set<BeatSelection> beatSelections, int ensembleType) {
-			
+
 			// Go through each selection
 			for (BeatSelection beatSelection : beatSelections) {
 				List<Beat> allBeats = beatSelection.getBeats();
 				Beat ensembledBeat = Beat.ensembleFlowPressure(allBeats, ensembleType, beatSelection.getName());
-				
+
 				List<String> beatScreenImages = beatSelection.getBeatImages();
 
-				
 				ensembledBeats.put(ensembledBeat, beatScreenImages);
-				
+
 			}
-			
+
 		}
-		
+
+		/**
+		 * Gets the list of final, ensembled beats.
+		 * 
+		 * @return A list of {@link Beat} objects.
+		 */
 		public List<Beat> getBeats() {
 			return new ArrayList<Beat>(ensembledBeats.keySet());
 		}
-		
+
+		/**
+		 * Gets the screenshots associated with the selection that created a given
+		 * ensembled beat.
+		 * 
+		 * @param beat The ensembled beat for which to retrieve images.
+		 * @return A list of base64-encoded image strings, or null if the beat is not
+		 *         found.
+		 */
 		public List<String> getBeatImages(Beat beat) {
 			return ensembledBeats.get(beat);
 		}
-		
+
+		/**
+		 * Removes an ensembled beat and its associated images from the result.
+		 * 
+		 * @param beat The beat to remove.
+		 */
 		public void removeBeat(Beat beat) {
 			ensembledBeats.remove(beat);
 		}
-		
-		
-	}
-	
 
+	}
 
 }

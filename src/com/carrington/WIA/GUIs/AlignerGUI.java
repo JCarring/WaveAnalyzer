@@ -13,7 +13,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -58,6 +57,12 @@ import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.FlowUnit;
 import com.carrington.WIA.Math.PressureUnit;
 
+/**
+ * GUI for aligning two files. The user can visually align traces, select
+ * corresponding heartbeats from each file, and then generate an ensembled
+ * result from these selections. This is crucial for comparing hemodynamic data
+ * (i.e. pressure/flow) recorded with different equipment.
+ */
 public class AlignerGUI extends JDialog implements SelectionTableListener, AlignChartPanelListener {
 
 	private static final long serialVersionUID = -8183475955290511152L;
@@ -65,7 +70,6 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 
 	private static final Color pnlTopColor = new Color(169, 169, 169);
 	private static final Color pnlOtherColor = new Color(213, 213, 213);
-	public static final Color purple = new Color(161, 0, 132, 255);
 
 	private static final String displayTraceAll = "All traces (Q)";
 	private static final String displayTraceEKG = "EKG trace only (W)";
@@ -89,56 +93,51 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 	private JCButton btnSetSync;
 	private JCButton btnAddSel;
 	private JCButton btnResetCurrSel;
-	
+
 	/**
-	 * One of {@link HemoData#ENSEMBLE_TRIM} or {@link HemoData#ENSEMBLE_SCALE}
+	 * One of {@link HemoData#ENSEMBLE_TRIM} or {@link HemoData#ENSEMBLE_SCALE}.
+	 * This determines the ensembling method.
 	 */
 	@SuppressWarnings("unused")
 	private final int trimSelection;
+
+	/**
+	 * Stores the final result of the alignment process, containing ensembled beats.
+	 * It is null until the user accepts the selections.
+	 */
 	private AlignResult alignResult;
-	
+
 	private Component componentParent;
 
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			File file1 = new File(
-					"/Users/justincarrington/Documents/School/Residency/Research/WIA Project/Tests/sample1.hd");
-			File file2 = new File(
-					"/Users/justincarrington/Documents/School/Residency/Research/WIA Project/Tests/sample2.hd");
-			HemoData hd1 = HemoData.deserialize(file1);
-			HemoData hd2 = HemoData.deserialize(file2);
-
-			AlignerGUI dialog = new AlignerGUI(hd1, hd2, HemoData.ENSEMBLE_TRIM, null);
-			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-			dialog.setVisible(true);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Create the dialog.
+	 * Create the dialog. * @param hd1 The first hemodynamic data object to align.
 	 * 
-	 * @throws OutOfMemoryError if the {@link HemoData} is too large - may need to trim
-	 * @throws IllegalArgumentException if there is not a flow and pressure trace contained in the hemo data
+	 * @param hd2          The second hemodynamic data object to align.
+	 * @param ensembleType The type of ensembling to perform, either
+	 *                     {@link HemoData#ENSEMBLE_TRIM} or
+	 *                     {@link HemoData#ENSEMBLE_SCALE}.
+	 * @param parent       The parent component, used for positioning the dialog.
+	 * 
+	 * @throws OutOfMemoryError         if the {@link HemoData} is too large - may
+	 *                                  need to trim
+	 * @throws IllegalArgumentException if there is not a flow and pressure trace
+	 *                                  contained in the hemo data
 	 */
 	@SuppressWarnings("serial")
-	public AlignerGUI(HemoData hd1, HemoData hd2, int ensembleType,
-			Component parent) throws OutOfMemoryError, IllegalArgumentException {
-		
+	public AlignerGUI(HemoData hd1, HemoData hd2, int ensembleType, Component parent)
+			throws OutOfMemoryError, IllegalArgumentException {
+
 		this.trimSelection = ensembleType;
 		this.componentParent = parent;
-		
+
 		// make sure we have flow and pressure traces
 		List<Trace> tracesPressure = getTracesPressure(hd1, hd2);
 		List<Trace> tracesFlow = getTracesFlow(hd1, hd2);
 		if (tracesPressure.size() < 2 || tracesPressure.size() < 2) {
-			throw new IllegalArgumentException("Less than 2 traces, but must be at least 2, one for pressure and one for flow!");
+			throw new IllegalArgumentException(
+					"Less than 2 traces, but must be at least 2, one for pressure and one for flow!");
 		}
-		
+
 		setModal(true);
 		setTitle("Pick selections");
 		getContentPane().setLayout(new BorderLayout());
@@ -459,7 +458,6 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			}
 		});
 
-
 		JLabel lblSelections = new JLabel("Selections");
 
 		JLabel lblSelTime1 = new JLabel("# Beats Top:");
@@ -634,14 +632,13 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 					}
 				}
 
-				
 				Trace pressureTrace = (Trace) cbTypePressure.getSelectedItem();
 				PressureUnit pressureUnits = (PressureUnit) cbUnitsPressure.getSelectedItem();
 				Trace flowTrace = (Trace) cbTypeFlow.getSelectedItem();
 				FlowUnit flowUnits = (FlowUnit) cbUnitsFlow.getSelectedItem();
 				if (pressureTrace.hd == null || flowTrace.hd == null) {
-					if (Utils.confirmAction("Confirm", "You need to select the pressure and trace. Sure you want to exit?",
-							ref.get())) {
+					if (Utils.confirmAction("Confirm",
+							"You need to select the pressure and trace. Sure you want to exit?", ref.get())) {
 						alignResult = null;
 						discard();
 						return;
@@ -649,10 +646,10 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 						return;
 					}
 				}
-				
+
 				if (pressureUnits == PressureUnit.NEITHER || flowUnits == FlowUnit.NEITHER) {
-					if (Utils.confirmAction("Confirm", "You need to select the pressure and trace units. Sure you want to exit?",
-							ref.get())) {
+					if (Utils.confirmAction("Confirm",
+							"You need to select the pressure and trace units. Sure you want to exit?", ref.get())) {
 						alignResult = null;
 						discard();
 						return;
@@ -661,28 +658,32 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 					}
 				}
 				pressureTrace.hd.addFlags(pressureTrace.header, HemoData.TYPE_PRESSURE);
-				pressureTrace.hd.addFlags(pressureTrace.header, pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
+				pressureTrace.hd.addFlags(pressureTrace.header,
+						pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
 				flowTrace.hd.addFlags(flowTrace.header, HemoData.TYPE_FLOW);
-				flowTrace.hd.addFlags(flowTrace.header, flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
-				
+				flowTrace.hd.addFlags(flowTrace.header,
+						flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
+
 				// Make sure that all the Beats within BeatSelection have updated flags also
 				for (BeatSelection selection : getBeatSelections()) {
 					List<Beat> allBeats = selection.getBeats();
 					for (Beat beat : allBeats) {
 						if (beat.getData().hasHeader(pressureTrace.header)) {
 							beat.getData().addFlags(pressureTrace.header, HemoData.TYPE_PRESSURE);
-							beat.getData().addFlags(pressureTrace.header, pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
+							beat.getData().addFlags(pressureTrace.header,
+									pressureUnits == PressureUnit.MMHG ? HemoData.UNIT_MMHG : HemoData.UNIT_PASCAL);
 
 						}
 						if (beat.getData().hasHeader(flowTrace.header)) {
 							beat.getData().addFlags(flowTrace.header, HemoData.TYPE_FLOW);
-							beat.getData().addFlags(flowTrace.header, flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
+							beat.getData().addFlags(flowTrace.header,
+									flowUnits == FlowUnit.MPS ? HemoData.UNIT_MperS : HemoData.UNIT_CMperS);
 
 						}
 					}
-					
+
 				}
-				
+
 				alignResult = new AlignResult(getBeatSelections(), ensembleType);
 
 				discard();
@@ -718,13 +719,13 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		Utils.unfocusButtons(contentPanel);
 		Utils.unfocusAll(pnlBottom);
 		Utils.unfocusAll(pnlTop);
-		 addMouseListener(new MouseAdapter() {
-             @Override
-             public void mouseClicked(MouseEvent e) {
-                 // Request focus on the frame, causing the JTextField to lose focus
-                 ref.get().requestFocusInWindow();
-             }
-         });
+		addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				// Request focus on the frame, causing the JTextField to lose focus
+				ref.get().requestFocusInWindow();
+			}
+		});
 
 		setPreferredSize(new Dimension(1200, 800));
 
@@ -758,7 +759,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 				pnlDisplay.zoomOut();
 			}
 		});
-		
+
 		pnlDisplay.getActionMap().put("addSel", new AbstractAction() {
 			public void actionPerformed(ActionEvent e) {
 				if (Utils.doesTextFieldHaveFocus(ref.get())) {
@@ -829,7 +830,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		contentPanel.setLayout(gl_contentPanel);
 
 		pack();
-		
+
 		Utils.unfocusAll(this);
 		txtTimeSync1.setFocusable(true);
 		txtTimeSync2.setFocusable(true);
@@ -841,8 +842,16 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 
 	}
 
-	public List<Trace> getTracesPressure(HemoData hd1, HemoData hd2) {
-		
+	/**
+	 * Extracts and identifies potential pressure traces from two HemoData objects.
+	 *
+	 * @param hd1 The first {@link HemoData} object.
+	 * @param hd2 The second {@link HemoData} object.
+	 * @return A list of {@link Trace} objects identified as potential pressure
+	 *         traces.
+	 */
+	private List<Trace> getTracesPressure(HemoData hd1, HemoData hd2) {
+
 		List<Trace> traces = new LinkedList<Trace>();
 		for (Header header : hd1.getYHeaders()) {
 			Trace trace = new Trace(hd1, header);
@@ -858,7 +867,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			}
 			traces.add(trace);
 		}
-		
+
 		if (!traces.stream().anyMatch(trace -> trace.selectedDefault)) {
 			HemoData hdMatch = null;
 			if (isLikelyPressureString(hd1.getName())) {
@@ -866,7 +875,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			} else if (isLikelyPressureString(hd2.getName())) {
 				hdMatch = hd2;
 			}
-			
+
 			if (hdMatch != null) {
 				Trace match = null;
 				for (Trace trace : traces) {
@@ -879,20 +888,27 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 						}
 					}
 				}
-				
+
 				if (match != null) {
 					match.selectedDefault = true;
 				}
 			}
 		}
-		
+
 		return traces;
 
 	}
-	
 
-	public List<Trace> getTracesFlow(HemoData hd1, HemoData hd2) {
-		
+	/**
+	 * Extracts and identifies potential flow traces from two {@link HemoData}
+	 * objects.
+	 *
+	 * @param hd1 The first {@link HemoData} object.
+	 * @param hd2 The second {@link HemoData} object.
+	 * @return A list of {@link Trace} objects identified as potential flow traces.
+	 */
+	private List<Trace> getTracesFlow(HemoData hd1, HemoData hd2) {
+
 		List<Trace> traces = new LinkedList<Trace>();
 		for (Header header : hd1.getYHeaders()) {
 			Trace trace = new Trace(hd1, header);
@@ -908,7 +924,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			}
 			traces.add(trace);
 		}
-		
+
 		if (!traces.stream().anyMatch(trace -> trace.selectedDefault)) {
 			HemoData hdMatch = null;
 			if (isLikelyFlowString(hd1.getName())) {
@@ -916,7 +932,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			} else if (isLikelyFlowString(hd1.getName())) {
 				hdMatch = hd2;
 			}
-			
+
 			if (hdMatch != null) {
 				Trace match = null;
 				for (Trace trace : traces) {
@@ -929,29 +945,45 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 						}
 					}
 				}
-				
+
 				if (match != null) {
 					match.selectedDefault = true;
 				}
 			}
 		}
-		
+
 		return traces;
 
 	}
 
+	/**
+	 * Checks if a given string suggests it represents a pressure measurement.
+	 *
+	 * @param input The string to check (e.g., a header or file name).
+	 * @return {@code true} if the string contains "pressure" or "press",
+	 *         case-insensitive.
+	 */
 	private boolean isLikelyPressureString(String input) {
 
 		return (input.toLowerCase().contains("pressure") || input.toLowerCase().contains("press"));
 	}
 
+	/**
+	 * Checks if a given string suggests it represents a flow or velocity
+	 * measurement.
+	 *
+	 * @param input The string to check (e.g., a header or file name).
+	 * @return {@code true} if the string contains "flow" or "velocity",
+	 *         case-insensitive.
+	 */
 	private boolean isLikelyFlowString(String input) {
 
 		return (input.toLowerCase().contains("flow") || input.toLowerCase().contains("velocity"));
 	}
 
 	/**
-	 * display the jdialog
+	 * Makes the dialog visible and positions it relative to parent component (if
+	 * provided at time of creation of this GUI)
 	 */
 	public void display() {
 		setLocationRelativeTo(componentParent);
@@ -961,22 +993,36 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 	/**
 	 * Exit the jdialog and return to the calling frame
 	 */
-	public void discard() {
+	private void discard() {
 		setVisible(false);
 		dispose();
 	}
-	
+
 	/**
-	 * @return results from running this alignment, or null if user cancelled before adequate input was obtained
+	 * Retrieves the results of the alignment process.
+	 * 
+	 * @return An {@link AlignResult} object containing the ensembled beats, or
+	 *         {@code null} if the user cancelled the operation or did not provide
+	 *         adequate input.
 	 */
 	public AlignResult getResult() {
 		return this.alignResult;
 	}
 
+	/**
+	 * Gets all beat selections made by the user in the alignment panel.
+	 *
+	 * @return A set of {@link BeatSelection} objects.
+	 */
 	public Set<BeatSelection> getBeatSelections() {
 		return pnlDisplay.getAllSelections();
 	}
 
+	/**
+	 * Attempts to group the currently selected beats in the top and bottom graphs
+	 * into a single {@link BeatSelection}. If successful, the new selection is
+	 * added to the selections table and the current beat counts are reset.
+	 */
 	public void addSelection() {
 		BeatSelection bs = pnlDisplay.attemptBeatGrouping();
 		if (bs != null) {
@@ -985,25 +1031,30 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			setNumBeatsBottom(0);
 		}
 	}
-	
+
 	/**
-	 * Performed if key press is triggered on the {@link AlignChartPanel}
+	 * Performed if key press is triggered on the {@link AlignChartPanel}. This is a
+	 * callback method that invokes the general {@link #addSelection()} method.
 	 */
-	@Override 
+	@Override
 	public void triggerAddSelection() {
 		addSelection();
 	}
-	
 
+	/**
+	 * Callback method to programmatically click the 'Lock Alignment' checkbox.
+	 */
 	@Override
 	public void triggerLockToggle() {
 		chLockSamples.doClick();
-		
+
 	}
 
-
 	/**
-	 * Sets the current number of beats in the top graph
+	 * Sets the displayed number of currently selected beats in the top graph. This
+	 * method is a callback from the {@link AlignChartPanel}.
+	 * 
+	 * @param numberOfBeats The number of beats to display.
 	 */
 	@Override
 	public void setNumBeatsTop(int numberOfBeats) {
@@ -1012,7 +1063,10 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 	}
 
 	/**
-	 * Sets the current number of beats in the bottom graph
+	 * Sets the displayed number of currently selected beats in the bottom graph.
+	 * This method is a callback from the {@link AlignChartPanel}.
+	 * 
+	 * @param numberOfBeats The number of beats to display.
 	 */
 	@Override
 	public void setNumBeatsBottom(int numberOfBeats) {
@@ -1020,8 +1074,9 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 	}
 
 	/**
-	 * Called if a {@link BeatSelection} is removed from the selection table. Then makes sure
-	 * that the appropriate annotations on the {@link AlignChartPanel} are removed.
+	 * Called if a {@link BeatSelection} is removed from the selection table. Then
+	 * makes sure that the appropriate annotations on the {@link AlignChartPanel}
+	 * are removed.
 	 */
 	@Override
 	public void tableSelectionRemoved(BeatSelection selection) {
@@ -1029,9 +1084,10 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 	}
 
 	/**
-	 * Parses a user-entered time value into seconds. Integer number of seconds is returned.
+	 * Parses a user-entered time value into seconds. Integer number of seconds is
+	 * returned.
 	 */
-	public static int parseTimeToSeconds(String time) {
+	private static int parseTimeToSeconds(String time) {
 		Pattern pattern = Pattern.compile("^(?:(\\d+):)?(\\d{1,2}):(\\d{1,2})$");
 		Matcher matcher = pattern.matcher(time);
 
@@ -1045,61 +1101,113 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			throw new IllegalArgumentException("Invalid time format. Expected HH:MM:SS or MM:SS.");
 		}
 	}
-	
+
+	/**
+	 * A container for the results of the alignment process. It holds the ensembled
+	 * beats created from the user's selections and provides access to associated
+	 * data like screenshots.
+	 */
 	public static class AlignResult {
-				
+
 		/**
-		 * Name of the beat selection can be acquired from the {@link Beat}
+		 * Map where each key is an ensembled {@link Beat} and the value is a list of
+		 * base64-encoded strings representing screenshots of the original beat
+		 * selections. Name of the beat selection can be acquired from the {@link Beat}.
 		 */
 		private Map<Beat, List<String>> ensembledBeats = new LinkedHashMap<Beat, List<String>>();
-		
+
+		/**
+		 * Create an alignment result. It processes the user's beat selections to
+		 * generate the final ensembled beats.
+		 *
+		 * @param beatSelections The set of beat selections made by the user.
+		 * @param ensembleType   The ensembling method to use (e.g.,
+		 *                       {@link HemoData#ENSEMBLE_TRIM}).
+		 */
 		private AlignResult(Set<BeatSelection> beatSelections, int ensembleType) {
-			
+
 			// Go through each selection
 			for (BeatSelection beatSelection : beatSelections) {
 				List<Beat> allBeats = beatSelection.getBeats();
 				Beat ensembledBeat = Beat.ensembleFlowPressure(allBeats, ensembleType, beatSelection.getName());
-				
+
 				List<String> beatScreenImages = beatSelection.getBeatImages();
 
-				
 				ensembledBeats.put(ensembledBeat, beatScreenImages);
-				
+
 			}
-			
+
 		}
-		
+
+		/**
+		 * Gets the list of final, ensembled beats.
+		 *
+		 * @return A list of {@link Beat} objects.
+		 */
 		public List<Beat> getBeats() {
 			return new ArrayList<Beat>(ensembledBeats.keySet());
 		}
-		
+
+		/**
+		 * Gets the screenshots associated with the selection that created a given
+		 * ensembled beat.
+		 *
+		 * @param beat The ensembled {@link Beat} for which to retrieve images.
+		 * @return A list of base64-encoded image strings, or null if not found.
+		 */
 		public List<String> getBeatImages(Beat beat) {
 			return ensembledBeats.get(beat);
 		}
-		
+
+		/**
+		 * Removes an ensembled beat and its associated images from the result.
+		 *
+		 * @param beat The {@link Beat} to remove.
+		 */
 		public void removeBeat(Beat beat) {
 			ensembledBeats.remove(beat);
 		}
-		
-		
+
 	}
-	
+
+	/**
+	 * A helper class representing a single data trace from a {@link HemoData} file.
+	 * It bundles the data source, the specific header for the trace, and metadata
+	 * like whether it's an alignment trace or a default selection.
+	 */
 	public static class Trace {
 
+		/** The source {@link HemoData} object for this trace. */
 		private final HemoData hd;
+		/** The specific {@link Header} defining this trace within the {@link HemoData} object. */
 		private final Header header;
+		/** Flag indicating if this is an alignment trace (e.g., EKG). */
 		private final boolean isAlign;
+		/** Flag indicating if this trace should be selected by default in the UI. */
 		private boolean selectedDefault = false;
-		
+
+		/** The display name for this trace, shown in UI components. */
 		private final String name;
 
+		/**
+		 * Constructs a {@link Trace} from {@link HemoData} object and a specific {@link Header}.
+		 *
+		 * @param hd The source {@link HemoData}.
+		 * @param header The {@link Header} that identifies this trace.
+		 */
 		private Trace(HemoData hd, Header header) {
 			this.hd = hd;
 			this.header = header;
 			this.isAlign = hd.hasFlag(header, HemoData.OTHER_ALIGN);
-			name = "\"" + hd.getFileName()+ "\": " + header.getName();
+			name = "\"" + hd.getFileName() + "\": " + header.getName();
 		}
-		
+
+		/**
+		 * Constructs a dummy Trace object with only a name. Used for placeholder
+		 * items in JComboBox controls, such as "Select trace...".
+		 *
+		 * @param name The display name for the dummy trace.
+		 */
 		private Trace(String name) {
 			hd = null;
 			header = null;
@@ -1107,6 +1215,12 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 			this.name = name;
 		}
 
+		/**
+		 * Determines if the trace is likely a pressure measurement based on its name
+		 * based on its {@link Header} name.
+		 *
+		 * @return {@code true} if the name contains "pressure" or "press".
+		 */
 		private boolean isLikelyPressure() {
 
 			String headerName = header.getName();
@@ -1114,22 +1228,29 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 
 		}
 
+		/**
+		 * Determines if the trace is likely a flow measurement based on its name
+		 * based on its {@link Header} name.
+		 *
+		 * @return {@code true} if the name contains "flow", "velocity", or "doppler"
+		 */
 		private boolean isLikelyFlow() {
 
 			String headerName = header.getName();
-			return (headerName.toLowerCase().contains("flow") || headerName.toLowerCase().contains("velocity"));
+			return (headerName.toLowerCase().contains("flow") || headerName.toLowerCase().contains("velocity")
+					|| headerName.toLowerCase().contains("doppler"));
 
 		}
-		
+
+		/**
+		 * Provides the string representation of the trace, which is its display name.
+		 *
+		 * @return The name of the trace.
+		 */
 		public String toString() {
 			return name;
 		}
-		
 
 	}
-
-	
-	
-
 
 }

@@ -2,7 +2,7 @@ package com.carrington.WIA.GUIs;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.EventQueue;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -12,8 +12,14 @@ import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.BevelBorder;
@@ -30,28 +36,25 @@ import com.carrington.WIA.GUIs.Components.StandardWaveTable;
 import com.carrington.WIA.GUIs.Components.StandardWaveTable.StandardWaveTableListener;
 import com.carrington.WIA.GUIs.Components.WIAFileSelectionTable;
 import com.carrington.WIA.GUIs.Components.WIAFileSelectionTable.WIATableListener;
-import com.carrington.WIA.GUIs.Configs.ComboFileConfigGUI;
 import com.carrington.WIA.GUIs.Components.WIATxNameTable;
+import com.carrington.WIA.GUIs.Configs.ComboFileConfigGUI;
 import com.carrington.WIA.IO.Saver;
 import com.carrington.WIA.IO.WIAStats;
 import com.carrington.WIA.IO.WIAStats.StandardWave;
 import com.carrington.WIA.IO.WIAStats.StandardWaveGrouping;
 import com.carrington.WIA.stats.StatisticalException;
 
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.LayoutStyle.ComponentPlacement;
-
-import java.awt.FlowLayout;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.SwingConstants;
-
+/**
+ * A graphical user interface for performing statistical analysis on a
+ * collection of Wave Intensity Analysis (.wia) files. It allows users to load a
+ * folder of WIA files, manage wave definitions, group waves, and run and save
+ * statistical comparisons.
+ */
 public class WIAStatsGUI extends JFrame
 		implements StandardWaveTableListener, StandardWaveGroupTableListener, WIATableListener {
 
 	private static final long serialVersionUID = 9222582868347296174L;
-	
+
 	// GUI FIELDS
 	private JPanel contentPane;
 
@@ -74,11 +77,10 @@ public class WIAStatsGUI extends JFrame
 	private volatile JCButton btnSaveStats;
 	private volatile JCButton btnSaveCompiledData;
 	private JCButton btnGroup;
-	
+
 	private static final int STATE_INIT = 0;
 	private static final int STATE_LOADED = 1;
 	private static final int STATE_STATS_RUN = 2;
-
 
 	// Configuration (i.e. used for determining default file search path
 	private final ComboFileConfigGUI config = new ComboFileConfigGUI();
@@ -86,25 +88,12 @@ public class WIAStatsGUI extends JFrame
 	private WIAStats wiastat;
 
 	/**
-	 * Launch the application.
-	 * 
+	 * Constructs the WIA Statistics GUI.
+	 *
+	 * @param frameToGoBackTo The parent frame to which this GUI will return.
+	 * @param closeListener   The listener to be notified when the "back" action is
+	 *                        performed.
 	 */
-	public static void main(String[] args) throws ClassNotFoundException, InstantiationException,
-			IllegalAccessException, UnsupportedLookAndFeelException {
-		UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					WIAStatsGUI frame = new WIAStatsGUI(null, null);
-					frame.navigateInto();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
 	public WIAStatsGUI(JFrame frameToGoBackTo, BackListener closeListener) {
 		this();
 		this.backListener = closeListener;
@@ -128,7 +117,7 @@ public class WIAStatsGUI extends JFrame
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
-				
+
 				quit();
 			}
 		});
@@ -167,10 +156,13 @@ public class WIAStatsGUI extends JFrame
 
 		Utils.unfocusAll(contentPane);
 		Utils.unfocusAll(this);
-		
+
 		setPanelState(STATE_INIT);
 	}
 
+	/**
+	 * Makes this GUI visible and hides the parent frame it was called from.
+	 */
 	public synchronized void navigateInto() {
 		pack();
 		setLocationRelativeTo(null);
@@ -197,7 +189,8 @@ public class WIAStatsGUI extends JFrame
 	}
 
 	/**
-	 * Exit th program entirely, NOT navigating back to the prior frame (as in {@link #navigateBack()})
+	 * Exit the program entirely, NOT navigating back to the prior frame (as in
+	 * {@link #navigateBack()})
 	 */
 	public void quit() {
 
@@ -208,10 +201,11 @@ public class WIAStatsGUI extends JFrame
 
 	}
 
-
 	/**
-	 * Set the current panel state. 
-	 * @param state One of {@link #STATE_INIT}, {@link #STATE_LOADED}, {@link #STATE_STATS_RUN}.
+	 * Set the current panel state.
+	 * 
+	 * @param state One of {@link #STATE_INIT}, {@link #STATE_LOADED},
+	 *              {@link #STATE_STATS_RUN}.
 	 */
 	private synchronized void setPanelState(int state) {
 		switch (state) {
@@ -245,8 +239,8 @@ public class WIAStatsGUI extends JFrame
 	}
 
 	/**
-	 * Opens a file selection dialog. The user will select a folder which contains .wia files which can be
-	 * deserialized into {@link WIAData} objects 
+	 * Prompts the user to select a directory, then loads all .wia files from that
+	 * directory into the {@link WIAStats} object for analysis.
 	 */
 	private synchronized void runFileSelection() {
 
@@ -271,19 +265,14 @@ public class WIAStatsGUI extends JFrame
 		// config.tryToSetLastDir(file);
 
 	}
-	
+
 	/**
-	 * Saves the stats. If not run this essentially returns an empty array.
+	 * Prompts the user for a file name and saves the calculated statistics to an Excel (.xlsx) file.
 	 */
 	private synchronized void runStatsSave() {
-//		
-//		String[][] statSaveableArray = wiastat.getStatsAsArray();
-//		if (statSaveableArray == null) {
-//			Utils.showError("Stats not yet run.", null);
-//			return;
-//		}
-		
-		File fileToSave = Utils.promptUserForFileName("Save Stats", config.getLastDirectoryPath(), "stats.xlsx", ".xlsx");
+
+		File fileToSave = Utils.promptUserForFileName("Save Stats", config.getLastDirectoryPath(), "stats.xlsx",
+				".xlsx");
 		if (fileToSave == null) {
 			return;
 		} else if (!Utils.hasOkayExtension(fileToSave, ".xlsx")) {
@@ -292,17 +281,18 @@ public class WIAStatsGUI extends JFrame
 			return;
 		}
 		fileToSave = Utils.appendExtensionIfDoesNotHaveExt(fileToSave, ".xlsx");
-		
-		//Saver.saveData(fileToSav, statSaveableArray);
+
 		wiastat.save(fileToSave);
 	}
-	
+
 	/**
-	 * Saves the aggregated, compiled data
+	 * Prompts the user for a file name and saves the compiled, aggregated data from all
+	 * loaded .wia files into a single CSV file.
 	 */
 	private synchronized void runDataSave() {
 		String[][] dataSaveableArray = wiastat.getDataArray();
-		File fileToSav = Utils.promptUserForFileName("Save Data", config.getLastDirectoryPath(), "compiled data.csv", ".csv");
+		File fileToSav = Utils.promptUserForFileName("Save Data", config.getLastDirectoryPath(), "compiled data.csv",
+				".csv");
 		if (fileToSav == null || !Utils.hasOkayExtension(fileToSav, ".csv")) {
 			// user cancelled
 			return;
@@ -312,17 +302,15 @@ public class WIAStatsGUI extends JFrame
 			return;
 		}
 		fileToSav = Utils.appendExtensionIfDoesNotHaveExt(fileToSav, ".csv");
-		
+
 		Saver.saveData(fileToSav, dataSaveableArray);
 	}
-	
-	
 
 	@Override
 	public void removedWaveGroup(StandardWaveGrouping waveGrouping) {
-
+		tableStandardWaveGroups.updateGroups(wiastat);
 	}
-	
+
 	/**
 	 * Called when user removes a wave in the wave table
 	 */
@@ -331,7 +319,7 @@ public class WIAStatsGUI extends JFrame
 		tableStandardWaveGroups.updateGroups(wiastat);
 
 	}
-	
+
 	/**
 	 * called when a user changes a wave name in the wave table
 	 */
@@ -341,6 +329,10 @@ public class WIAStatsGUI extends JFrame
 
 	}
 
+	/**
+	 * Callback method invoked when a WIA data file is removed from the selection table.
+	 * This triggers updates to the treatment names, standard waves, and wave groups tables.
+	 */
 	@Override
 	public void wiaDataRemoved() {
 		tableWIATxNames.updateTreatments(wiastat);
@@ -349,22 +341,29 @@ public class WIAStatsGUI extends JFrame
 
 	}
 
+	/**
+	 * Callback method invoked when a treatment name is changed for a WIA data file.
+	 * This triggers an update of the treatment names table.
+	 */
 	@Override
 	public void wiaDataTxNameChanged() {
 		tableWIATxNames.updateTreatments(wiastat);
 
 	}
-	
 
+	/**
+	 * Provides access to the collection of {@link WIAData} objects loaded for analysis.
+	 * @return A collection of the loaded WIA data.
+	 */
 	@Override
 	public Collection<WIAData> getData() {
 		return wiastat.getData();
 	}
-	
+
 	///////////////////////////////////////////
 	// Helper methods for building GUI
 	///////////////////////////////////////////
-	
+
 	/**
 	 * Helper method for building GUI
 	 */
@@ -389,12 +388,14 @@ public class WIAStatsGUI extends JFrame
 		_initPnlOutput();
 
 		GroupLayout gl_pnlMiddle = new GroupLayout(pnlMiddle);
-		gl_pnlMiddle.setHorizontalGroup(gl_pnlMiddle.createSequentialGroup()
-				.addContainerGap()
-				.addGroup(gl_pnlMiddle.createParallelGroup()
-						.addComponent(pnlInput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(pnlOutput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-				.addContainerGap());
+		gl_pnlMiddle
+				.setHorizontalGroup(gl_pnlMiddle.createSequentialGroup().addContainerGap()
+						.addGroup(gl_pnlMiddle.createParallelGroup()
+								.addComponent(pnlInput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										Short.MAX_VALUE)
+								.addComponent(pnlOutput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										Short.MAX_VALUE))
+						.addContainerGap());
 		gl_pnlMiddle.setVerticalGroup(gl_pnlMiddle.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlMiddle
 				.createSequentialGroup().addContainerGap()
 				.addComponent(pnlInput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
@@ -416,7 +417,7 @@ public class WIAStatsGUI extends JFrame
 		flowLayout.setAlignment(FlowLayout.TRAILING);
 		pnlBottom.setBackground(new Color(192, 192, 192));
 		pnlBottom.setBorder(new LineBorder(new Color(0, 0, 0)));
-		
+
 		JCButton btnReset = new JCButton("Reset", JCButton.BUTTON_RESET);
 		btnReset.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -442,7 +443,7 @@ public class WIAStatsGUI extends JFrame
 				quit();
 			}
 		});
-		
+
 		pnlBottom.add(btnReset);
 		pnlBottom.add(btnBack);
 		pnlBottom.add(btnQuit);
@@ -460,7 +461,7 @@ public class WIAStatsGUI extends JFrame
 		JCLabel lblInput = new JCLabel("Input", JCLabel.LABEL_SUBTITLE);
 		JCLabel lblDirections = new JCLabel("Select a folder which contains \".wia\" files", JCLabel.LABEL_TEXT_BOLD);
 		JCLabel lblWaves = new JCLabel("Waves:", JCLabel.LABEL_TEXT_BOLD);
-		 btnGroup = new JCButton("Group Selected", JCButton.BUTTON_SMALL);
+		btnGroup = new JCButton("Group Selected", JCButton.BUTTON_SMALL);
 		btnGroup.addActionListener(new ActionListener() {
 
 			@Override
@@ -518,7 +519,6 @@ public class WIAStatsGUI extends JFrame
 		tableStandardWaveGroups.setPreferredScrollableViewportSize(new Dimension(
 				tableStandardWaveGroups.getPreferredSize().width, tableStandardWaveGroups.getRowHeight() * 3));
 
-
 		btnBrowse = new JCButton("Browse...");
 		btnBrowse.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -532,9 +532,11 @@ public class WIAStatsGUI extends JFrame
 
 		GroupLayout gl_pnlIn = new GroupLayout(pnlInput);
 		gl_pnlIn.setHorizontalGroup(gl_pnlIn.createParallelGroup(Alignment.LEADING)
-				.addComponent(lblInput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(lblInput, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+						GroupLayout.PREFERRED_SIZE)
 				.addGroup(gl_pnlIn.createSequentialGroup().addContainerGap().addGroup(gl_pnlIn
-						.createParallelGroup(Alignment.LEADING, false).addComponent(lblDirections).addComponent(btnBrowse)
+						.createParallelGroup(Alignment.LEADING, false).addComponent(lblDirections)
+						.addComponent(btnBrowse)
 						.addComponent(sep2, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
 						.addGroup(gl_pnlIn.createSequentialGroup()
 								.addComponent(lblWaves, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
@@ -552,45 +554,43 @@ public class WIAStatsGUI extends JFrame
 										GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
 								.addComponent(lblTxNames))
 						.addContainerGap()));
-		gl_pnlIn.setVerticalGroup(gl_pnlIn.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_pnlIn.createSequentialGroup()
-						.addComponent(lblInput, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlIn.createParallelGroup(Alignment.LEADING)
-								.addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										Short.MAX_VALUE)
-								.addGroup(gl_pnlIn.createSequentialGroup().addComponent(lblSelections)
-										.addComponent(scrFiles, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+		gl_pnlIn.setVerticalGroup(gl_pnlIn.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlIn
+				.createSequentialGroup()
+				.addComponent(
+						lblInput, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addPreferredGap(ComponentPlacement.RELATED)
+				.addGroup(gl_pnlIn.createParallelGroup(Alignment.LEADING)
+						.addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+						.addGroup(gl_pnlIn.createSequentialGroup().addComponent(lblSelections)
+								.addComponent(scrFiles, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblTxNames)
+								.addComponent(scrTxtNames, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										GroupLayout.PREFERRED_SIZE))
+						.addGroup(
+								gl_pnlIn.createSequentialGroup()
+										.addComponent(lblDirections, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.UNRELATED)
+										.addComponent(btnBrowse, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
 												GroupLayout.PREFERRED_SIZE)
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblTxNames)
-										.addComponent(scrTxtNames, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
-								.addGroup(
-										gl_pnlIn.createSequentialGroup()
-												.addComponent(lblDirections, GroupLayout.PREFERRED_SIZE,
-														GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-												.addPreferredGap(ComponentPlacement.UNRELATED)
-												.addComponent(btnBrowse, GroupLayout.PREFERRED_SIZE,
-														GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-												.addPreferredGap(ComponentPlacement.UNRELATED)
-												.addComponent(sep2, GroupLayout.PREFERRED_SIZE,
-														GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-												.addPreferredGap(ComponentPlacement.RELATED)
-												.addGroup(gl_pnlIn.createParallelGroup(Alignment.CENTER)
-														.addComponent(lblWaves).addComponent(btnGroup))
-												.addPreferredGap(ComponentPlacement.RELATED)
-												.addComponent(scrWaves, GroupLayout.PREFERRED_SIZE,
-														GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-												.addPreferredGap(ComponentPlacement.RELATED)
-												.addComponent(lblGroupedWaves).addComponent(scrWaveGroups,
-														GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-														GroupLayout.PREFERRED_SIZE)))
-						.addContainerGap()));
+										.addPreferredGap(ComponentPlacement.UNRELATED)
+										.addComponent(sep2, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_pnlIn.createParallelGroup(Alignment.CENTER).addComponent(lblWaves)
+												.addComponent(btnGroup))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(scrWaves, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.PREFERRED_SIZE)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblGroupedWaves)
+										.addComponent(scrWaveGroups, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)))
+				.addContainerGap()));
 		pnlInput.setLayout(gl_pnlIn);
 
 	}
-	
+
 	/**
 	 * Helper method for building GUI
 	 */
@@ -598,7 +598,7 @@ public class WIAStatsGUI extends JFrame
 		pnlOutput = new JPanel();
 		pnlOutput.setBackground(Utils.colorPnlEnabled);
 		pnlOutput.setBorder(new LineBorder(Color.BLACK));
-		
+
 		JCLabel lblOut = new JCLabel("Output", JCLabel.LABEL_SUBTITLE);
 		btnRunStats = new JCButton("Run Stats", JCButton.BUTTON_RUN);
 		btnSaveCompiledData = new JCButton("Save Compiled Data", JCButton.BUTTON_STANDARD);
@@ -608,8 +608,7 @@ public class WIAStatsGUI extends JFrame
 		JSeparator jsepH = new JSeparator(SwingConstants.HORIZONTAL);
 		jsep.setForeground(Color.GRAY);
 		jsepH.setForeground(Color.GRAY);
-		
-		
+
 		btnRunStats.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
@@ -622,65 +621,55 @@ public class WIAStatsGUI extends JFrame
 						Utils.showError("Unable to perform stats: " + e1.getMessage(), null);
 						return;
 					}
-					
+
 					setPanelState(STATE_STATS_RUN);
 				}
-				
+
 			}
-			
+
 		});
-		
+
 		btnSaveStats.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
 				runStatsSave();
-				   	
+
 			}
-			
+
 		});
-		
+
 		btnSaveCompiledData.addActionListener(new ActionListener() {
 
 			public void actionPerformed(ActionEvent e) {
 				runDataSave();
-				   	
-			}
-			
-		});
-		
 
+			}
+
+		});
 
 		GroupLayout gl_pnlOut = new GroupLayout(pnlOutput);
-		gl_pnlOut.setHorizontalGroup(gl_pnlOut.createParallelGroup(Alignment.LEADING)
-				.addComponent(lblOut)
-				.addGroup(gl_pnlOut.createSequentialGroup()
-						.addContainerGap()
-						.addComponent(btnSaveCompiledData)
+		gl_pnlOut.setHorizontalGroup(gl_pnlOut.createParallelGroup(Alignment.LEADING).addComponent(lblOut)
+				.addGroup(gl_pnlOut.createSequentialGroup().addContainerGap().addComponent(btnSaveCompiledData)
 						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(jsep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(btnRunStats)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(btnSaveStats)
-						.addContainerGap())
-						
-				);
-		gl_pnlOut.setVerticalGroup(gl_pnlOut.createSequentialGroup()
-				.addComponent(lblOut)
-				.addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(gl_pnlOut.createParallelGroup(Alignment.LEADING)
-						.addComponent(btnSaveCompiledData)
-						.addComponent(btnRunStats)
-						.addComponent(jsep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(btnSaveStats)
+						.addComponent(jsep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnRunStats)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveStats).addContainerGap())
 
-						)
-				.addContainerGap());
-		
-		
+		);
+		gl_pnlOut
+				.setVerticalGroup(
+						gl_pnlOut.createSequentialGroup().addComponent(lblOut)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addGroup(gl_pnlOut.createParallelGroup(Alignment.LEADING)
+										.addComponent(btnSaveCompiledData).addComponent(btnRunStats).addComponent(jsep,
+												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+										.addComponent(btnSaveStats)
+
+								).addContainerGap());
+
 		pnlOutput.setLayout(gl_pnlOut);
-		
+
 	}
 
-	
 }

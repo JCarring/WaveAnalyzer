@@ -52,7 +52,6 @@ import com.carrington.WIA.Cardio.BeatSelection;
 import com.carrington.WIA.Cardio.QRS;
 import com.carrington.WIA.Cardio.QRSDetector;
 import com.carrington.WIA.DataStructures.HemoData;
-import com.carrington.WIA.GUIs.AlignerGUI;
 import com.carrington.WIA.GUIs.Components.KeyChecker;
 import com.carrington.WIA.IO.Header;
 
@@ -709,7 +708,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 			ValueMarker vm = new ValueMarker(xValue);
 			vm.setStroke(new BasicStroke(2f));
-			vm.setPaint(AlignerGUI.purple.darker());
+			vm.setPaint(Utils.colorPurpleDarker);
 			getChart().getXYPlot().addDomainMarker(vm);
 			selStartMarker = vm;
 			selStart = xValue;
@@ -728,7 +727,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 			ValueMarker vm = new ValueMarker(xValue);
 			vm.setStroke(new BasicStroke(2f));
-			vm.setPaint(AlignerGUI.purple.darker());
+			vm.setPaint(Utils.colorPurpleDarker);
 			getChart().getXYPlot().addDomainMarker(vm);
 			selEndMarker = vm;
 			selEnd = xValue;

@@ -11,7 +11,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.HemoData;
-import com.carrington.WIA.GUIs.ProgressRecorder;
+import com.carrington.WIA.GUIs.BackgroundProgressRecorder;
 
 public class SheetDataReader {
 
@@ -84,7 +84,7 @@ public class SheetDataReader {
 		return readData(columns, null);
 	}
 
-	public ReadResult readData(List<Header> columns, ProgressRecorder progDisplayer) {
+	public ReadResult readData(List<Header> columns, BackgroundProgressRecorder progDisplayer) {
 		
 		if (columns.isEmpty())
 			return new ReadResult(null, "No headers supplied when trying to read sheet");
