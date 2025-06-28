@@ -26,7 +26,7 @@ import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
 
 import com.carrington.WIA.Utils;
-import com.carrington.WIA.GUIs.ProgressRecorder;
+import com.carrington.WIA.GUIs.BackgroundProgressRecorder;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.DataResampler;
 import com.carrington.WIA.Math.DataResampler.ResampleException;
@@ -36,6 +36,7 @@ import com.opencsv.CSVWriter;
 /**
  * The main data structure used to carry information in this program.
  */
+@SuppressWarnings("javadoc")
 public class HemoData implements Serializable {
 
 	private static final long serialVersionUID = -4771987296718864051L;
@@ -197,7 +198,7 @@ public class HemoData implements Serializable {
 	 * @return new {@link HemoData} object which has been resampled
 	 * @throws ResampleException if there was an issue with resampling
 	 */
-	public HemoData resampleAt(double resampleRate, ProgressRecorder progRecorder) throws ResampleException {
+	public HemoData resampleAt(double resampleRate, BackgroundProgressRecorder progRecorder) throws ResampleException {
 
 		if (resampleRate <= 0 || this.xData == null || this.xHeader == null || this.yValues == null
 				|| this.yValues.isEmpty()) {
