@@ -3,7 +3,6 @@ package com.carrington.WIA.GUIs;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.FlowLayout;
 import java.awt.FontMetrics;
 import java.awt.event.ActionEvent;
@@ -55,6 +54,7 @@ import com.carrington.WIA.Graph.ComboChartSaver;
 import com.carrington.WIA.Graph.PressureFlowChartPanel;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.IO.HeaderResult;
+import com.carrington.WIA.IO.NamingConvention;
 import com.carrington.WIA.IO.ReadResult;
 import com.carrington.WIA.IO.Saver;
 import com.carrington.WIA.IO.SheetDataReader;
@@ -62,6 +62,12 @@ import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.DataResampler.ResampleException;
 import com.carrington.WIA.Math.Savgol.SavGolSettings;
 
+/**
+ * A graphical user interface for analyzing hemodynamic data from a combination
+ * pressure / flow system which is a single file containing at least time,
+ * pressure, flow, and ECG data. The workflow guides the user through file
+ * selection, beat selection, and wave intensity analysis.
+ */
 public class CombowireGUI extends JFrame implements WIACaller {
 
 	private static final long serialVersionUID = 882079419657857245L;
@@ -69,26 +75,17 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private JFrame frameToGoBackTo = null;
 	private BackListener backListener = null;
 
-
 	private static final int widthScaler = Utils.getMaxAppSize().width;
 	private static final int heightScaler = Utils.getMaxAppSize().height;
-
-	// TODO: see which of these are actually needed
-	public static final String pathNameWIASerialize = "%s serialized.wia";
-	public static final String pathNameWIASVG = "%s printable.svg";
-	public static final String pathNameWIATIFF = "%s printable.tiff";
-	private static final String pathNameWIACSV = "%s WIA.csv";
-	
-	private static final String pathNameBeatSelectionsCSV = "%s - data.csv";
-	private static final String pathNameBeatSelectionsSVG = "%s - beat %s.svg";
-
-
-	public static final String pathNameWaveSelectionsSVG = "%s wave selections.svg";
 
 	private static final int STATE_INIT = 0;
 	private static final int STATE_BEATS = 1;
 	private static final int STATE_WIA = 2;
 
+	/**
+	 * A map to associate user-friendly ensemble type names ("Trim", "Scale") with
+	 * their corresponding HemoData constants.
+	 */
 	public static final LinkedHashMap<String, Integer> EnsembleTypeMap = new LinkedHashMap<String, Integer>();
 	static {
 		EnsembleTypeMap.put("Trim", HemoData.ENSEMBLE_TRIM);
@@ -97,13 +94,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	private static final Header headerEmpty = new Header("< No R Wave Data >", 0, false);
 
-//	public final JTextArea lblTopInstructions = new JTextArea(
-//			"Start by selecting a file (.txt tabbed, .csv, or .xlsx). Choose pressure (mmHg), flow (cm/s), ECG, and (optional) RWave indicator (1 for wave, 0 no wave)"
-//					+ " column data. The input will be filtered using Savitsky Golay parameters of your choice (standard). You will then select beats, which will be ensemble averaged. Output "
-//					+ "will then be displayed and you can select the dominant waves.");
-//	public final JTextArea lblTopInstructions = new JTextArea("Sta aowiejd oawiejd oaw edjaow ejdia woed oaw eoid aiwo edoa jwoedj oiaw jeodi aowiej doaw jed aiwje dija weidj aiw edoa weodj aowiej doiaj weoidj ");
-
-	public final JLabel lblTopInstructions = new JLabel(
+	private final JLabel lblTopInstructions = new JLabel(
 			"Select a file, then select beats and calculate wave intensity.");
 	private JTextField txtFileName;
 	private JTextField txtFilePath;
@@ -141,7 +132,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private JCButton btnSaveSelectionEnsembledBeat;
 	private JCButton btnSaveIndividualBeatImages;
 	private JTextField txtSampleRate;
-	
+
 	private JTextField txtSelectionName;
 	private JTextField txtSelectionRemaining;
 	private JButton btnRunWIAPreview;
@@ -150,32 +141,19 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private JCButton btnNextFile;
 	private JCButton btnNextSelection;
 	private JLabel lblPreviewFirst;
-	
+
 	private final ComboFileConfigGUI config = new ComboFileConfigGUI();
 
 	private SelectionResult selectionResult;
 	private LinkedList<PreviewResult> previewResultData = null;
 
-
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-
-					CombowireGUI frame = new CombowireGUI(null, null);
-					frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
-	 * Create the frame.
+	 * Creates the main frame for the Combowire analysis GUI.
+	 * 
+	 * @param frameToGoBackTo The parent frame to return to when this frame is
+	 *                        closed. Can be null.
+	 * @param back            A listener to notify when the "back" action is
+	 *                        performed. Can be null.
 	 */
 	public CombowireGUI(JFrame frameToGoBackTo, BackListener back) {
 		System.setProperty("apple.eawt.quitStrategy", "CLOSE_ALL_WINDOWS");
@@ -228,18 +206,17 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				.addContainerGap());
 
 		GroupLayout gl_middlePanel = new GroupLayout(middlePanel);
-		gl_middlePanel.setHorizontalGroup(gl_middlePanel.createParallelGroup(Alignment.LEADING).addGroup(
-				Alignment.TRAILING,
-				gl_middlePanel.createSequentialGroup()
-						.addContainerGap().addGroup(gl_middlePanel
-						.createParallelGroup(Alignment.CENTER)
-						.addComponent(pnlSelectFile, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
-								GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(pnlBeats, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
+		gl_middlePanel
+				.setHorizontalGroup(gl_middlePanel.createParallelGroup(Alignment.LEADING).addGroup(Alignment.TRAILING,
+						gl_middlePanel.createSequentialGroup().addContainerGap()
+								.addGroup(gl_middlePanel.createParallelGroup(Alignment.CENTER)
+										.addComponent(pnlSelectFile, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(pnlWIA, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
+										.addComponent(pnlBeats, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+										.addComponent(pnlWIA, Alignment.LEADING, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-						.addContainerGap()));
+								.addContainerGap()));
 		gl_middlePanel.setVerticalGroup(gl_middlePanel.createSequentialGroup().addContainerGap()
 				.addComponent(pnlSelectFile, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 						GroupLayout.PREFERRED_SIZE)
@@ -262,7 +239,6 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		menuBar.add(mnFile);
 		menuBar.add(mnBeats);
 		menuBar.add(mnWaveAnalysis);
-
 
 		JMenuItem mnSelectFile = new JMenuItem("Select input file...");
 		mnSelectFile.addActionListener(new ActionListener() {
@@ -316,8 +292,6 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		});
 		mnFile.add(mnQuit);
 
-		
-		
 		JMenuItem mnRunBeatSel = new JMenuItem("Run Beats Selection");
 		mnRunBeatSel.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -329,7 +303,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnSaveSelections.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				btnSaveSelectionEnsembledBeat.doClick();
-				
+
 			}
 		});
 		mnSaveSelections.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2, ActionEvent.META_MASK));
@@ -344,7 +318,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnBeats.addSeparator();
 		mnBeats.add(mnSaveSelections);
 		mnBeats.add(mnSaveBeatImages);
-		
+
 		JMenuItem mnRunWIA = new JMenuItem("Run WIA");
 		mnRunWIA.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -380,11 +354,12 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnWaveAnalysis.add(mnNextSel);
 		mnWaveAnalysis.add(mnNextFile);
 
-		Utils.setFont(Utils.getSubTitleFont(), mnFile, mnQuit,mnSelectFile, mnSettings, mnReset, mnBackToSTart, mnSaveMetrics, mnWaveAnalysis,
-				mnNextFile, mnNextSel, mnRunWIA, mnBeats, mnRunBeatSel, mnSaveSelections, mnSaveBeatImages);
+		Utils.setFont(Utils.getSubTitleFont(), mnFile, mnQuit, mnSelectFile, mnSettings, mnReset, mnBackToSTart,
+				mnSaveMetrics, mnWaveAnalysis, mnNextFile, mnNextSel, mnRunWIA, mnBeats, mnRunBeatSel, mnSaveSelections,
+				mnSaveBeatImages);
 
-		//setSelectFileState(STATE_FILE_INIT, null, null, null);
-		//setBeatsState(STATE_BEATS_INIT, null, null);
+		// setSelectFileState(STATE_FILE_INIT, null, null, null);
+		// setBeatsState(STATE_BEATS_INIT, null, null);
 		setPanelState(STATE_INIT);
 		Utils.unfocusButtons(contentPane);
 		contentPane.setLayout(mainContentPaneLayout);
@@ -401,6 +376,10 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	}
 
+	/**
+	 * Initializes the top panel of the GUI, which contains instructions for the
+	 * user.
+	 */
 	private void initTop() {
 		topPanel = new JPanel();
 		topPanel.setBackground(new Color(192, 192, 192));
@@ -426,6 +405,10 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		topPanel.setLayout(gl_topPanel);
 	}
 
+	/**
+	 * Initializes the bottom panel of the GUI, which contains the main action
+	 * buttons (Reset, Go Back, Quit) and a processing label.
+	 */
 	private void initBottom() {
 		pnlButtons = new JPanel();
 		pnlButtons.setBackground(new Color(192, 192, 192));
@@ -470,6 +453,11 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		pnlButtons.add(btnQuit);
 	}
 
+	/**
+	 * Initializes the panel for file selection and data column mapping. This panel
+	 * allows the user to browse for a file and assign columns to pressure, flow,
+	 * ECG, and R-wave data.
+	 */
 	private void initPnlSelectRun() {
 		pnlSelectFile = new JPanel();
 		pnlSelectFile.setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -556,47 +544,53 @@ public class CombowireGUI extends JFrame implements WIACaller {
 								.addComponent(cbECG, 240, 240, 240).addComponent(cbRWave, 240, 240, 240)
 								.addComponent(cbPressure, 240, 240, 240))))
 				.addContainerGap());
-		gl_pnlSelectRun.setVerticalGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlSelectRun
-				.createSequentialGroup().addGap(4).addComponent(lblSelectFile).addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlSelectRun
-						.createSequentialGroup().addComponent(btnBrowseFile)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING)
-								.addComponent(txtFileName, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblFileName))
+		gl_pnlSelectRun.setVerticalGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlSelectRun.createSequentialGroup().addGap(4).addComponent(lblSelectFile)
 						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING)
-								.addComponent(txtFilePath, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblPath)))
-						.addGroup(gl_pnlSelectRun.createSequentialGroup()
-								.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
-										.addComponent(txtTime, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblTimeField))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
-										.addComponent(cbPressure, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblPressure))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE).addComponent(lblFlow)
-										.addComponent(cbFlow, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
-										.addComponent(cbECG, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblECG))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
-										.addComponent(cbRWave, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblRWave)))
-						.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								Short.MAX_VALUE))
-				.addContainerGap()));
+						.addGroup(gl_pnlSelectRun
+								.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_pnlSelectRun.createSequentialGroup().addComponent(btnBrowseFile)
+										.addPreferredGap(ComponentPlacement.UNRELATED).addGroup(gl_pnlSelectRun
+												.createParallelGroup(Alignment.LEADING)
+												.addComponent(
+														txtFileName, GroupLayout.PREFERRED_SIZE,
+														GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+												.addComponent(lblFileName))
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.LEADING)
+												.addComponent(
+														txtFilePath, GroupLayout.PREFERRED_SIZE,
+														GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+												.addComponent(lblPath)))
+								.addGroup(
+										gl_pnlSelectRun.createSequentialGroup()
+												.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
+														.addComponent(txtTime, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(lblTimeField))
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
+														.addComponent(cbPressure, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(lblPressure))
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
+														.addComponent(lblFlow).addComponent(cbFlow,
+																GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+																GroupLayout.PREFERRED_SIZE))
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
+														.addComponent(cbECG, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(lblECG))
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addGroup(gl_pnlSelectRun.createParallelGroup(Alignment.BASELINE)
+														.addComponent(cbRWave, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+														.addComponent(lblRWave)))
+								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										Short.MAX_VALUE))
+						.addContainerGap()));
 		pnlSelectFile.setLayout(gl_pnlSelectRun);
 
 		btnBrowseFile.addActionListener(new ActionListener() {
@@ -607,25 +601,27 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		});
-		
 
-		Utils.setFont(Utils.getTextFont(true), lblFlow, lblECG, lblRWave, lblPressure, btnBrowseFile, lblTimeField, txtTime,
-				cbPressure, cbFlow, cbECG, cbRWave);
+		Utils.setFont(Utils.getTextFont(true), lblFlow, lblECG, lblRWave, lblPressure, btnBrowseFile, lblTimeField,
+				txtTime, cbPressure, cbFlow, cbECG, cbRWave);
 		Utils.setFont(Utils.getTextFont(false), txtFilePath, txtFileName, lblFileName, lblPath);
 		Utils.setFont(Utils.getSubTitleFont(), lblSelectFile);
 	}
 
+	/**
+	 * Initializes the panel for beat selection configuration. This includes
+	 * settings for ensembling, flow offset, resampling, and launching the beat
+	 * selection process.
+	 */
 	private void initPnlBeats() {
 
 		pnlBeats = new JPanel();
 		pnlBeats.setBorder(new LineBorder(new Color(0, 0, 0)));
-		
+
 		JSeparator separator = new JSeparator();
 		separator.setOrientation(SwingConstants.VERTICAL);
 		separator.setBackground(new Color(192, 192, 192));
 		separator.setForeground(new Color(192, 192, 192));
-
-
 
 		btnSaveSelectionEnsembledBeat = new JCButton("Save Selections", JCButton.BUTTON_STANDARD);
 		btnSaveSelectionEnsembledBeat.addActionListener(new ActionListener() {
@@ -694,18 +690,14 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		});
-		
-
-
 
 		JLabel lblBeats = new JLabel("Selections");
-
 
 		chUseFilesRWaves = new JCheckBox("Use File's R Waves");
 		chUseFilesRWaves.setSelected(true);
 		chUseFilesRWaves.setOpaque(false);
 		chUseFilesRWaves.setFocusable(false);
-		
+
 		JLabel lblEnsembleType = new JLabel("Ensemble type:");
 		cbEnsembleType = new JComboBox<String>(EnsembleTypeMap.keySet().toArray(new String[0]));
 		cbEnsembleType.setOpaque(false);
@@ -719,19 +711,18 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			cbEnsembleWidth = Math.max(currWidth, cbEnsembleWidth);
 		}
 		cbEnsembleWidth *= 3;
-		
+
 		JLabel lblFlowOffset = new JLabel("Flow Offset:");
 		txtFlowOffset = new JTextField();
 		txtFlowOffset.setColumns(10);
 		txtFlowOffset.setText(config.getFlowOffset() + "");
 		JLabel lblMS = new JLabel("milliseconds");
-		
+
 		JLabel lblSampRate = new JLabel("Resample rate (leave blank to not resample):");
 		txtSampleRate = new JTextField("");
 		txtSampleRate.setText(config.getResampleString());
 		int fontWidthTxtSampleRate = Utils.getFontParams(Utils.getTextFont(false), "0.00001")[1];
 
-		
 		btnRunBeatSel = new JCButton("Start");
 		btnRunBeatSel.addActionListener(new ActionListener() {
 			@Override
@@ -739,87 +730,69 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				runBeatSelection();
 			}
 		});
-		
+
 		int widthTxtFlowOffset = Utils.getFontParams(Utils.getTextFont(false), "1000...")[1];
 
 		GroupLayout gl_pnlBeats = new GroupLayout(pnlBeats);
 		gl_pnlBeats.setHorizontalGroup(gl_pnlBeats.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlBeats
 				.createSequentialGroup().addGap(4)
-				.addGroup(gl_pnlBeats.createParallelGroup(Alignment.LEADING).addComponent(lblBeats)
-						.addGroup(gl_pnlBeats.createSequentialGroup()
-								.addContainerGap()
-								.addComponent(lblEnsembleType)
-								.addGap(3)
-								.addComponent(cbEnsembleType, GroupLayout.DEFAULT_SIZE, cbEnsembleWidth, cbEnsembleWidth)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(lblFlowOffset)
-								.addGap(3)
-								.addComponent(txtFlowOffset, GroupLayout.PREFERRED_SIZE, widthTxtFlowOffset, GroupLayout.PREFERRED_SIZE)
-								.addGap(3)
-								.addComponent(lblMS)
-								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(chUseFilesRWaves)
-								)
-						.addGroup(gl_pnlBeats.createSequentialGroup()
-								.addContainerGap()
-								.addComponent(lblSampRate)
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(txtSampleRate, GroupLayout.PREFERRED_SIZE, fontWidthTxtSampleRate, GroupLayout.PREFERRED_SIZE))
-						.addGroup(gl_pnlBeats.createSequentialGroup()
-								.addContainerGap()
-								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-						.addGroup(gl_pnlBeats.createSequentialGroup()
-								.addContainerGap()
-								.addComponent(btnRunBeatSel)
+				.addGroup(gl_pnlBeats.createParallelGroup(Alignment.LEADING).addComponent(lblBeats).addGroup(gl_pnlBeats
+						.createSequentialGroup().addContainerGap().addComponent(lblEnsembleType).addGap(3)
+						.addComponent(cbEnsembleType, GroupLayout.DEFAULT_SIZE, cbEnsembleWidth, cbEnsembleWidth)
+						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblFlowOffset).addGap(3)
+						.addComponent(txtFlowOffset, GroupLayout.PREFERRED_SIZE, widthTxtFlowOffset,
+								GroupLayout.PREFERRED_SIZE)
+						.addGap(3).addComponent(lblMS).addPreferredGap(ComponentPlacement.UNRELATED)
+						.addComponent(chUseFilesRWaves))
+						.addGroup(gl_pnlBeats.createSequentialGroup().addContainerGap().addComponent(lblSampRate)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(txtSampleRate,
+										GroupLayout.PREFERRED_SIZE, fontWidthTxtSampleRate, GroupLayout.PREFERRED_SIZE))
+						.addGroup(gl_pnlBeats.createSequentialGroup().addContainerGap().addComponent(separator,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+						.addGroup(gl_pnlBeats.createSequentialGroup().addContainerGap().addComponent(btnRunBeatSel)
 								.addPreferredGap(ComponentPlacement.UNRELATED)
 								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										GroupLayout.PREFERRED_SIZE)
 								.addPreferredGap(ComponentPlacement.UNRELATED)
-								.addComponent(btnSaveSelectionEnsembledBeat)
-								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(btnSaveSelectionEnsembledBeat).addPreferredGap(ComponentPlacement.RELATED)
 								.addComponent(btnSaveIndividualBeatImages)))
 				.addContainerGap()));
-		gl_pnlBeats.setVerticalGroup(gl_pnlBeats.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_pnlBeats.createSequentialGroup()
-						.addGap(4)
-						.addComponent(lblBeats)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addGroup(gl_pnlBeats.createParallelGroup(Alignment.CENTER)
-								.addComponent(chUseFilesRWaves)
-								.addComponent(lblEnsembleType)
-								.addComponent(cbEnsembleType)
-								.addComponent(lblFlowOffset)
-								.addComponent(txtFlowOffset, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(lblFlowOffset)
-								.addComponent(lblMS))
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addGroup(gl_pnlBeats.createParallelGroup(Alignment.CENTER)
-								.addComponent(lblSampRate)
-								.addComponent(txtSampleRate))
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addGroup(gl_pnlBeats.createParallelGroup(Alignment.CENTER)
-								.addComponent(btnRunBeatSel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnSaveSelectionEnsembledBeat, GroupLayout.PREFERRED_SIZE,
-										GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnSaveIndividualBeatImages, GroupLayout.PREFERRED_SIZE,
-										GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										Short.MAX_VALUE))
-						.addContainerGap()));
+		gl_pnlBeats.setVerticalGroup(gl_pnlBeats.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlBeats
+				.createSequentialGroup().addGap(4).addComponent(lblBeats).addPreferredGap(ComponentPlacement.UNRELATED)
+				.addGroup(gl_pnlBeats.createParallelGroup(Alignment.CENTER).addComponent(chUseFilesRWaves)
+						.addComponent(lblEnsembleType).addComponent(cbEnsembleType).addComponent(lblFlowOffset)
+						.addComponent(txtFlowOffset, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addComponent(lblFlowOffset).addComponent(lblMS))
+				.addPreferredGap(ComponentPlacement.UNRELATED)
+				.addGroup(gl_pnlBeats
+						.createParallelGroup(Alignment.CENTER).addComponent(lblSampRate).addComponent(txtSampleRate))
+				.addPreferredGap(ComponentPlacement.UNRELATED)
+				.addGroup(gl_pnlBeats.createParallelGroup(Alignment.CENTER)
+						.addComponent(btnRunBeatSel, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnSaveSelectionEnsembledBeat, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(btnSaveIndividualBeatImages, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								Short.MAX_VALUE))
+				.addContainerGap()));
 		pnlBeats.setLayout(gl_pnlBeats);
 
-		
-
-
 		Utils.setFont(Utils.getTextFont(true), btnRunBeatSel);
-		Utils.setFont(Utils.getTextFont(false), lblFlowOffset, lblMS, txtFlowOffset, chUseFilesRWaves, lblEnsembleType, cbEnsembleType,
-				lblSampRate, txtSampleRate);
+		Utils.setFont(Utils.getTextFont(false), lblFlowOffset, lblMS, txtFlowOffset, chUseFilesRWaves, lblEnsembleType,
+				cbEnsembleType, lblSampRate, txtSampleRate);
 		Utils.setFont(Utils.getSubTitleFont(), lblBeats);
 	}
 
+	/**
+	 * Initializes the panel for Wave Intensity Analysis (WIA). This panel manages
+	 * previewing wave profiles, running the final analysis, saving metrics, and
+	 * navigating between different selections or files.
+	 */
 	private void initPnlWIA() {
-		
+
 		pnlWIA = new JPanel();
 		pnlWIA.setBorder(new LineBorder(new Color(0, 0, 0)));
 		GroupLayout gl_pnlWIA = new GroupLayout(pnlWIA);
@@ -845,7 +818,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				String selName = wiaData.getSelectionName();
 				String[][] data = wiaData.toCSV(selName);
 
-				File fileToSave = getPrimaryDataWIASave(pathNameWIACSV, selName, true);
+				File fileToSave = getPrimaryDataWIASave(NamingConvention.PATHNAME_WIACSV, selName, true);
 				if (fileToSave == null)
 					return;
 				String errors = Saver.saveData(fileToSave, data);
@@ -944,7 +917,6 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		JLabel lblSelectionName = new JLabel("Selection name:");
 		txtSelectionName = new JTextField("");
 
-
 		JSeparator separator = new JSeparator();
 		separator.setOrientation(SwingConstants.VERTICAL);
 		separator.setForeground(Color.GRAY);
@@ -956,51 +928,42 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		separator3.setForeground(Color.GRAY);
 
 		JLabel lblWIA = new JLabel("Wave Intensity Analysis");
-		
-		gl_pnlWIA.setHorizontalGroup(gl_pnlWIA.createSequentialGroup().addGap(4).addGroup(gl_pnlWIA
-				.createParallelGroup(Alignment.LEADING).addComponent(lblWIA)
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap()
-						.addComponent(btnRunWIAPreview)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(lblPreviewFirst))
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(separator3))
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap()
-						.addComponent(lblSelectionName)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(txtSelectionName, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								Short.MAX_VALUE))
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap()
-						.addComponent(btnRunWIA)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(btnSaveMetrics))
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(separator2,
-						GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-				.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(lblSelectionRemaining)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(txtSelectionRemaining, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE,
-								Short.MAX_VALUE)
-						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnNextSelection)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnNextFile)))
+
+		gl_pnlWIA.setHorizontalGroup(gl_pnlWIA.createSequentialGroup().addGap(4)
+				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.LEADING).addComponent(lblWIA)
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(btnRunWIAPreview)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblPreviewFirst))
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(separator3))
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(lblSelectionName)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(txtSelectionName,
+										GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(btnRunWIA)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveMetrics))
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(separator2,
+								GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap()
+								.addComponent(lblSelectionRemaining).addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(txtSelectionRemaining, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE,
+										Short.MAX_VALUE)
+								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnNextSelection)
+								.addPreferredGap(ComponentPlacement.RELATED)
+								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnNextFile)))
 				.addContainerGap(10, GroupLayout.PREFERRED_SIZE));
 
 		gl_pnlWIA.setVerticalGroup(gl_pnlWIA.createSequentialGroup().addGap(4).addComponent(lblWIA)
 				.addPreferredGap(ComponentPlacement.UNRELATED)
-				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER).addComponent(btnRunWIAPreview)
-						.addComponent(lblPreviewFirst, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								GroupLayout.PREFERRED_SIZE))
+				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER).addComponent(btnRunWIAPreview).addComponent(
+						lblPreviewFirst, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+						GroupLayout.PREFERRED_SIZE))
+				.addPreferredGap(ComponentPlacement.RELATED).addComponent(separator3)
 				.addPreferredGap(ComponentPlacement.RELATED)
-				.addComponent(separator3)
+				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER).addComponent(lblSelectionName).addComponent(
+						txtSelectionName, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+						GroupLayout.PREFERRED_SIZE))
 				.addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER)
-						.addComponent(lblSelectionName)
-						.addComponent(txtSelectionName, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								GroupLayout.PREFERRED_SIZE))
-				.addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER)
-						.addComponent(btnRunWIA)
+				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.CENTER).addComponent(btnRunWIA)
 						.addComponent(btnSaveMetrics))
 				.addPreferredGap(ComponentPlacement.RELATED).addComponent(separator2)
 				.addPreferredGap(ComponentPlacement.RELATED)
@@ -1016,200 +979,16 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		Utils.setFont(Utils.getSubTitleFont(), lblWIA);
 		Utils.setFont(Utils.getTextFont(false), lblSelectionName, txtSelectionName, lblSelectionRemaining,
 				txtSelectionRemaining, lblPreviewFirst);
-		
-//		pnlWIA = new JPanel();
-//		pnlWIA.setBorder(new LineBorder(new Color(0, 0, 0)));
-//
-//		JLabel lblWIA = new JLabel("Wave Intensity Analysis");
-//
-//		JLabel lblNumberWaves = new JLabel("No. of Waves:");
-//
-//		txtNumWaves = new JTextField();
-//		txtNumWaves.setColumns(10);
-//		txtNumWaves.setEditable(false);
-//
-//		btnRunWIAPreview = new JCButton("Align and Filter Wave Profile");
-//		lblPreviewFirst = new JLabel("All selections must be previewed first.");
-//		lblPreviewFirst.setForeground(Color.RED);
-//
-//		
-//
-//		
-//		
-//
-//		JLabel lblSelectionRemaining = new JLabel("Selections remaining:");
-//		txtSelectionRemaining = new JTextField("");
-//		txtSelectionRemaining.setColumns(10);
-//		txtSelectionRemaining.setEditable(false);
-//
-//		JLabel lblSelectionName = new JLabel("Selection name:");
-//		txtSelectionName = new JTextField("");
-//
-//
-//		btnRunWIAPreview.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				runWavePreview();
-//			}
-//
-//		});
-//		
-//		btnSaveMetrics = new JCButton("Save Metrics");
-//		btnSaveMetrics.addActionListener(new ActionListener() {
-//			public void actionPerformed(ActionEvent e) {
-//				if (!validateCurrentSelectionName()) {
-//					return; // error already shown
-//				}
-//				WIAData wiaData = getCurrentData();
-//				String selName = wiaData.getSelectionName();
-//				String[][] data = wiaData.toCSV(selName);
-//
-//				File fileToSave = getPrimaryDataWIASave(pathNameWIACSV, selName, true);
-//				if (fileToSave == null)
-//					return;
-//				String errors = Saver.saveData(fileToSave, data);
-//				if (errors != null) {
-//					Utils.showError("Error occurred while saving: " + errors, ref.get());
-//					btnSaveMetrics.setIcon(Utils.IconFail);
-//				} else {
-//					btnSaveMetrics.setIcon(Utils.IconSuccess);
-//				}
-//			}
-//		});
-//		
-//		btnRunWIA = new JCButton("Run Wave Analysis");
-//		btnRunWIA.addActionListener(new ActionListener() {
-//
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				runNextWIASelection();
-//			}
-//
-//		});
-//		
-//		btnNextSelection = new JCButton("Next Selection");
-//		btnNextSelection.addActionListener(new ActionListener() {
-//
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//
-//				// Check if user saved previous data
-//				if (ref.get().btnSaveMetrics.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved the data. Are you sure you want to go to the next selection?",
-//							ref.get())) {
-//						return;
-//					}
-//				} else if (ref.get().btnSaveIndividualBeatImages.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved images of beats. If you go to the next selection, and then decide to save them, the images "
-//									+ "for this past selection will not be saved.",
-//							ref.get())) {
-//						return;
-//					}
-//				} else if (ref.get().btnSaveSelectionEnsembledBeat.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved the raw ensembled beat data. If you go to the next selection, and then decide to save them later, the raw data "
-//									+ "for this past selection will not be saved.",
-//							ref.get())) {
-//						return;
-//					}
-//				}
-//				prepareNextWIASelection(true);
-//			}
-//
-//		});
-//		
-//		btnNextFile = new JCButton("Next File");
-//		btnNextFile.addActionListener(new ActionListener() {
-//
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				// Check if user saved previous data
-//				if (ref.get().btnSaveMetrics.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved the data. Are you sure you want to go to the next file?", ref.get())) {
-//						return;
-//					}
-//				} else if (ref.get().btnSaveIndividualBeatImages.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved images of beats. If you go to the next file they will be lost. Sure you want to proceed?",
-//							ref.get())) {
-//						return;
-//					}
-//				} else if (ref.get().btnSaveSelectionEnsembledBeat.getIcon() != Utils.IconSuccess) {
-//					if (!Utils.confirmAction("Confirm Next",
-//							"You have NOT saved the raw ensembled beat data. If you go to the next file it will be lost. Sure you want to proceed?",
-//							ref.get())) {
-//						return;
-//					}
-//				}
-//				if (Utils.confirmAction("Confirm Next",
-//						"Are you sure you would like to proceed to the next file? This will skip any selections "
-//								+ "that you have not analyzed yet.",
-//						ref.get())) {
-//					reset(false);
-//				}
-//
-//			}
-//
-//		});
-//
-//		JLabel lblSaveWarning = new JLabel(
-//				"<html><em>Saving metrics does not save an image. Re-open wave analysis to save images.</em></html>");
-//
-//		JSeparator separator = new JSeparator();
-//		separator.setOrientation(SwingConstants.VERTICAL);
-//		JSeparator separator_3 = new JSeparator();
-//		separator_3.setOrientation(SwingConstants.HORIZONTAL);
-//		separator_3.setForeground(Color.GRAY);
-//
-//		GroupLayout gl_pnlWIA = new GroupLayout(pnlWIA);
-//		gl_pnlWIA.setHorizontalGroup(gl_pnlWIA.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlWIA
-//				.createSequentialGroup().addGap(4)
-//				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.LEADING).addComponent(lblWIA)
-//						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(btnRunWIA))
-//						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(separator_3,
-//								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-//
-//						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(lblNumberWaves)
-//								.addPreferredGap(ComponentPlacement.RELATED)
-//								.addComponent(txtNumWaves, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-//										GroupLayout.PREFERRED_SIZE)
-//								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnSaveMetrics)
-//								.addPreferredGap(ComponentPlacement.UNRELATED)
-//								.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-//										GroupLayout.PREFERRED_SIZE)
-//								.addPreferredGap(ComponentPlacement.UNRELATED)
-//								.addComponent(btnNextSelection)
-//								.addPreferredGap(ComponentPlacement.RELATED)
-//								.addComponent(btnNextFile))
-//						.addGroup(gl_pnlWIA.createSequentialGroup().addContainerGap().addComponent(lblSaveWarning,
-//								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)))
-//				.addContainerGap())
-//
-//		);
-//		gl_pnlWIA.setVerticalGroup(gl_pnlWIA.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlWIA
-//				.createSequentialGroup().addGap(4).addComponent(lblWIA).addPreferredGap(ComponentPlacement.UNRELATED)
-//				.addComponent(btnRunWIA, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-//						GroupLayout.PREFERRED_SIZE)
-//				.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(separator_3)
-//				.addPreferredGap(ComponentPlacement.UNRELATED)
-//				.addGroup(gl_pnlWIA.createParallelGroup(Alignment.BASELINE).addComponent(lblNumberWaves)
-//						.addComponent(txtNumWaves, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-//								GroupLayout.PREFERRED_SIZE)
-//						.addComponent(btnSaveMetrics).addComponent(btnNextFile).addComponent(btnNextSelection).addComponent(separator,
-//								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-//				.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblSaveWarning)
-//				.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)));
-//		pnlWIA.setLayout(gl_pnlWIA);
-//
-//		Utils.changeFont(Utils.getTextFont(true), lblNumberWaves, btnSaveMetrics, btnNextFile, btnRunWIA, btnNextSelection);
-//		Utils.changeFont(Utils.getTextFont(false), txtNumWaves, lblSaveWarning);
-//		Utils.changeFont(Utils.getSubTitleFont(), lblWIA);
 
 	}
 
-	
+	/**
+	 * Sets the state of the GUI, enabling or disabling panels and components based
+	 * on the current step in the analysis workflow.
+	 * 
+	 * @param state The state to set, e.g., {@link #STATE_INIT},
+	 *              {@link #STATE_BEATS}, {@link #STATE_WIA}.
+	 */
 	private void setPanelState(int state) {
 		switch (state) {
 		case STATE_INIT:
@@ -1231,19 +1010,22 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		case STATE_WIA:
 			Utils.setEnabledDeep(true, false, true, pnlSelectFile, pnlBeats, pnlWIA);
 
-			Utils.setEnabled(false, false, btnBrowseFile, cbECG, cbRWave, cbFlow, cbPressure, 
-					btnRunBeatSel, txtFlowOffset, txtSampleRate, chUseFilesRWaves, cbEnsembleType,
-					btnNextFile, btnNextSelection, btnSaveMetrics, txtSelectionName, txtSelectionRemaining,
-					btnRunWIA
-					
-					);
-			
+			Utils.setEnabled(false, false, btnBrowseFile, cbECG, cbRWave, cbFlow, cbPressure, btnRunBeatSel,
+					txtFlowOffset, txtSampleRate, chUseFilesRWaves, cbEnsembleType, btnNextFile, btnNextSelection,
+					btnSaveMetrics, txtSelectionName, txtSelectionRemaining, btnRunWIA
+
+			);
+
 			break;
 
 		}
 	}
 
-
+	/**
+	 * Handles the file selection process. Prompts the user to select a data file,
+	 * reads the headers, and populates the UI with the column information for
+	 * mapping.
+	 */
 	private synchronized void runFileSelection() {
 
 		File file = Utils.promptUserForFile("Get Data File (CSV, TXT, XLS, XLSX)", config.getLastDirectoryPath(),
@@ -1292,8 +1074,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 
 		this.data = dataResult.data;
-		
-		
+
 		currFile = file;
 		txtFileName.setText(file.getName());
 		txtFilePath.setText(file.getPath());
@@ -1357,14 +1138,18 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		});
-		
+
 		setPanelState(STATE_BEATS);
-		
 
 	}
-	
+
+	/**
+	 * Gathers settings from the UI, processes the input data (resampling, offset),
+	 * and launches the {@link BeatSelectorGUI} to allow the user to select beats of
+	 * interest.
+	 */
 	private void runBeatSelection() {
-		
+
 		Double sampleRate = validateResampleRate();
 		if (sampleRate == null) {
 			return; // error occured in validating, msg was already displayed
@@ -1382,7 +1167,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				return;
 			}
 		}
-		
+
 		String errors = data.isValid();
 		if (errors != null) {
 			Utils.showError(errors, null);
@@ -1410,7 +1195,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		data.addFlags(headerPressure, HemoData.TYPE_PRESSURE, HemoData.UNIT_MMHG);
 		data.addFlags(headerECG, HemoData.TYPE_ECG);
 		data.addFlags(headerRWave, HemoData.TYPE_R_WAVE);
-		
+
 		if (!Double.isNaN(sampleRate)) {
 
 			// Resample
@@ -1437,7 +1222,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		try {
 			beatGUI = new BeatSelectorGUI(data, config.getRWaveSync(), HemoData.ENSEMBLE_SCALE, this);
-			
+
 			// main thread hangs until finished
 			beatGUI.display();
 
@@ -1451,31 +1236,32 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			reset(false);
 		}
 
-
 		selectionResult = beatGUI.getResult();
 		if (selectionResult == null)
 			return; // user cancelled
 
 		setPanelState(STATE_WIA);
-		
+
 	}
-	
-	
+
 	/**
-	 * Runs WIA analysis preview using the filter parameters
+	 * Launches the {@link WavePickerPreviewGUI} for each beat selection. This
+	 * allows the user to configure filtering and alignment parameters for each
+	 * selection before running the final wave intensity analysis.
+	 * 
+	 * @return true if all selections were previewed successfully, false otherwise.
 	 */
 	private boolean runWavePreview() {
-		
 
 		List<HemoData> beats = new ArrayList<HemoData>();
 		List<PreviewResult> beatsResult = new ArrayList<PreviewResult>();
-		
-		for (Beat beat : selectionResult.getBeats()) {			
+
+		for (Beat beat : selectionResult.getBeats()) {
 			beats.add(beat.getData());
 			beatsResult.add(null);
 
 		}
-		
+
 		final SavGolSettings defSav = Savgol.generateSettings(config.getPreWIAFilterWindowString(),
 				config.getPreWIAFilterPolyString());
 		final boolean defSavEnabled = config.isPreWIAFilterEnabled();
@@ -1485,10 +1271,10 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		boolean currSavEnabled = config.isPreWIAFilterEnabled();
 		boolean currAllowAlignWrap = true;
 		boolean currAllowAlignWrapExcessDisc = false;
-		
+
 		int currSelectionIndex = 0;
 		boolean maintain = true;
-		
+
 		int status = WavePickerGUI.PREVIEW_NEXT;
 
 		while (status == WavePickerPreviewGUI.PREVIEW_NEXT || status == WavePickerPreviewGUI.PREVIEW_LAST) {
@@ -1510,8 +1296,9 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 			}
 
-			WavePickerPreviewGUI wavepickerGUI = new WavePickerPreviewGUI(beatCopy.getName() + " [Combo]", beatCopy, pr, hasPrevious,
-					hasNext, currSav, currSavEnabled, currAllowAlignWrap, currAllowAlignWrapExcessDisc, maintain, this);
+			WavePickerPreviewGUI wavepickerGUI = new WavePickerPreviewGUI(beatCopy.getName() + " [Combo]", beatCopy, pr,
+					hasPrevious, hasNext, currSav, currSavEnabled, currAllowAlignWrap, currAllowAlignWrapExcessDisc,
+					maintain, this);
 			wavepickerGUI.display();
 			// hangs
 
@@ -1546,7 +1333,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		}
-		
+
 		if (beatsResult.stream().anyMatch(Objects::isNull)) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("You did not preview ");
@@ -1559,39 +1346,45 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 			Utils.showError(sb.toString(), this);
 			previewResultData = null;
-			
+
 			return false;
 		}
 		previewResultData = new LinkedList<PreviewResult>();
 		for (int i = 0; i < beatsResult.size(); i++) {
 			previewResultData.add(beatsResult.get(i));
 		}
-		
+
 		prepareNextWIASelection(false);
-		
+
 		return true;
 	}
-	
 
+	/**
+	 * Prepares the WIA panel for the next available selection. It updates the UI
+	 * with the new selection's name and enables the appropriate controls.
+	 * 
+	 * @param remove If {@code true}, the currently processed selection is removed
+	 *               from the queue.
+	 */
 	private void prepareNextWIASelection(boolean remove) {
 
 		Utils.setEnabled(true, false, txtSelectionName, btnRunWIA, btnNextSelection, btnNextFile, btnSaveMetrics,
 				txtSelectionRemaining);
-		
+
 		btnRunWIAPreview.setEnabled(false);
-		
+
 		if (remove && !previewResultData.isEmpty()) {
 			previewResultData.remove(0);
 		}
-		
+
 		// All previews have been completed
 		if (previewResultData.isEmpty()) {
 			reset(false);
 			return;
 		}
-		
+
 		PreviewResult pr = previewResultData.get(0);
-		
+
 		txtSelectionName.setText(pr.wiaData.getSelectionName());
 
 		_updateNumSelectionsLeftWIA();
@@ -1599,12 +1392,13 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		btnRunWIA.setIcon(null);
 		btnSaveMetrics.setEnabled(false);
 		btnSaveMetrics.setIcon(null);
-		
+
 	}
 
-
 	/**
-	 * Runs WIA analysis on the current selection
+	 * Runs the final wave intensity analysis for the current selection by launching
+	 * the {@link WavePickerGUI}. After the user defines waves, it calculates
+	 * metrics and enables saving options.
 	 */
 	private void runNextWIASelection() {
 
@@ -1612,28 +1406,29 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			return; // error already shown
 		}
 
-		
 		btnRunWIAPreview.setEnabled(false);
-		
+
 		PreviewResult pr = previewResultData.get(0);
-		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.wiaData.getSelectionName() + " [Combo]", pr.wiaData, config.getSaveSettingsChoices(), ref.get(), this, pr);
+		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.wiaData.getSelectionName() + " [Combo]", pr.wiaData,
+				config.getSaveSettingsChoices(), ref.get(), this, pr);
 		wavepickerGUI.display();
-		
+
 		if (config.getSaveSettingsChoices().hasChanged()) {
 			config.writeProperties();
 			config.getSaveSettingsChoices().setChanged(false);
 		}
-		
+
 		if (wavepickerGUI.getStatus() == WavePickerGUI.CANCELLED) {
 			return;
 		}
-		
+
 		btnRunWIA.setIcon(Utils.IconSuccess);
-		
+
 		if (wavepickerGUI.serializeWIAData()) {
 			try {
 
-				File fileToSave = getPrimaryDataWIASave(pathNameWIASerialize, pr.wiaData.getSelectionName(), true);
+				File fileToSave = getPrimaryDataWIASave(NamingConvention.PATHNAME_WIASerialize,
+						pr.wiaData.getSelectionName(), true);
 				if (fileToSave != null) {
 					WIAData.serialize(pr.wiaData, fileToSave);
 				}
@@ -1650,12 +1445,11 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		// Waves and systole / diastole were set. NOW need to run calculations
 		pr.wiaData.calculateWavePeaksAndSum();
 		pr.wiaData.calculateResistance();
-		
+
 		// Allow saving
 		btnSaveMetrics.setEnabled(true);
 
 	}
-
 
 	/**
 	 * Set the number in the field {@link SeparateWireGUI#txtSelectionRemaining}
@@ -1683,13 +1477,13 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 
 	}
-	
+
 	/**
 	 * Validates the current align sample rate. Shows user error if there is an
 	 * issue.
 	 * 
-	 * @return resample rate, NaN if error, or null if not set (and therefore should
-	 *         not resample)
+	 * @return resample rate, {@link Double#NaN} if error, or {@code null} if not
+	 *         set (and therefore should not resample)
 	 */
 	private Double validateResampleRate() {
 
@@ -1725,11 +1519,11 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	 * then it displays an error to the user and replaces the textfield with the
 	 * current / previous selection's name
 	 * 
-	 * @return true if successfully updated, false otherwise
+	 * @return {@code true} if successfully updated, {@code false} otherwise
 	 */
 	private boolean validateCurrentSelectionName() {
 		WIAData data = previewResultData.isEmpty() ? null : previewResultData.get(0).wiaData;
-		
+
 		if (data == null || !txtSelectionName.isEnabled()) {
 			return false;
 		}
@@ -1745,6 +1539,9 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	}
 
+	/**
+	 * Prompts the user for confirmation and then quits the application.
+	 */
 	public void quit() {
 
 		if (Utils.confirmAction("Confirm Quit", "Are you sure you want to quit?", this)) {
@@ -1754,16 +1551,24 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	}
 
+	/**
+	 * Resets the GUI to its initial state, clearing all data and selections.
+	 * 
+	 * @param warn If {@code true}, prompts the user for confirmation before
+	 *             resetting.
+	 */
 	public void reset(boolean warn) {
 		setPanelState(STATE_INIT);
 
 		selectionResult = null;
 		currFile = null;
 		previewResultData = null;
-		
 
 	}
 
+	/**
+	 * Makes this GUI visible and hides the parent frame it was called from.
+	 */
 	public void navigateInto() {
 		this.setVisible(true);
 		if (this.frameToGoBackTo != null) {
@@ -1771,7 +1576,11 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 	}
 
-	public synchronized void navigateBack() {
+	/**
+	 * Hides this GUI and makes the parent frame visible, triggering the back
+	 * listener.
+	 */
+	public void navigateBack() {
 
 		if (this.frameToGoBackTo != null) {
 			this.setVisible(false);
@@ -1780,21 +1589,22 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 	}
 
-	
 	private void setButtonIconsNull() {
 		btnSaveSelectionEnsembledBeat.setIcon(null);
 		btnSaveIndividualBeatImages.setIcon(null);
 		btnSaveMetrics.setIcon(null);
 		btnRunWIA.setIcon(null);
 	}
-	
 
 	/**
-	 * Saves images of the {@link Beat} selections.
-	 * 
-	 * @param beat      The beat of interest
-	 * @param svgImages Images, in the format of an SVG string
-	 * @return error String, otherwise null
+	 * Saves SVG images of the individual raw beats that were part of an ensembled
+	 * selection.
+	 *
+	 * @param beat      The ensembled {@link Beat} whose constituent parts are to be
+	 *                  saved.
+	 * @param svgImages A list of base64-encoded SVG strings for each constituent
+	 *                  beat.
+	 * @return An error message string if saving fails, otherwise null.
 	 */
 	private String saveBeatImages(Beat beat, List<String> svgImages) {
 
@@ -1812,7 +1622,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			try {
 
 				ComboChartSaver.saveSVGString(str, new File(folder.getPath() + File.separator
-						+ String.format(pathNameBeatSelectionsSVG, selectionName, counter)));
+						+ String.format(NamingConvention.PATHNAME_BeatSelectionsSVG, selectionName, counter)));
 			} catch (IOException e) {
 				return "Could not save Beat SVG.";
 			}
@@ -1820,7 +1630,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Saves {@link Beat} selections
 	 * 
@@ -1838,14 +1648,12 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			return "Could not create folder to save data.";
 		}
 
-		String errors = beat.getData().saveToSheet(
-				new File(folder.getPath() + File.separator + String.format(pathNameBeatSelectionsCSV, selectionName)));
+		String errors = beat.getData().saveToSheet(new File(folder.getPath() + File.separator
+				+ String.format(NamingConvention.PATHNAME_BeatSelectionsCSV, selectionName)));
 
 		return errors;
 	}
-	
 
-	
 	/**
 	 * Gets a data folder to store pictures of the beats and the raw beat
 	 * {@link HemoData} CSV
@@ -1858,8 +1666,8 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		try {
 
-			folder = new File(currFile.getParent() + File.separator + "WIA_"
-					+ Utils.stripInvalidFileNameCharacters(selection));
+			folder = new File(
+					currFile.getParent() + File.separator + "WIA_" + Utils.stripInvalidFileNameCharacters(selection));
 			folder.mkdir();
 
 		} catch (Exception ex) {
@@ -1868,16 +1676,26 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		return folder;
 	}
 
-
+	/**
+	 * Retrieves the currently active {@link WIAData} object from the processing
+	 * queue.
+	 * 
+	 * @return The current {@link WIAData} object, or null if the queue is empty.
+	 */
 	public WIAData getCurrentData() {
 		if (previewResultData == null || previewResultData.isEmpty())
 			return null;
-		
+
 		return previewResultData.get(0).wiaData;
 	}
-	
 
-
+	/**
+	 * Gets or creates the primary output folder for all WIA data related to the
+	 * current file. The folder is named "WIA_Data" and is located in the same
+	 * directory as the input file.
+	 * 
+	 * @return A {@link File} object representing the folder, or null on failure.
+	 */
 	public File getPrimaryDataWIAFolder() {
 		File folder = null;
 		try {
@@ -1896,6 +1714,19 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		return folder;
 	}
 
+	/**
+	 * Constructs a file path for saving WIA-related output within the primary data
+	 * folder.
+	 * 
+	 * @param fileNameForm    The format string for the file name (e.g., "%s
+	 *                        WIA.csv").
+	 * @param fileNameReplace The string to insert into the format string (e.g., the
+	 *                        selection name).
+	 * @param ignoreExisting  If false, the user will be prompted to confirm
+	 *                        overwriting an existing file.
+	 * @return A {@link File} object for the new file, or null if the operation is
+	 *         cancelled.
+	 */
 	public File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
 		if (currFile == null || fileNameForm == null) {
 			Utils.showError("No file to save to.", null);
@@ -1925,28 +1756,40 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		return file;
 	}
-	
 
+	/**
+	 * Gets the save file path for the main WIA plot as an SVG image.
+	 * @return The {@link File} object for the SVG image.
+	 */
 	@Override
 	public File getWIAImageFileSVG() {
 		if (getCurrentData() == null)
 			return null;
-		
-		return getPrimaryDataWIASave(pathNameWIASVG, getCurrentData().getSelectionName(), true);
+
+		return getPrimaryDataWIASave(NamingConvention.PATHNAME_BeatSelectionsSVG, getCurrentData().getSelectionName(),
+				true);
 	}
 
+	/**
+	 * Gets the primary output folder where TIFF images will be saved.
+	 * @return The {@link File} object for the output folder.
+	 */
 	@Override
 	public File getWIAImageFolderTIFF() {
 		return getPrimaryDataWIAFolder();
 	}
 
+	/**
+	 * Gets the save file path for the wave selections plot as an SVG image.
+	 * @return The {@link File} object for the SVG image.
+	 */
 	@Override
 	public File getWIAWaveSelectionsFileSVG() {
 		if (getCurrentData() == null)
 			return null;
-		
-		return getPrimaryDataWIASave(pathNameWaveSelectionsSVG, getCurrentData().getSelectionName(), true);
-	}
 
+		return getPrimaryDataWIASave(NamingConvention.PATHNAME_WaveSelectionsSVG, getCurrentData().getSelectionName(),
+				true);
+	}
 
 }

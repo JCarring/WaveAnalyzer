@@ -54,7 +54,6 @@ import com.carrington.WIA.Cardio.BeatSelection;
 import com.carrington.WIA.Cardio.QRS;
 import com.carrington.WIA.Cardio.QRSDetector;
 import com.carrington.WIA.DataStructures.HemoData;
-import com.carrington.WIA.GUIs.AlignerGUI;
 import com.carrington.WIA.GUIs.Components.KeyChecker;
 import com.carrington.WIA.IO.Header;
 
@@ -776,7 +775,7 @@ public class AlignChartPanel extends JPanel {
 
 			ValueMarker vm = new ValueMarker(xValue);
 			vm.setStroke(new BasicStroke(2f));
-			vm.setPaint(AlignerGUI.purple.darker());
+			vm.setPaint(Utils.colorPurpleDarker);
 			cr.cp.getChart().getXYPlot().addDomainMarker(vm);
 			if (cr.isTopChart) {
 				selTopStartMarker = vm;
@@ -811,7 +810,7 @@ public class AlignChartPanel extends JPanel {
 
 			ValueMarker vm = new ValueMarker(xValue);
 			vm.setStroke(new BasicStroke(2f));
-			vm.setPaint(AlignerGUI.purple.darker());
+			vm.setPaint(Utils.colorPurpleDarker);
 			cr.cp.getChart().getXYPlot().addDomainMarker(vm);
 			if (cr.isTopChart) {
 				selTopEndMarker = vm;

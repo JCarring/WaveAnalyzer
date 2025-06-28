@@ -189,6 +189,11 @@ public abstract class Utils {
 	 * Default value for an disabled panel, {@link Color#LIGHT_GRAY}
 	 */
 	public static final Color colorPnlDisabled = Color.LIGHT_GRAY;
+	
+	/** A custom purple color used for UI elements. */
+	public static final Color colorPurple = new Color(161, 0, 132, 255);
+	/** A custom darker purple color used for UI elements. */
+	public static final Color colorPurpleDarker = colorPurple.darker();
 
 	///////////////////////////////////////////////////////
 	//

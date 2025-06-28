@@ -11,6 +11,7 @@ import java.util.List;
  * detailed description, abbreviation, typical direction, and whether is is
  * accelerating or decelerating
  */
+@SuppressWarnings("javadoc")
 public enum WaveClassification implements Serializable {
 
 	// proximally (forward traveling)
