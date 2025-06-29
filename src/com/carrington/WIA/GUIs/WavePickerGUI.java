@@ -74,9 +74,14 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private static final long serialVersionUID = -4214441167859285576L;
 	private static final Color pnlLightGray = new Color(213, 213, 213);
 	private static final Color pnlDarkGray = new Color(169, 169, 169);
+
+	/** User has accepted the selections. */
 	public static final int SELECTION_OK = 0;
+	/** User has cancelled the operation. */
 	public static final int CANCELLED = 1;
+	/** User would like to proceed to the next preview. */
 	public static final int PREVIEW_NEXT = 2;
+	/** User would like to proceed to the previous preview. */
 	public static final int PREVIEW_LAST = 3;
 
 	private JPanel contentPane;
@@ -129,27 +134,37 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	private int status = CANCELLED;
 	private JButton btnSave;
-	
+
 	private Component componentParent;
 
 	/**
-	 * Constructs a {@link WavePickerGUI} with the specified {@link WIAData}, save
-	 * settings, and caller. This constructor calls the main constructor with a null
-	 * preview result. May be useful, for instance, in opening a saved WIA file
-	 * which would not have to be previewed
-	 *
-	 * @param wiaData     the WIA data to be used
-	 * @param saveChoices the save settings choices
-	 * @param wiaCaller   the caller interface for WIA operations
+	 * Create the frame.
+	 * 
+	 * @param selectionName The name of the selection being processed.
+	 * @param wiaData       The {@link WIAData} object to be visualized and
+	 *                      manipulated.
+	 * @param saveChoices   The choices for saving settings.
+	 * @param wiaCaller     The calling interface for WIA operations.
+	 * @param parent        The parent component for this dialog.
 	 */
-	public WavePickerGUI(String selectionName, WIAData wiaData, WIASaveSettingsChoices saveChoices, WIACaller wiaCaller, Component parent) {
+	public WavePickerGUI(String selectionName, WIAData wiaData, WIASaveSettingsChoices saveChoices, WIACaller wiaCaller,
+			Component parent) {
 		this(selectionName, wiaData, saveChoices, wiaCaller, parent, null);
 	}
 
 	/**
 	 * Create the frame.
+	 * 
+	 * @param selectionName The name of the selection being processed.
+	 * @param wiaData       The {@link WIAData} object to be visualized and
+	 *                      manipulated.
+	 * @param saveChoices   The choices for saving settings.
+	 * @param wiaCaller     The calling interface for WIA operations.
+	 * @param parent        The parent component for this dialog.
+	 * @param pr            The result from a preview screen, if available.
 	 */
-	public WavePickerGUI(String selectionName, WIAData wiaData, WIASaveSettingsChoices saveChoices, WIACaller wiaCaller, Component parent, PreviewResult pr) {
+	public WavePickerGUI(String selectionName, WIAData wiaData, WIASaveSettingsChoices saveChoices, WIACaller wiaCaller,
+			Component parent, PreviewResult pr) {
 
 		this.saveSettingsGUI = new WIASaveSettingsGUI(saveChoices);
 		this.wiaData = wiaData;
@@ -187,12 +202,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			}
 		});
 
-		generateWIA(false, pr != null ? pr.allowWrap : true, pr != null ? pr.allowWrapIgnoreEnds : false);
+		generateWIA(false, pr != null ? pr.isAllowWrap() : true, pr != null ? pr.isAllowWrapIgnoreEnds() : false);
 
 		initMenuBar();
 		initPnlTop(selectionName);
 		initWIA();
-		initPnlDisplaySetting(pr != null ? pr.allowWrap : true, pr != null ? pr.allowWrapIgnoreEnds : false);
+		initPnlDisplaySetting(pr != null ? pr.isAllowWrap() : true, pr != null ? pr.isAllowWrapIgnoreEnds() : false);
 		initPnlButtons();
 
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
@@ -230,6 +245,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		displayExistingChoices();
 	}
 
+	/**
+	 * Initializes the menu bar for the GUI.
+	 */
 	private void initMenuBar() {
 		JMenuBar menuBar = new JMenuBar();
 		JMenu fileMenu = new JMenu("File");
@@ -310,6 +328,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
+	/**
+	 * Initializes the top panel of the GUI, which displays the selection name and
+	 * help button.
+	 * 
+	 * @param selectionName The name of the current selection.
+	 */
 	private void initPnlTop(String selectionName) {
 		pnlTop = new JPanel();
 		FlowLayout flowLayout = (FlowLayout) pnlTop.getLayout();
@@ -317,9 +341,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		pnlTop.setBorder(new LineBorder(new Color(0, 0, 0)));
 		pnlTop.setBackground(pnlDarkGray);
 
-
-		JLabel pnlInstruction = new JLabel(
-				"Select waves for \"" + selectionName + "\"");
+		JLabel pnlInstruction = new JLabel("Select waves for \"" + selectionName + "\"");
 
 		wavesPanelHelpMsg = EnclosedTxtFileReader.getWavePanelHelp();
 
@@ -341,6 +363,10 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
+	/**
+	 * Initializes the main WIA panel containing the separated wave, net wave, and
+	 * pressure-flow graphs.
+	 */
 	private void initWIA() {
 
 		pnlWIA = new JPanel();
@@ -390,6 +416,16 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		pnlWIA.setLayout(gl_pnlWIA);
 	}
 
+	/**
+	 * Initializes the right-side panel that displays metrics and settings for
+	 * alignment and data manipulation.
+	 * 
+	 * @param allowAlignWrap                     Boolean indicating if wrap-around
+	 *                                           alignment is allowed.
+	 * @param allowAlignWrapExcessiveDiscordance Boolean indicating if excessive
+	 *                                           discordance should be ignored
+	 *                                           during wrap-around alignment.
+	 */
 	private void initPnlDisplaySetting(boolean allowAlignWrap, boolean allowAlignWrapExcessiveDiscordance) {
 		pnlWIADisplay = new JPanel();
 		pnlWIADisplay.setBackground(pnlLightGray);
@@ -813,8 +849,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		scrWaves.setViewportView(tableWaves);
 		tableWaves.setFillsViewportHeight(true);
 
-		Utils.setFont(Utils.getSubTitleFont(), lblMetrics, lblPF, lblDiameter, lblExistingWaves, lblOther,
-				lblSaving);
+		Utils.setFont(Utils.getSubTitleFont(), lblMetrics, lblPF, lblDiameter, lblExistingWaves, lblOther, lblSaving);
 		Utils.setFont(Utils.getTextFont(false), btnSave);
 		Utils.setFont(Utils.getSubTitleSubFont(), lblSelectionMode);
 
@@ -824,11 +859,15 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		pnlWIADisplay.setLayout(gl_pnlWIADisplay);
 
-		storeDisplayValues();
+		updateDisplayValues();
 		Utils.unfocusButtons(contentPane);
 
 	}
 
+	/**
+	 * Initializes the bottom button panel containing the "Reset" and "Accept"
+	 * buttons.
+	 */
 	private void initPnlButtons() {
 
 		pnlWIAButtons = new JPanel();
@@ -882,6 +921,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		pnlWIAButtons.setBorder(new LineBorder(new Color(0, 0, 0)));
 	}
 
+	/**
+	 * Sets up specified text fields to be non-editable and non-focusable.
+	 * 
+	 * @param fields The text fields to configure.
+	 */
 	private void setupDisplayTextFields(JTextField... fields) {
 		for (JTextField field : fields) {
 			field.setEditable(false);
@@ -889,6 +933,10 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		}
 	}
 
+	/**
+	 * Displays the existing wave and cycle choices from the WIAData object when the
+	 * GUI is first opened.
+	 */
 	private void displayExistingChoices() {
 		if (!this.wiaData.getWaves().isEmpty()) {
 			for (Wave wave : this.wiaData.getWaves()) {
@@ -904,6 +952,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		// the panels will handle their own modifications for startup
 	}
 
+	/**
+	 * Generates the WIA data based on current settings and updates the GUI.
+	 * 
+	 * @return {@code true} if the WIA generation was successful, {@code false}
+	 *         otherwise.
+	 */
 	private boolean generateWIA() {
 		return generateWIA(true, chAllowWrap.isSelected(), chAllowWrapIgnoreEnds.isSelected());
 	}
@@ -970,6 +1024,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
+	/**
+	 * Executes the alignment of pressure and flow data based on user selections.
+	 */
 	private void runAlignPressureFlow() {
 
 		Double timeAlignFlow = pnlGraphPF.getFlowAlignTime();
@@ -1006,7 +1063,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		pnlGraphPF.resetWIAData(wiaData);
 		pnlGraphWIASep.resetWIAData(wiaData);
 		pnlGraphWIANet.resetWIAData(wiaData);
-		storeDisplayValues();
+		updateDisplayValues();
 	}
 
 	/**
@@ -1017,6 +1074,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		setVisible(true);
 	}
 
+	/**
+	 * Returns the final status of the dialog (e.g. {@link #SELECTION_OK},
+	 * {@link #CANCELLED}, {@link #PREVIEW_NEXT}, or {@link #PREVIEW_LAST})
+	 * 
+	 * @return The status code.
+	 */
 	public int getStatus() {
 		return this.status;
 	}
@@ -1029,10 +1092,20 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		dispose();
 	}
 
+	/**
+	 * Checks if the user has opted to serialize the WIA data upon accepting.
+	 * 
+	 * @return {@code true} if the serialize checkbox is selected, {@code false}
+	 *         otherwise.
+	 */
 	public boolean serializeWIAData() {
 		return this.chSerialize.isSelected();
 	}
 
+	/**
+	 * Resets all user selections in the GUI, including cycle points and selected
+	 * waves.
+	 */
 	private void reset() {
 		this.pnlGraphPF.resetAllSelections();
 		this.txtSystole.setText("");
@@ -1043,6 +1116,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
+	/**
+	 * Resets the pressure-flow alignment to its original state.
+	 */
 	public void resetAlignPressureFlow() {
 
 		pnlGraphPF.resetAlignSelections();
@@ -1058,7 +1134,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
-	private void storeDisplayValues() {
+	/**
+	 * Updates the calculated display values (C-value, avg flow, avg pressure,
+	 * vessel diameter) in their respective text fields.
+	 */
+	private void updateDisplayValues() {
 		DecimalFormat nf = new DecimalFormat("0.##");
 		if (this.wiaData != null) {
 			this.txtCVal.setText(nf.format(wiaData.getWaveSpeed()) + " m/s");
@@ -1103,18 +1183,30 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		return true;
 	}
 
+	/**
+	 * Callback method from {@link WavePickListener} to update the display when a new wave is added.
+	 * @param wave The wave that was added.
+	 */
 	@Override
 	public void updateDisplayForAddedWave(Wave wave) {
 
 		tableWaves.addWave(wave);
 	}
 
+	/**
+	 * Callback method from {@link WaveTableListener} to remove a wave from the display.
+	 * @param wave The wave to be removed.
+	 */
 	@Override
 	public void removeWave(Wave wave) {
 		this.pnlGraphWIASep.removeWave(wave);
 
 	}
 
+	/**
+	 * Callback method from {@link PFPickListener} to set the systole time in the display.
+	 * @param timeSystole The time of systole.
+	 */
 	@Override
 	public void setSystole(double timeSystole) {
 		DecimalFormat df = new DecimalFormat("#.00");
@@ -1123,6 +1215,10 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 	}
 
+	/**
+	 * Callback method from {@link PFPickListener} to set the diastole time in the display.
+	 * @param timeDiastole The time of diastole.
+	 */
 	@Override
 	public void setDiastole(double timeDiastole) {
 		DecimalFormat df = new DecimalFormat("#.00");
@@ -1130,16 +1226,27 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		this.txtDiastole.setText(df.format(timeDiastole));
 	}
 
+	/**
+	 * Callback method from {@link PFPickListener} to reset the systole time in the display.
+	 */
 	@Override
 	public void resetSystole() {
 		this.txtSystole.setText("");
 	}
 
+
+	/**
+	 * Callback method from {@link PFPickListener} to reset the diastole time in the display.
+	 */
 	@Override
 	public void resetDiastole() {
 		this.txtDiastole.setText("");
 	}
 
+	/**
+	 * Callback method from {@link PFPickListener} to enable or disable the alignment button.
+	 * @param ready True if the alignment can be run, false otherwise.
+	 */
 	@Override
 	public void setReadyAlign(boolean ready) {
 		Utils.setEnabled(ready, false, this.btnAlign);

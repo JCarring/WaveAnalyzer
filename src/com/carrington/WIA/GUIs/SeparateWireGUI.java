@@ -1675,10 +1675,10 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			boolean hasPrevious = currSelectionIndex > 0;
 			PreviewResult pr = beatsResult.get(currSelectionIndex);
 			if (pr != null) {
-				currAllowAlignWrap = pr.allowWrap;
-				currAllowAlignWrapExcessDisc = pr.allowWrapIgnoreEnds;
-				currSavEnabled = pr.filterEnabled;
-				currSav = pr.filterSettings;
+				currAllowAlignWrap = pr.isAllowWrap();
+				currAllowAlignWrapExcessDisc = pr.isAllowWrapIgnoreEnds();
+				currSavEnabled = pr.isFilterEnabled();
+				currSav = pr.getSettings();
 			} else if (!maintain) {
 
 				currAllowAlignWrap = defAllowAlignWrap;
@@ -1718,10 +1718,10 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			maintain = wavepickerGUI.getMaintainSetting();
 
 			if (maintain) {
-				currAllowAlignWrap = prCurr.allowWrap;
-				currAllowAlignWrapExcessDisc = prCurr.allowWrapIgnoreEnds;
-				currSavEnabled = prCurr.filterEnabled;
-				currSav = prCurr.filterSettings;
+				currAllowAlignWrap = prCurr.isAllowWrap();
+				currAllowAlignWrapExcessDisc = prCurr.isAllowWrapIgnoreEnds();
+				currSavEnabled = prCurr.isFilterEnabled();
+				currSav = prCurr.getSettings();
 			}
 
 		}
@@ -1776,7 +1776,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		PreviewResult pr = previewResultData.get(0);
 
-		txtSelectionName.setText(pr.wiaData.getSelectionName());
+		txtSelectionName.setText(pr.getWIAData().getSelectionName());
 
 		_updateNumSelectionsLeftWIA();
 		btnRunWIA.setEnabled(true);
@@ -1800,7 +1800,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		btnRunWIAPreview.setEnabled(false);
 
 		PreviewResult pr = previewResultData.get(0);
-		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.wiaData.getSelectionName() + " [Separate]", pr.wiaData,
+		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.getWIAData().getSelectionName() + " [Separate]", pr.getWIAData(),
 				config.getSaveSettingsChoices(), ref.get(), this, pr);
 		wavepickerGUI.display();
 
@@ -1819,9 +1819,9 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			try {
 
 				File fileToSave = getPrimaryDataWIASave(NamingConvention.PATHNAME_WIASerialize,
-						pr.wiaData.getSelectionName(), true);
+						pr.getWIAData().getSelectionName(), true);
 				if (fileToSave != null) {
-					WIAData.serialize(pr.wiaData, fileToSave);
+					WIAData.serialize(pr.getWIAData(), fileToSave);
 				}
 
 			} catch (Exception ex) {
@@ -1834,8 +1834,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		}
 
 		// Waves and systole / diastole were set. NOW need to run calculations
-		pr.wiaData.calculateWavePeaksAndSum();
-		pr.wiaData.calculateResistance();
+		pr.getWIAData().calculateWavePeaksAndSum();
+		pr.getWIAData().calculateResistance();
 
 		// Allow saving
 		btnSaveMetrics.setEnabled(true);
@@ -1860,7 +1860,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			sb.append(alignResult.getBeats().size() - 1).append(" (");
 			String comma = "";
 			for (int i = 1; i < previewResultData.size(); i++) {
-				sb.append(comma).append("\"").append(previewResultData.get(i).wiaData.getSelectionName()).append("\"");
+				sb.append(comma).append("\"").append(previewResultData.get(i).getWIAData().getSelectionName()).append("\"");
 				comma = ", ";
 			}
 			sb.append(")");
@@ -1969,7 +1969,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 * @return true if successfully updated, false otherwise
 	 */
 	private boolean validateCurrentSelectionName() {
-		WIAData data = previewResultData.isEmpty() ? null : previewResultData.get(0).wiaData;
+		WIAData data = previewResultData.isEmpty() ? null : previewResultData.get(0).getWIAData();
 
 		if (data == null || !txtSelectionName.isEnabled()) {
 			return false;
@@ -2111,7 +2111,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		if (previewResultData == null || previewResultData.isEmpty())
 			return null;
 
-		return previewResultData.get(0).wiaData;
+		return previewResultData.get(0).getWIAData();
 	}
 
 	/**

@@ -22,6 +22,10 @@ import com.carrington.WIA.IO.WIAStats;
 import com.carrington.WIA.IO.WIAStats.StandardTreatment;
 import com.carrington.WIA.IO.WIAStats.StandardTreatmentType;
 
+/**
+ * A {@link JTable} component for displaying and managing WIA (Waveform
+ * Information Analysis) treatment names and types.
+ */
 public class WIATxNameTable extends JTable {
 
 	private static final long serialVersionUID = -8024206678386190448L;
@@ -29,32 +33,39 @@ public class WIATxNameTable extends JTable {
 			Utils.getSmallTextFont().getSize());
 	private final WeakReference<JTable> ref = new WeakReference<JTable>(this);
 	private WIAStats stats;
-	
-	public static WIATxNameTable generate() {
-		String[] cols = new String[] { "Treatment", "  #  ", "Type", "Info"};
 
+	/**
+	 * Generates a new table instance.
+	 *
+	 * @return A new instance of {@link WIATxNameTable}
+	 */
+	public static WIATxNameTable generate() {
+		String[] cols = new String[] { "Treatment", "  #  ", "Type", "Info" };
 
 		return new WIATxNameTable(cols);
 
 	}
 
+	/**
+	 * Constructs a table
+	 *
+	 * @param cols An array of strings for the column headers.
+	 */
 	private WIATxNameTable(String[] cols) {
-		super(new MyTableModel(cols));
+		super(new CustomTableModel(cols));
 
 		int[] columnWidths = new int[] { Utils.getFontParams(cellFont, cols[0])[1],
-				Utils.getFontParams(cellFont, cols[1])[1] * 2,
-				(int) (Utils.getFontParams(cellFont, cols[2])[1] * 2),
+				Utils.getFontParams(cellFont, cols[1])[1] * 2, (int) (Utils.getFontParams(cellFont, cols[2])[1] * 2),
 				(int) (Utils.getFontParams(cellFont, cols[3])[1] * 1.5),
 
-
 		};
-		
+
 		int maxTypeStringWidth = 0;
 		for (StandardTreatmentType type : StandardTreatmentType.values()) {
 			int width = Utils.getFontParams(cellFont, type.getDisplayName())[1];
 			maxTypeStringWidth = Math.max(maxTypeStringWidth, width);
 		}
-		maxTypeStringWidth*=1.5;
+		maxTypeStringWidth *= 1.5;
 		columnWidths[2] = maxTypeStringWidth;
 
 		DefaultTableCellRenderer r = new DefaultTableCellRenderer() {
@@ -69,7 +80,7 @@ public class WIATxNameTable extends JTable {
 			}
 
 		};
-		
+
 		DefaultTableCellRenderer rType = new DefaultTableCellRenderer() {
 			private static final long serialVersionUID = -5377598739589939281L;
 
@@ -105,16 +116,13 @@ public class WIATxNameTable extends JTable {
 		for (StandardTreatmentType type : StandardTreatmentType.values()) {
 			txDropdown.addItem(type);
 		}
-		
+
 		DefaultCellEditor editor = new DefaultCellEditor(txDropdown);
 		typeColumn.setCellEditor(editor);
-		
-		
 
 		getColumnModel().getColumn(0).setCellRenderer(r);
 		getColumnModel().getColumn(1).setCellRenderer(r);
 		getColumnModel().getColumn(2).setCellRenderer(rType);
-
 
 		getModel().addTableModelListener(new TableModelListener() {
 
@@ -123,11 +131,11 @@ public class WIATxNameTable extends JTable {
 				if (e.getType() == TableModelEvent.UPDATE) {
 					int row = e.getFirstRow();
 					int column = e.getColumn();
-					
+
 					if (column != 2) {
 						return;
 					}
-					
+
 					TableModel model = (TableModel) e.getSource();
 					StandardTreatmentType txType = (StandardTreatmentType) model.getValueAt(row, column);
 					stats.getTreatments().get(row).setTreatmentType(txType);
@@ -146,24 +154,28 @@ public class WIATxNameTable extends JTable {
 		getColumnModel().getColumn(3).setMinWidth(columnWidths[3]);
 		getColumnModel().getColumn(3).setMaxWidth(columnWidths[3]);
 
-
 		getTableHeader().setReorderingAllowed(false);
 		getTableHeader().setResizingAllowed(false);
 		setRowSelectionAllowed(false);
 	}
 
+	/**
+	 * Updates the treatments displayed in the table.
+	 *
+	 * @param wiastats The {@link WIAStats} containing the new treatment data.
+	 */
 	public void updateTreatments(WIAStats wiastats) {
 		if (stats != null && stats.getTreatments().size() == this.getRowCount()) {
-			MyTableModel model = (MyTableModel) getModel();
+			CustomTableModel model = (CustomTableModel) getModel();
 			int r = 0;
 
 			for (StandardTreatment treatment : this.stats.getTreatments()) {
-				
+
 				model.setValueAt(treatment.getName(), r, 0);
 				model.setValueAt(treatment.getCount(), r, 1);
 				model.setValueAt(treatment.getTreatmentType(), r, 2);
 				model.setValueAt(Utils.IconQuestion, r, 3);
-				
+
 				r++;
 			}
 		} else {
@@ -172,47 +184,64 @@ public class WIATxNameTable extends JTable {
 		}
 	}
 
-	
+	/**
+	 * Adds treatments to the table from the provided stats object.
+	 *
+	 * @param wiastats The {@link WIAStats} containing the treatment data.
+	 */
 	public void addTreatments(WIAStats wiastats) {
-		
+
 		removeData();
 		this.stats = wiastats;
-		MyTableModel model = (MyTableModel) getModel();
-		
+		CustomTableModel model = (CustomTableModel) getModel();
+
 		for (StandardTreatment treatment : wiastats.getTreatments()) {
-			model.addRow(new Object[] { treatment.getName(), treatment.getCount(), treatment.getTreatmentType(), Utils.IconQuestion});
+			model.addRow(new Object[] { treatment.getName(), treatment.getCount(), treatment.getTreatmentType(),
+					Utils.IconQuestion });
 
 		}
-		
+
 	}
 
+	/**
+	 * Removes all data from the table.
+	 */
 	public void removeData() {
 		this.stats = null;
-		MyTableModel model = (MyTableModel) getModel();
+		CustomTableModel model = (CustomTableModel) getModel();
 		model.setRowCount(0);
 	}
 
-
-	
-	
-	private static class MyTableModel extends DefaultTableModel {
+	/**
+	 * A custom table model
+	 */
+	private static class CustomTableModel extends DefaultTableModel {
 
 		private static final long serialVersionUID = 5457283359118010870L;
-		
-		public MyTableModel(Object[] headers) {
+
+		/**
+		 * Constructs a table model with specified column headers.
+		 * 
+		 * @param headers An array of objects for the column headers.
+		 */
+		public CustomTableModel(Object[] headers) {
 			super(null, headers);
-			
+
 		}
-		
+
+		/**
+		 * Determines if a cell is editable. In this model, columns after the first two
+		 * are editable.
+		 * 
+		 * @param row    The row of the cell.
+		 * @param column The column of the cell.
+		 * @return True if the cell is editable, false otherwise.
+		 */
 		@Override
 		public boolean isCellEditable(int row, int column) {
 			return (column > 1);
 		}
-		
+
 	}
 
 }
-
-
-
-

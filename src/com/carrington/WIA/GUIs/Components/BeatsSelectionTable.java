@@ -14,22 +14,36 @@ import javax.swing.table.DefaultTableModel;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.BeatSelection;
 
+/**
+ * A {@link JTable} component for displaying beat selections, including their name and beat counts.
+ */
 public class BeatsSelectionTable extends JTable  {
 
 	private static final long serialVersionUID = -5811412063023398537L;
 	
-	//private ButtonColumn buttonCol; // TODO may need to re-instate this
 	@SuppressWarnings("unused") // it's used just not in this thread
 	private final SelectionTableListener listener;
 	private final Font cell = new Font(Utils.getSmallTextFont().getFontName(), Font.BOLD, Utils.getSmallTextFont().getSize());
 	private final Color lightGray = new Color(220, 220, 220);
 	
+	/**
+	 * Generates a new {@link BeatsSelectionTable} instance.
+	 *
+	 * @param listener The listener to handle table events.
+	 * @return A new instance of {@link BeatsSelectionTable}
+	 */
 	public static BeatsSelectionTable generate(SelectionTableListener listener ) {
 		String[] cols = new String[] {"Name", "# Beats Top", "# Beats Bott", "Del"};
 		DefaultTableModel model = new DefaultTableModel(null, cols);
 		return new BeatsSelectionTable(model, listener);
 	}
 	
+	/**
+	 * Constructs a {@link BeatsSelectionTable}
+	 *
+	 * @param model    The table model to use.
+	 * @param listener The listener for table selection events.
+	 */
 	private BeatsSelectionTable(DefaultTableModel model, SelectionTableListener listener) {
 		super(model);
 		
@@ -87,8 +101,11 @@ public class BeatsSelectionTable extends JTable  {
 
 	}
 	
-	
-
+	/**
+	 * Adds a beat selection to the table.
+	 *
+	 * @param selection The {@link BeatSelection} to add.
+	 */
 	public void addSelection(BeatSelection selection) {
 		DefaultTableModel model = (DefaultTableModel) getModel();
 
@@ -96,6 +113,11 @@ public class BeatsSelectionTable extends JTable  {
 		model.addRow(new Object[] {selection, selection.getNumberBeats("Top"), selection.getNumberBeats("Bottom"), Utils.IconFail});
 	}
 	
+	/**
+	 * Removes a specific beat selection from the table.
+	 *
+	 * @param selection The {@link BeatSelection} to remove.
+	 */
 	public void removeSelection(BeatSelection selection) {
 		DefaultTableModel model = (DefaultTableModel) getModel();
 		for (int row = 0; row < model.getRowCount(); row++) {
@@ -107,13 +129,24 @@ public class BeatsSelectionTable extends JTable  {
 		}
 	}
 	
+	/**
+	 * Removes all beat selections from the table.
+	 */
 	public void removeAllBeatSelections() {
 		DefaultTableModel model = (DefaultTableModel) getModel();
 		model.setRowCount(0);
 	}
 	
+	/**
+	 * An interface for listening to selection events from the {@link BeatsSelectionTable}
+	 */
 	public interface SelectionTableListener {
 		
+		/**
+		 * Called when a selection is removed from the table.
+		 * 
+		 * @param selection The {@link BeatSelection} that was removed.
+		 */
 		public void tableSelectionRemoved(BeatSelection selection) ;
 	}
 	
