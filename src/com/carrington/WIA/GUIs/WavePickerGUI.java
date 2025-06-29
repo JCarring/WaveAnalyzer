@@ -133,25 +133,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	
 	private Component componentParent;
 
-	/*
-	 * For testing
-	 */
-	public static void main(String[] args) {
-
-		WIAData data = null;
-		try {
-			data = WIAData.deserialize(new File(
-					"/Users/justincarrington/Documents/School/Residency/Research/WIA Project/Separate Wire/bania 10525647/WIA_Data/adenosine serialized.wia"));
-			data.retryCalculations();
-		} catch (Exception e) {
-
-			return;
-		}
-		ComboFileConfigGUI config = new ComboFileConfigGUI();
-		WavePickerGUI wavepicker = new WavePickerGUI("Test", data, config.getSaveSettingsChoices(), null, null);
-		wavepicker.display();
-		System.exit(0);
-	}
 
 	/**
 	 * Constructs a {@link WavePickerGUI} with the specified {@link WIAData}, save
