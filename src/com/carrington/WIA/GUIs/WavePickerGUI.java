@@ -133,7 +133,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	
 	private Component componentParent;
 
-	//
 	/**
 	 * Constructs a {@link WavePickerGUI} with the specified {@link WIAData}, save
 	 * settings, and caller. This constructor calls the main constructor with a null
