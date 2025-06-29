@@ -51,39 +51,37 @@ import com.carrington.WIA.Utils;
  * The <code>JFontChooser</code> class is a swing component for font selection.
  * This class has <code>JFileChooser</code> like APIs. The following code pops
  * up a font chooser dialog.
-
+ * 
  **/
 public class JFontChooser extends JComponent {
 
 	private static final long serialVersionUID = -1875857422814818390L;
-	
+
+	/**
+	 * A map to cache Font objects and their calculated dimensions for performance.
+	 */
 	public static final Map<String, Object[]> fonts = new HashMap<String, Object[]>();
 	private static final String[] fontFamilyNames;
 	static {
 		GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
 		fontFamilyNames = env.getAvailableFontFamilyNames();
-		for (String fontName: fontFamilyNames) {
+		for (String fontName : fontFamilyNames) {
 			Font font = new Font(fontName, Font.PLAIN, 12);
 			int[] fontParams = Utils.getFontParams(font, fontName);
-			fonts.put(fontName, new Object[] {font, fontParams[0], fontParams[1]});
+			fonts.put(fontName, new Object[] { font, fontParams[0], fontParams[1] });
 		}
 	}
-	
-	
+
+	/**
+	 * Creates and displays a modal {@link JFontChooser} dialog.
+	 */
 	public static void promptForFont() {
 
 		JFontChooser jc = new JFontChooser();
 		jc.showDialog(null);
 
-
 	}
 
-	public static void main(String[] args) {
-		promptForFont();
-
-	}
-
-	// class variables
 	/**
 	 * Return value from <code>showDialog()</code>.
 	 * 
@@ -108,8 +106,7 @@ public class JFontChooser extends JComponent {
 	private static final String[] DEFAULT_FONT_SIZE_STRINGS = { "8", "9", "10", "11", "12", "14", "16", "18", "20",
 			"22", "24", "26", "28", "36", "48", "72", };
 
-	// instance variables
-	protected int dialogResultValue = ERROR_OPTION;
+	private int dialogResultValue = ERROR_OPTION;
 
 	private String[] fontStyleNames = null;
 	private String[] fontSizeStrings = null;
@@ -161,7 +158,12 @@ public class JFontChooser extends JComponent {
 		this.setSelectedFont(DEFAULT_SELECTED_FONT);
 	}
 
-	public JTextField getFontFamilyTextField() {
+	/**
+	 * Gets the text field for font family input.
+	 * 
+	 * @return the font family {@link JTextField}
+	 */
+	private JTextField getFontFamilyTextField() {
 		if (fontFamilyTextField == null) {
 			fontFamilyTextField = new JTextField();
 			fontFamilyTextField.addFocusListener(new TextFieldFocusHandlerForTextSelection(fontFamilyTextField));
@@ -174,7 +176,12 @@ public class JFontChooser extends JComponent {
 		return fontFamilyTextField;
 	}
 
-	public JTextField getFontStyleTextField() {
+	/**
+	 * Gets the text field for font style input.
+	 * 
+	 * @return the font style {@link JTextField}
+	 */
+	private JTextField getFontStyleTextField() {
 		if (fontStyleTextField == null) {
 			fontStyleTextField = new JTextField();
 			fontStyleTextField.addFocusListener(new TextFieldFocusHandlerForTextSelection(fontStyleTextField));
@@ -186,7 +193,12 @@ public class JFontChooser extends JComponent {
 		return fontStyleTextField;
 	}
 
-	public JTextField getFontSizeTextField() {
+	/**
+	 * Gets the text field for font size input.
+	 * 
+	 * @return the font size {@link JTextField}
+	 */
+	private JTextField getFontSizeTextField() {
 		if (fontSizeTextField == null) {
 			fontSizeTextField = new JTextField();
 			fontSizeTextField.addFocusListener(new TextFieldFocusHandlerForTextSelection(fontSizeTextField));
@@ -198,7 +210,12 @@ public class JFontChooser extends JComponent {
 		return fontSizeTextField;
 	}
 
-	public JList<String> getFontFamilyList() {
+	/**
+	 * Gets the list component for font family selection.
+	 * 
+	 * @return the font family {@link JList}
+	 */
+	private JList<String> getFontFamilyList() {
 		if (fontNameList == null) {
 			fontNameList = new JList<String>(fontFamilyNames);
 			fontNameList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -210,20 +227,20 @@ public class JFontChooser extends JComponent {
 					JLabel label = new JLabel(value);
 					Object[] obj = fonts.get(value);
 					label.setFont((Font) obj[0]);
-					
-					label.setPreferredSize(new Dimension((int) obj[2], (int) obj[1]  + 2));
+
+					label.setPreferredSize(new Dimension((int) obj[2], (int) obj[1] + 2));
 					label.setOpaque(true);
-			         if (isSelected) {
-			        	 label.setBackground(list.getSelectionBackground());
-			        	 label.setForeground(list.getSelectionForeground());
-			         } else {
-			        	 label.setBackground(list.getBackground());
-			        	 label.setForeground(list.getForeground());
-			         }
+					if (isSelected) {
+						label.setBackground(list.getSelectionBackground());
+						label.setForeground(list.getSelectionForeground());
+					} else {
+						label.setBackground(list.getBackground());
+						label.setForeground(list.getForeground());
+					}
 
 					return label;
 				}
-				
+
 			});
 			fontNameList.addListSelectionListener(new ListSelectionHandler(getFontFamilyTextField()));
 			fontNameList.setSelectedIndex(0);
@@ -233,7 +250,12 @@ public class JFontChooser extends JComponent {
 		return fontNameList;
 	}
 
-	public JList<String> getFontStyleList() {
+	/**
+	 * Gets the list component for font style selection.
+	 * 
+	 * @return the font style {@link JList}
+	 */
+	private JList<String> getFontStyleList() {
 		if (fontStyleList == null) {
 			fontStyleList = new JList<String>(getFontStyleNames());
 			fontStyleList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -245,7 +267,12 @@ public class JFontChooser extends JComponent {
 		return fontStyleList;
 	}
 
-	public JList<String> getFontSizeList() {
+	/**
+	 * Gets the list component for font size selection.
+	 * 
+	 * @return the font size JList.
+	 */
+	private JList<String> getFontSizeList() {
 		if (fontSizeList == null) {
 			fontSizeList = new JList<String>(this.fontSizeStrings);
 			fontSizeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -393,10 +420,6 @@ public class JFontChooser extends JComponent {
 		setSelectedFontSize(font.getSize());
 	}
 
-	public String getVersionString() {
-		return ("Version");
-	}
-
 	/**
 	 * Show font selection dialog.
 	 * 
@@ -426,13 +449,22 @@ public class JFontChooser extends JComponent {
 		return dialogResultValue;
 	}
 
-	protected class ListSelectionHandler implements ListSelectionListener {
+	/**
+	 * Handles changes in list selections, updating the corresponding text field.
+	 */
+	private class ListSelectionHandler implements ListSelectionListener {
 		private JTextComponent textComponent;
 
-		ListSelectionHandler(JTextComponent textComponent) {
+		private ListSelectionHandler(JTextComponent textComponent) {
 			this.textComponent = textComponent;
 		}
 
+		/**
+		 * Called when the list selection changes. Updates the text field with the
+		 * selected value.
+		 * 
+		 * @param e the list selection event.
+		 */
 		public void valueChanged(ListSelectionEvent e) {
 			if (e.getValueIsAdjusting() == false) {
 				@SuppressWarnings("unchecked")
@@ -451,9 +483,18 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
-	protected class TextFieldFocusHandlerForTextSelection extends FocusAdapter {
+	/**
+	 * A focus listener that selects all text in a text component when it gains
+	 * focus.
+	 */
+	private class TextFieldFocusHandlerForTextSelection extends FocusAdapter {
 		private JTextComponent textComponent;
 
+		/**
+		 * Constructs a {@link TextFieldFocusHandlerForTextSelection}
+		 * 
+		 * @param textComponent The text component to apply the focus behavior to.
+		 */
 		public TextFieldFocusHandlerForTextSelection(JTextComponent textComponent) {
 			this.textComponent = textComponent;
 		}
@@ -468,7 +509,11 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
-	protected class TextFieldKeyHandlerForListSelectionUpDown extends KeyAdapter {
+	/**
+	 * Handles up and down arrow key presses in a text field to change the selection
+	 * in a target JList.
+	 */
+	private class TextFieldKeyHandlerForListSelectionUpDown extends KeyAdapter {
 		private JList<String> targetList;
 
 		public TextFieldKeyHandlerForListSelectionUpDown(JList<String> list) {
@@ -499,9 +544,18 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
+	/**
+	 * A document listener that searches a JList for content matching the text
+	 * field's input.
+	 */
 	protected class ListSearchTextFieldDocumentHandler implements DocumentListener {
-		JList<String> targetList;
+		private JList<String> targetList;
 
+		/**
+		 * Constructs a document handler.
+		 * 
+		 * @param targetList The {@link JList} to search within.
+		 */
 		public ListSearchTextFieldDocumentHandler(JList<String> targetList) {
 			this.targetList = targetList;
 		}
@@ -518,6 +572,11 @@ public class JFontChooser extends JComponent {
 			update(e);
 		}
 
+		/**
+		 * Searches the target list for the current text and updates the list selection.
+		 * 
+		 * @param event the document event.
+		 */
 		private void update(DocumentEvent event) {
 			String newValue = "";
 			try {
@@ -543,9 +602,18 @@ public class JFontChooser extends JComponent {
 			}
 		}
 
+		/**
+		 * A Runnable that safely selects an index in the target list on the Event
+		 * Dispatch Thread.
+		 */
 		public class ListSelector implements Runnable {
 			private int index;
 
+			/**
+			 * Constructs a list selector
+			 * 
+			 * @param index the list index to select.
+			 */
 			public ListSelector(int index) {
 				this.index = index;
 			}
@@ -556,7 +624,11 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
-	protected class DialogOKAction extends AbstractAction {
+	/**
+	 * An action that is performed when the OK button is clicked, closing the dialog
+	 * and setting the result to OK_OPTION.
+	 */
+	private class DialogOKAction extends AbstractAction {
 		private static final long serialVersionUID = 4913928933897180387L;
 		protected static final String ACTION_NAME = "OK";
 		private JDialog dialog;
@@ -574,7 +646,11 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
-	protected class DialogCancelAction extends AbstractAction {
+	/**
+	 * An action that is performed when the Cancel button is clicked, closing the
+	 * dialog and setting the result to CANCEL_OPTION.
+	 */
+	private class DialogCancelAction extends AbstractAction {
 		private static final long serialVersionUID = -4636123464214561097L;
 		protected static final String ACTION_NAME = "Cancel";
 		private JDialog dialog;
@@ -592,7 +668,14 @@ public class JFontChooser extends JComponent {
 		}
 	}
 
-	protected JDialog createDialog(Component parent) {
+	/**
+	 * Creates and configures the JDialog that will contain the JFontChooser panel
+	 * and buttons.
+	 * 
+	 * @param parent the parent component for the dialog.
+	 * @return a configured JDialog.
+	 */
+	private JDialog createDialog(Component parent) {
 		Frame frame = parent instanceof Frame ? (Frame) parent
 				: (Frame) SwingUtilities.getAncestorOfClass(Frame.class, parent);
 		JDialog dialog = new JDialog(frame, ("Select Font"), true);
@@ -633,12 +716,21 @@ public class JFontChooser extends JComponent {
 		return dialog;
 	}
 
-	protected void updateSampleFont() {
+	/**
+	 * Updates the font of the sample text field based on the current selections.
+	 */
+	private void updateSampleFont() {
 		Font font = getSelectedFont();
 		getSampleTextField().setFont(font);
 	}
 
-	protected JPanel getFontFamilyPanel() {
+	/**
+	 * Lazily creates and returns the panel containing the font family list and text
+	 * field.
+	 * 
+	 * @return the font family selection {@link JPanel}
+	 */
+	private JPanel getFontFamilyPanel() {
 		if (fontNamePanel == null) {
 			fontNamePanel = new JPanel();
 			fontNamePanel.setLayout(new BorderLayout());
@@ -668,7 +760,13 @@ public class JFontChooser extends JComponent {
 		return fontNamePanel;
 	}
 
-	protected JPanel getFontStylePanel() {
+	/**
+	 * Lazily creates and returns the panel containing the font style list and text
+	 * field.
+	 * 
+	 * @return the font style selection {@link JPanel}
+	 */
+	private JPanel getFontStylePanel() {
 		if (fontStylePanel == null) {
 			fontStylePanel = new JPanel();
 			fontStylePanel.setLayout(new BorderLayout());
@@ -697,7 +795,13 @@ public class JFontChooser extends JComponent {
 		return fontStylePanel;
 	}
 
-	protected JPanel getFontSizePanel() {
+	/**
+	 * Lazily creates and returns the panel containing the font size list and text
+	 * field.
+	 * 
+	 * @return the font size selection {@link JPanel}
+	 */
+	private JPanel getFontSizePanel() {
 		if (fontSizePanel == null) {
 			fontSizePanel = new JPanel();
 			fontSizePanel.setLayout(new BorderLayout());
@@ -726,7 +830,12 @@ public class JFontChooser extends JComponent {
 		return fontSizePanel;
 	}
 
-	protected JPanel getSamplePanel() {
+	/**
+	 * Lazily creates and returns the panel that displays the sample text.
+	 * 
+	 * @return the sample text {@link JPanel}
+	 */
+	private JPanel getSamplePanel() {
 		if (samplePanel == null) {
 			Border titledBorder = BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), ("Sample"));
 			Border empty = BorderFactory.createEmptyBorder(5, 10, 10, 10);
@@ -741,6 +850,11 @@ public class JFontChooser extends JComponent {
 		return samplePanel;
 	}
 
+	/**
+	 * Lazily creates and returns the text field used to display the sample font.
+	 * 
+	 * @return the sample {@link JTextField}
+	 */
 	protected JTextField getSampleTextField() {
 		if (sampleText == null) {
 			Border lowered = BorderFactory.createLoweredBevelBorder();
@@ -752,7 +866,11 @@ public class JFontChooser extends JComponent {
 		return sampleText;
 	}
 
-
+	/**
+	 * Lazily creates and returns an array of font style names.
+	 * 
+	 * @return an array of font style names.
+	 */
 	protected String[] getFontStyleNames() {
 		if (fontStyleNames == null) {
 			int i = 0;

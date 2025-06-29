@@ -13,10 +13,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
@@ -52,13 +50,21 @@ import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.Savgol.SavGolSettings;
 
+/**
+ * A dialog for previewing wave intensity analysis on a single beat of
+ * hemodynamic data. It allows for data filtering and alignment before final
+ * processing.
+ */
 public class WavePickerPreviewGUI extends JDialog implements PFPickListener, WavePickListener {
 
 	private static final long serialVersionUID = -4214441167859285576L;
 	private static final Color pnlLightGray = new Color(213, 213, 213);
 	private static final Color pnlDarkGray = new Color(169, 169, 169);
+	/** Status code indicating done with previewing */
 	public static final int DONE = 0;
+	/** Status code indicating to preview next */
 	public static final int PREVIEW_NEXT = 1;
+	/** Status code indicating to preview previous */
 	public static final int PREVIEW_LAST = 2;
 
 	private JPanel contentPane;
@@ -105,16 +111,15 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	private final boolean hasNextPreview;
 
 	private PreviewResult previewResult = null;
-	
-	private Component compForPosition = null;
 
+	private Component compForPosition = null;
 
 	/**
 	 * Create the frame.
 	 */
-	public WavePickerPreviewGUI(String selectionName, HemoData data, PreviewResult pr, boolean hasPreviousPreview, boolean hasNextPreview,
-			SavGolSettings filterSettings, boolean filterEnabled, boolean allowAlignWrap, boolean allowAlignWrapExcessiveDiscordance, boolean maintainSettings,
-			Component relative) {
+	public WavePickerPreviewGUI(String selectionName, HemoData data, PreviewResult pr, boolean hasPreviousPreview,
+			boolean hasNextPreview, SavGolSettings filterSettings, boolean filterEnabled, boolean allowAlignWrap,
+			boolean allowAlignWrapExcessiveDiscordance, boolean maintainSettings, Component relative) {
 
 		this.data = data;
 		this.hasPreviousPreview = hasPreviousPreview;
@@ -131,7 +136,6 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			this._indexFlowAligned = -1;
 			this._indexPressureAligned = -1;
 		}
-		
 
 		setTitle("[PREVIEW] Waves for Selection '" + selectionName + "' ("
 				+ Utils.getShortenedFilePath(data.getFile().getPath(), 80) + ")");
@@ -166,21 +170,22 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		});
 
 		generateWIA(this.filterEnabled, false, allowAlignWrap, allowAlignWrapExcessiveDiscordance);
-		
+
 		initPnlTop(selectionName);
 		initWIA();
 		initPnlDisplaySetting(allowAlignWrap, allowAlignWrapExcessiveDiscordance, maintainSettings);
 		initPnlButtons();
-		
+
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		
+
 		pnlWIA.setPreferredSize(pnlWIA.getPreferredSize());
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 				.addComponent(pnlTop, GroupLayout.DEFAULT_SIZE, 1240, Short.MAX_VALUE)
-				.addGroup(Alignment.TRAILING,
-						gl_contentPane.createSequentialGroup().addComponent(pnlWIA, screenSize.width / 4, screenSize.width / 2, Short.MAX_VALUE)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlWIADisplay, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
+				.addGroup(Alignment.TRAILING, gl_contentPane.createSequentialGroup()
+						.addComponent(pnlWIA, screenSize.width / 4, screenSize.width / 2, Short.MAX_VALUE)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlWIADisplay,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
 				.addComponent(pnlWIAButtons, GroupLayout.DEFAULT_SIZE, 1240, Short.MAX_VALUE));
 		gl_contentPane.setVerticalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING).addGroup(gl_contentPane
 				.createSequentialGroup()
@@ -203,22 +208,31 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 	}
 
-	public void initPnlTop(String selectionName) {
+	/**
+	 * Initializes the top panel of the GUI, displaying the selection name.
+	 * 
+	 * @param selectionName The name of the selection being previewed.
+	 */
+	private void initPnlTop(String selectionName) {
 		pnlTop = new JPanel();
 		FlowLayout flowLayout = (FlowLayout) pnlTop.getLayout();
 		flowLayout.setHgap(10);
 		pnlTop.setBorder(new LineBorder(new Color(0, 0, 0)));
 		pnlTop.setBackground(pnlDarkGray);
 
-		JLabel pnlInstruction = new JLabel(
-				"<html><span style='background-color: yellow;'>Preview wave profile for \"" + selectionName + "\"</span></html>");
+		JLabel pnlInstruction = new JLabel("<html><span style='background-color: yellow;'>Preview wave profile for \""
+				+ selectionName + "\"</span></html>");
 
 		pnlInstruction.setFont(Utils.getSubTitleFont());
 		pnlTop.add(pnlInstruction);
 
 	}
 
-	public void initWIA() {
+	/**
+	 * Initializes the main WIA panel containing the separated wave and
+	 * pressure-flow graphs.
+	 */
+	private void initWIA() {
 
 		pnlWIA = new JPanel();
 		pnlWIA.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
@@ -236,7 +250,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 		pnlGraphWIASep.setBorder(new LineBorder(new Color(0, 0, 0)));
 		pnlGraphWIASep.setWavePickListener(this);
-		
+
 		splitTop.setLeftComponent(pnlGraphWIASep);
 
 		pnlGraphPF = PressureFlowChartPanel.generate(wiaDataPreview, Utils.getTextFont(false));
@@ -251,7 +265,18 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		pnlWIA.setLayout(gl_pnlWIA);
 	}
 
-	public void initPnlDisplaySetting(boolean allowAlignWrap, boolean allowAlignWrapExcessiveDiscordance, boolean maintain) {
+	/**
+	 * Initializes the right-side display and settings panel.
+	 * 
+	 * @param allowAlignWrap                     If true, allows wrap-around
+	 *                                           alignment.
+	 * @param allowAlignWrapExcessiveDiscordance If true, ignores excessive
+	 *                                           discordance on wrap-around.
+	 * @param maintain                           If true, maintains settings for the
+	 *                                           next preview.
+	 */
+	private void initPnlDisplaySetting(boolean allowAlignWrap, boolean allowAlignWrapExcessiveDiscordance,
+			boolean maintain) {
 		pnlWIADisplay = new JPanel();
 		pnlWIADisplay.setBackground(pnlLightGray);
 		pnlWIADisplay.setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -265,21 +290,21 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		txtCVal = new JTextField();
 		txtFlowAvg = new JTextField();
 		txtPressAvg = new JTextField();
-		
+
 		JLabel lblWaveIntensity = new JLabel("Wave Intensity");
 		chMeasureWaveIntensity = new JCheckBox("Test Measure Wave Intensity");
 		chMeasureWaveIntensity.setSelected(true);
-        pnlGraphWIASep.setTrace(true);
+		pnlGraphWIASep.setTrace(true);
 		chMeasureWaveIntensity.addActionListener(e -> {
-		        txtWaveIntensity.setText(null);
-		        pnlGraphWIASep.setTrace(chMeasureWaveIntensity.isSelected());
+			txtWaveIntensity.setText(null);
+			pnlGraphWIASep.setTrace(chMeasureWaveIntensity.isSelected());
 		});
 		chMeasureWaveIntensity.setOpaque(false);
 		JLabel lblCurrSelection = new JLabel("Current intensity:");
 		txtWaveIntensity = new JTextField("");
 		txtWaveIntensity.setEditable(false);
 		txtWaveIntensity.setFocusable(false);
-		
+
 		JLabel lblPF = new JLabel("Pressure and Flow");
 		btnPF = new JButton("");
 		btnPF.setIcon(Utils.IconQuestionLarger);
@@ -303,7 +328,6 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 		btnResetAlign = new JButton("Reset");
 
-		
 		btnResetAlign.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -339,7 +363,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 				}
 			}
 		};
-		
+
 		if (wiaDataPreview != null && wiaDataPreview.hasOriginal()) {
 			btnResetAlign.setEnabled(true);
 			btnPFModeAlignManual.setEnabled(false);
@@ -347,15 +371,13 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		} else {
 			btnResetAlign.setEnabled(false);
 		}
-		
+
 		chAllowWrap = new JCheckBox("Wrap-around when align");
 		chAllowWrap.setOpaque(false);
 		chAllowWrap.setSelected(true);
 		chAllowWrapIgnoreEnds = new JCheckBox("<html>Ignore excessive discordance<br> on wrap-around</html>");
 		chAllowWrapIgnoreEnds.setOpaque(false);
 
-		
-		
 		// Add the listener to each toggle button
 		btnPFModeOff.addItemListener(btnPFListener);
 		btnPFModeAlignPeak.addItemListener(btnPFListener);
@@ -380,7 +402,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 				} else if (e.getStateChange() == ItemEvent.DESELECTED) {
 					filterEnabled = false;
 				}
-				
+
 				Utils.setEnabled(filterEnabled, false, btnReFilter);
 				generateWIA();
 			}
@@ -400,7 +422,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			public void actionPerformed(ActionEvent e) {
 				if (!filterEnabled)
 					return;
-				
+
 				if (validateFilterSettings()) {
 					generateWIA();
 				}
@@ -419,7 +441,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		txtSavPolynomialOrder.addMouseListener(new java.awt.event.MouseAdapter() {
 			@Override
 			public void mouseClicked(java.awt.event.MouseEvent e) {
-				
+
 				txtSavPolynomialOrder.setFocusable(true);
 				txtSavPolynomialOrder.requestFocusInWindow();
 			}
@@ -440,12 +462,12 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 				pnlWIA.requestFocusInWindow(); // Shift focus away
 			}
 		});
-		
+
 		chAllowWrap.setSelected(allowAlignWrap);
 		chAllowWrapIgnoreEnds.setSelected(allowAlignWrapExcessiveDiscordance);
-		
+
 		GroupLayout gl_pnlWIADisplay = new GroupLayout(pnlWIADisplay);
-		
+
 		JSeparator sep = new JSeparator(JSeparator.HORIZONTAL);
 		sep.setBackground(new Color(192, 192, 192));
 		sep.setForeground(new Color(192, 192, 192));
@@ -471,21 +493,29 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 										Short.MAX_VALUE))
 						.addContainerGap())
 				.addComponent(lblWaveIntensity, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chMeasureWaveIntensity))
+				.addGroup(
+						gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chMeasureWaveIntensity))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(lblCurrSelection)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(txtWaveIntensity, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, 
-								Short.MAX_VALUE).addContainerGap())
+						.addPreferredGap(ComponentPlacement.RELATED)
+						.addComponent(txtWaveIntensity, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
+								Short.MAX_VALUE)
+						.addContainerGap())
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addComponent(lblPF)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPF)
 						.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(lblSelectionMode))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(btnPFModeOff)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPFModeAlignPeak)
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPFModeAlignManual).addContainerGap())
-				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-						Short.MAX_VALUE).addContainerGap())
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnPFModeAlignManual)
+						.addContainerGap())
+				.addGroup(
+						gl_pnlWIADisplay.createSequentialGroup().addContainerGap()
+								.addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										Short.MAX_VALUE)
+								.addContainerGap())
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chAllowWrap))
-				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chAllowWrapIgnoreEnds))
+				.addGroup(
+						gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chAllowWrapIgnoreEnds))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(btnAlign)
 						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnResetAlign))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(lblFilter))
@@ -519,10 +549,8 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 						.addGap(2)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.LEADING).addComponent(lblAvgPress)
 								.addComponent(txtPressAvg))
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(lblWaveIntensity)
-						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(chMeasureWaveIntensity)
+						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblWaveIntensity)
+						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(chMeasureWaveIntensity)
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(lblCurrSelection)
 								.addComponent(txtWaveIntensity))
@@ -536,21 +564,22 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(btnPFModeOff)
 								.addComponent(btnPFModeAlignPeak).addComponent(btnPFModeAlignManual))
 						.addPreferredGap(ComponentPlacement.UNRELATED)
-						.addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(chAllowWrap)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(chAllowWrapIgnoreEnds)
+						.addComponent(sep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(chAllowWrap)
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(chAllowWrapIgnoreEnds)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(btnAlign)
 								.addComponent(btnResetAlign))
 						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(lblFilter)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(chFilter)
 						.addPreferredGap(ComponentPlacement.UNRELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(lblWindow)
-								.addComponent(txtSavWindow, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
+								.addComponent(txtSavWindow, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+										GroupLayout.PREFERRED_SIZE))
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(lblPolyOrder)
-								.addComponent(txtSavPolynomialOrder, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
+								.addComponent(txtSavPolynomialOrder, GroupLayout.PREFERRED_SIZE,
+										GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
 						.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnReFilter)
 						.addPreferredGap(ComponentPlacement.UNRELATED, Short.MAX_VALUE, Short.MAX_VALUE)
 						.addComponent(chMaintainFilterSettings).addContainerGap()));
@@ -560,8 +589,8 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		Utils.setFont(Utils.getSubTitleSubFont(), lblSelectionMode);
 
 		Utils.setFont(Utils.getSmallTextFont(), lblCVal, lblAvgFlow, lblAvgPress, txtCVal, txtFlowAvg, txtPressAvg,
-				chFilter, txtSavPolynomialOrder, txtSavPolynomialOrder, lblPolyOrder, lblWindow, chAllowWrap, chAllowWrapIgnoreEnds, lblCurrSelection,
-				txtWaveIntensity, chMeasureWaveIntensity);
+				chFilter, txtSavPolynomialOrder, txtSavPolynomialOrder, lblPolyOrder, lblWindow, chAllowWrap,
+				chAllowWrapIgnoreEnds, lblCurrSelection, txtWaveIntensity, chMeasureWaveIntensity);
 
 		pnlWIADisplay.setLayout(gl_pnlWIADisplay);
 		storeDisplayValues();
@@ -569,6 +598,10 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 	}
 
+	/**
+	 * Initializes the bottom button panel with "Done", "Next Preview", and "Last
+	 * Preview" buttons.
+	 */
 	public void initPnlButtons() {
 
 		pnlWIAButtons = new JPanel();
@@ -638,6 +671,11 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		pnlWIAButtons.setBorder(new LineBorder(new Color(0, 0, 0)));
 	}
 
+	/**
+	 * Configures an array of JTextFields to be non-editable and non-focusable.
+	 * 
+	 * @param fields The text fields to set up.
+	 */
 	private void setupDisplayTextFields(JTextField... fields) {
 		for (JTextField field : fields) {
 			field.setEditable(false);
@@ -645,6 +683,11 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		}
 	}
 
+	/**
+	 * Generates WIA data based on the current filter and alignment settings.
+	 * 
+	 * @return {@code true} if generation is successful, {@code false} otherwise.
+	 */
 	private boolean generateWIA() {
 		return generateWIA(chFilter.isSelected(), true, chAllowWrap.isSelected(), chAllowWrapIgnoreEnds.isSelected());
 	}
@@ -663,7 +706,8 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			for (Header header : new ArrayList<Header>(dataCopy.getYHeaders())) {
 				if (dataCopy.hasFlag(header, HemoData.OTHER_ALIGN)) {
 					continue;
-				} else if (dataCopy.hasFlag(header, HemoData.TYPE_FLOW) || dataCopy.hasFlag(header, HemoData.TYPE_PRESSURE)) {
+				} else if (dataCopy.hasFlag(header, HemoData.TYPE_FLOW)
+						|| dataCopy.hasFlag(header, HemoData.TYPE_PRESSURE)) {
 					double[] dataY = dataCopy.getYData(header);
 					dataCopy.applyFilter(header, savGol.filter(dataY));
 				}
@@ -673,13 +717,13 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		}
 
 		dataCopy.convertXUnits(HemoData.UNIT_MILLISECONDS);
-		
+
 		WIAData temp = new WIAData(dataCopy.getName(), dataCopy);
 
 		if (_indexFlowAligned != -1 && _indexPressureAligned != -1) {
 			// the new, aligned (after +/- filtering as above) data.
-			HemoData newHD = _getAlignPressureFlowAfterReFilter(temp, _indexFlowAligned, _indexPressureAligned, allowAlignWrap,
-					allowAlignWrapExcessivelyDiscordant);
+			HemoData newHD = _getAlignPressureFlowAfterReFilter(temp, _indexFlowAligned, _indexPressureAligned,
+					allowAlignWrap, allowAlignWrapExcessivelyDiscordant);
 			if (newHD == null) {
 				// error, already displaced
 				wiaDataPreview = temp;
@@ -687,14 +731,14 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			}
 			temp.setNewHemoData(newHD); // also will re-analyze
 		}
-		
+
 		wiaDataPreview = temp;
-		
+
 		if (update) {
 			_applyUpdatedWIA();
 
 		}
-		
+
 		return true;
 
 	}
@@ -717,34 +761,44 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	 *         displayed). Stores in private variable if valid.
 	 */
 	private boolean validateFilterSettings() {
-		
+
 		if (!chFilter.isSelected())
 			return true;
 
 		try {
-			SavGolSettings settings = Savgol.generateSettings(txtSavWindow.getText().trim(), txtSavPolynomialOrder.getText().trim());
+			SavGolSettings settings = Savgol.generateSettings(txtSavWindow.getText().trim(),
+					txtSavPolynomialOrder.getText().trim());
 			filterSettings = settings;
 		} catch (Exception e) {
 			Utils.showError(e.getMessage(), this);
 			return false;
 		}
-		
+
 		return true;
-	
 
 	}
-	
-	public void setWaveIntensity(Double value) {
+
+	/**
+	 * Sets the displayed wave intensity value.
+	 * 
+	 * @param value The wave intensity value to display. Formats the value with
+	 *              units.
+	 */
+	private void setWaveIntensity(Double value) {
 		if (value == null || Double.isNaN(value))
 			txtWaveIntensity.setText("");
 		else {
-		    String formatted = _formatToOneDecimal(value) + " W m\u207B\u00B2 s\u207B\u00B2";
+			String formatted = _formatToOneDecimal(value) + " W m\u207B\u00B2 s\u207B\u00B2";
 			txtWaveIntensity.setText(formatted);
 
 		}
 	}
 
-	public void resetAlignPressureFlow() {
+	/**
+	 * Resets the pressure and flow alignment selections and reverts to the original
+	 * data.
+	 */
+	private void resetAlignPressureFlow() {
 
 		pnlGraphPF.resetAlignSelections();
 
@@ -765,8 +819,8 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	 * ONLY to be called by {@link WavePickerPreviewGUI#generateWIA(boolean)} as a
 	 * helper
 	 */
-	private HemoData _getAlignPressureFlowAfterReFilter(WIAData tempData, int indexFlow, int indexPressure, boolean allowAlignWrap,
-			boolean allowAlignWrapExcessivelyDiscordant) {
+	private HemoData _getAlignPressureFlowAfterReFilter(WIAData tempData, int indexFlow, int indexPressure,
+			boolean allowAlignWrap, boolean allowAlignWrapExcessivelyDiscordant) {
 		Header headerFlow = tempData.getData().getHeaderByFlag(HemoData.TYPE_FLOW).get(0);
 		Header headerPressure = tempData.getData().getHeaderByFlag(HemoData.TYPE_PRESSURE).get(0);
 		Header headerlower;
@@ -787,7 +841,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		}
 
 		HemoData hd;
-		
+
 		try {
 			hd = tempData.getData().copyWithYAlignment(headerlower, headerhigher, indexLower, indexHigher,
 					allowAlignWrap, allowAlignWrapExcessivelyDiscordant);
@@ -799,6 +853,10 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 	}
 
+	/**
+	 * Executes the alignment of pressure and flow data based on user selections in
+	 * the preview.
+	 */
 	private void runAlignPressureFlow() {
 
 		// check if valid
@@ -824,7 +882,6 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			btnPFModeAlignManual.setEnabled(false);
 			btnPFModeAlignPeak.setEnabled(false);
 		}
-		
 
 	}
 
@@ -868,20 +925,38 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		dispose();
 	}
 
+	/**
+	 * Creates a {@link PreviewResult} object from the current state of the GUI.
+	 */
 	private void createPreviewResult() {
 		this.previewResult = new PreviewResult(filterSettings.copy(), filterEnabled, wiaDataPreview,
 				chMaintainFilterSettings.isSelected(), chAllowWrap.isSelected(), chAllowWrapIgnoreEnds.isSelected(),
 				_indexPressureAligned, _indexFlowAligned);
 	}
 
+	/**
+	 * Gets the result of the preview operation.
+	 * 
+	 * @return The {@link PreviewResult} object containing the final state of the
+	 *         preview.
+	 */
 	public PreviewResult getPreviewResult() {
 		return this.previewResult;
 	}
-	
+
+	/**
+	 * Gets the user's choice on whether to maintain settings for the next preview.
+	 * 
+	 * @return True if the "maintain settings" checkbox is selected, false
+	 *         otherwise.
+	 */
 	public boolean getMaintainSetting() {
 		return this.chMaintainFilterSettings.isSelected();
 	}
 
+	/**
+	 * Updates the display fields with calculated metrics from the WIA data.
+	 */
 	private void storeDisplayValues() {
 		DecimalFormat nf = new DecimalFormat("0.##");
 		if (wiaDataPreview != null) {
@@ -891,42 +966,64 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		}
 	}
 
+	/**
+	 * Enables or disables the "Run Align" button based on whether alignment points
+	 * are selected.
+	 * 
+	 * @param ready {@code true} to enable the button, {@code false} to disable it.
+	 */
 	@Override
 	public void setReadyAlign(boolean ready) {
 		this.btnAlign.setEnabled(ready);
 	}
 
+	/**
+	 * (Not implemented in preview).
+	 */
 	@Override
 	public void setSystole(double timeSystole) {
 		// do nothing
 	}
 
+	/**
+	 * (Not implemented in preview).
+	 */
 	@Override
 	public void setDiastole(double timeDiastole) {
 		// do nothing
 	}
 
+	/**
+	 * (Not implemented in preview).
+	 */
 	@Override
 	public void resetSystole() {
 		// do nothing
 	}
 
+	/**
+	 * (Not implemented in preview).
+	 */
 	@Override
 	public void resetDiastole() {
 		// do nothing
 	}
 
+	/**
+	 * A container for the results of a wave-picking preview, including filter settings and alignment data.
+	 */
 	public static class PreviewResult {
-		public final SavGolSettings filterSettings;
-		public final boolean filterEnabled;
-		public final WIAData wiaData;
-		public final boolean allowWrap;
-		public final boolean allowWrapIgnoreEnds;
-		public final int indexPressureAlign;
-		public final int indexFlowAlign;
+		private final SavGolSettings filterSettings;
+		private final boolean filterEnabled;
+		private final WIAData wiaData;
+		private final boolean allowWrap;
+		private final boolean allowWrapIgnoreEnds;
+		private final int indexPressureAlign;
+		private final int indexFlowAlign;
 
-		private PreviewResult(SavGolSettings filterSettings, boolean filterEnabled, WIAData wiaData, boolean settingsPersist,
-				boolean allowWrap, boolean allowWrapIgnoreEnds, int pressureAlign, int flowAlign) {
+		private PreviewResult(SavGolSettings filterSettings, boolean filterEnabled, WIAData wiaData,
+				boolean settingsPersist, boolean allowWrap, boolean allowWrapIgnoreEnds, int pressureAlign,
+				int flowAlign) {
 			this.filterSettings = filterSettings;
 			this.filterEnabled = filterEnabled;
 			this.wiaData = wiaData;
@@ -934,6 +1031,34 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			this.allowWrapIgnoreEnds = allowWrapIgnoreEnds;
 			this.indexPressureAlign = pressureAlign;
 			this.indexFlowAlign = flowAlign;
+		}
+		
+		public SavGolSettings getSettings() {
+			return this.filterSettings;
+		}
+		
+		public boolean isFilterEnabled() {
+			return this.filterEnabled;
+		}
+		
+		public boolean isAllowWrap() {
+			return this.allowWrap;
+		}
+		
+		public boolean isAllowWrapIgnoreEnds() {
+			return this.allowWrapIgnoreEnds;
+		}
+		
+		public WIAData getWIAData() {
+			return this.wiaData;
+		}
+		
+		public int getIndexPressureAlign() {
+			return this.indexPressureAlign;
+		}
+		
+		public int getIndexFlowAlign() {
+			return this.indexFlowAlign;
 		}
 	}
 
@@ -945,12 +1070,11 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			setWaveIntensity(wave.getCumulativeIntensity());
 
 		}
-		
-	}
-	
-	private static String _formatToOneDecimal(double number) {
-	    return String.format("%.1f", number);
+
 	}
 
+	private static String _formatToOneDecimal(double number) {
+		return String.format("%.1f", number);
+	}
 
 }

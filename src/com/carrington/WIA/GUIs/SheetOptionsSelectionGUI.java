@@ -1,13 +1,28 @@
 package com.carrington.WIA.GUIs;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -16,25 +31,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.IO.Header;
 
-import java.awt.Color;
-import java.awt.Component;
-
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
-import javax.swing.ListCellRenderer;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.LayoutStyle.ComponentPlacement;
-import javax.swing.JScrollPane;
-import javax.swing.JList;
-import javax.swing.JComboBox;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-
-
+/**
+ * A dialog for selecting dataset properties, including series name and data
+ * columns (headers) to include for analysis.
+ */
 public class SheetOptionsSelectionGUI extends JDialog {
 
 	private static final long serialVersionUID = -7538705833329832549L;
@@ -43,25 +43,6 @@ public class SheetOptionsSelectionGUI extends JDialog {
 	private JComboBox<Header> cbSelectCategory;
 	private JList<Header> listCategories;
 	private OptionSelections options = null;
-
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			Header header1 = new Header("time", 0, true);
-			Header header2 = new Header("pressure", 1, false);
-			Header header3 = new Header("EKG", 2, false);
-
-			SheetOptionsSelectionGUI dialog = new SheetOptionsSelectionGUI("Testing",
-					Arrays.asList(header1, header2, header3), new ArrayList<Header>(), header3, null);
-			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-			dialog.setVisible(true);
-			System.exit(0);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Create the dialog.
@@ -123,8 +104,8 @@ public class SheetOptionsSelectionGUI extends JDialog {
 										.addPreferredGap(ComponentPlacement.RELATED).addComponent(scrollPane,
 												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
 								.addGroup(gl_pnlTop.createSequentialGroup()
-										.addComponent(lblCatAlign, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE)
+										.addComponent(lblCatAlign, GroupLayout.PREFERRED_SIZE,
+												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
 										.addPreferredGap(ComponentPlacement.RELATED).addComponent(cbSelectCategory,
 												GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)))
 						.addContainerGap()));
@@ -194,7 +175,7 @@ public class SheetOptionsSelectionGUI extends JDialog {
 
 		JLabel lblError = new JLabel("Error (needs name, ≥ 2 columns of which Align and x-axis should be one.)");
 		lblError.setFont(smallTextFontPlain);
-		lblError.setForeground(new Color(0,0,0,0));
+		lblError.setForeground(new Color(0, 0, 0, 0));
 		JButton btnOK = new JButton("OK");
 		btnOK.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -224,39 +205,49 @@ public class SheetOptionsSelectionGUI extends JDialog {
 		gl_pnlButton.setVerticalGroup(gl_pnlButton.createParallelGroup(Alignment.CENTER).addComponent(lblError)
 				.addComponent(btnCancel).addComponent(btnOK));
 
-
 		getRootPane().setDefaultButton(btnOK);
-		
+
 		GroupLayout gl_main = new GroupLayout(getContentPane());
 		gl_main.setVerticalGroup(gl_main.createSequentialGroup().addContainerGap()
-				.addComponent(pnlTop, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-				.addPreferredGap(ComponentPlacement.RELATED)
-				.addComponent(pnlButton, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+				.addComponent(pnlTop, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+						GroupLayout.PREFERRED_SIZE)
+				.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlButton, GroupLayout.PREFERRED_SIZE,
+						GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
 				.addContainerGap());
-		gl_main.setHorizontalGroup(gl_main.createSequentialGroup()
-				.addContainerGap()
-				.addGroup(gl_main.createParallelGroup(Alignment.CENTER)
-						.addComponent(pnlTop)
-						.addComponent(pnlButton))
+		gl_main.setHorizontalGroup(gl_main.createSequentialGroup().addContainerGap()
+				.addGroup(gl_main.createParallelGroup(Alignment.CENTER).addComponent(pnlTop).addComponent(pnlButton))
 				.addContainerGap());
 		getContentPane().setLayout(gl_main);
-		
+
 		pack();
 		setMinimumSize(getMinimumSize());
 
 		setLocationRelativeTo(parent);
-		
+
 		SwingUtilities.invokeLater(() -> {
-		    txtName.requestFocusInWindow();
-		    txtName.selectAll();
+			txtName.requestFocusInWindow();
+			txtName.selectAll();
 		});
 
 	}
 
+	/**
+	 * Gets the user's selections from the dialog.
+	 * 
+	 * @return An {@link OptionSelections} object containing the selected name,
+	 *         headers, and alignment {@link Header}, or null if the dialog was cancelled.
+	 */
 	public OptionSelections getOptionSelections() {
 		return this.options;
 	}
 
+	/**
+	 * Validates the user's selections before closing the dialog. Ensures a name is
+	 * provided and at least two columns are selected, including the primary x-axis
+	 * and the alignment column.
+	 * 
+	 * @return {@code true} if the selections are valid, {@code false} otherwise.
+	 */
 	private boolean validateSelections() {
 
 		String name = this.txtName.getText();
@@ -291,12 +282,26 @@ public class SheetOptionsSelectionGUI extends JDialog {
 
 	}
 
-	class OptionSelections {
+	/**
+	 * A container for the user's selections in the
+	 * {@link SheetOptionsSelectionGUI}.
+	 */
+	public static class OptionSelections {
 
+		/** The name for the data series. */
 		public final String name;
+		/** The list of headers selected for inclusion. */
 		public final List<Header> selectedHeaders;
+		/** The header selected for alignment purposes. */
 		public final Header headerForAlign;
 
+		/**
+		 * Constructs an {@link OptionSelections} object.
+		 * 
+		 * @param name            The name for the series.
+		 * @param selectedHeaders The list of selected headers.
+		 * @param headerForAlign  The {@link Header} to be used for alignment.
+		 */
 		private OptionSelections(String name, List<Header> selectedHeaders, Header headerForAlign) {
 			this.name = name;
 			this.selectedHeaders = selectedHeaders;

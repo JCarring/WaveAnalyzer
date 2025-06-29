@@ -4,6 +4,10 @@ import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 
+/**
+ * A utility class to globally track the pressed state of the Shift and Command
+ * (Meta) keys.
+ */
 public class KeyChecker {
 
 	private static volatile boolean shiftPressed = false;
@@ -38,14 +42,23 @@ public class KeyChecker {
 			}
 		});
 	}
-	
+
+	/**
+	 * Checks if the Shift key is currently pressed.
+	 * 
+	 * @return true if Shift is pressed, false otherwise.
+	 */
 	public static boolean isShiftPressed() {
 		synchronized (KeyChecker.class) {
 			return shiftPressed;
 		}
 	}
-	
-	
+
+	/**
+	 * Checks if the Command (Meta) key is currently pressed.
+	 * 
+	 * @return true if Command/Meta is pressed, false otherwise.
+	 */
 	public static boolean isControlPressed() {
 		synchronized (KeyChecker.class) {
 			return cmdPressed;

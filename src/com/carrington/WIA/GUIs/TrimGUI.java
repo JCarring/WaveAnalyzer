@@ -49,6 +49,10 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.event.ActionEvent;
 
+/**
+ * A dialog for trimming a {@link HemoData} object by selecting start and end
+ * points on a chart.
+ */
 public class TrimGUI extends JDialog {
 
 	private static final long serialVersionUID = -5175211099134912625L;
@@ -59,7 +63,7 @@ public class TrimGUI extends JDialog {
 	private Marker trimXMarkerLeft = null;
 	private double trimXRight = Double.NaN;
 	private Marker trimXMarkerRight = null;
-	private final  double[] validRangeX;
+	private final double[] validRangeX;
 	private final HemoData data;
 	private final String chartTitle;
 
@@ -69,15 +73,16 @@ public class TrimGUI extends JDialog {
 	 * Create the frame.
 	 * 
 	 */
-	public TrimGUI(String chartTitle, HemoData data, int[] trimIndices)  {
+	public TrimGUI(String chartTitle, HemoData data, int[] trimIndices) {
 		super();
 		setModal(true);
 
 		this.data = data;
 		this.chartTitle = chartTitle;
 		double[] xValues = data.getXData();
-		this.validRangeX = new double[] {xValues[0], xValues[xValues.length - 1]};
-		if (trimIndices != null && (trimIndices.length != 2 || !isWithinBounds(data, trimIndices[0]) || !isWithinBounds(data, trimIndices[1]))) {
+		this.validRangeX = new double[] { xValues[0], xValues[xValues.length - 1] };
+		if (trimIndices != null && (trimIndices.length != 2 || !isWithinBounds(data, trimIndices[0])
+				|| !isWithinBounds(data, trimIndices[1]))) {
 			throw new IllegalArgumentException("Trim indices out of bounds... likely coding error");
 		}
 
@@ -119,10 +124,8 @@ public class TrimGUI extends JDialog {
 		pnlGraph.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0, false), "trimRight");
 		pnlGraph.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_2, 0, false), "trimRight");
 		pnlGraph.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_W, 0, false), "trimRight");
-		
+
 		pnlGraph.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0, false), "trimReset");
-
-
 
 		pnlGraph.getActionMap().put("trimReset", new AbstractAction() {
 			private static final long serialVersionUID = -7703504349811078217L;
@@ -183,29 +186,31 @@ public class TrimGUI extends JDialog {
 		pnlButtons.setBorder(new LineBorder(new Color(0, 0, 0)));
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
-				
-						.addComponent(pnlButtons, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(pnlGraph, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-						.addComponent(pnlInstr, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE));
+
+				.addComponent(pnlButtons, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+				.addComponent(pnlGraph, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+				.addComponent(pnlInstr, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE));
 		gl_contentPane.setVerticalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_contentPane.createSequentialGroup()
-						.addComponent(pnlInstr, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
+						.addComponent(pnlInstr, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addComponent(pnlGraph, GroupLayout.DEFAULT_SIZE, 212, Short.MAX_VALUE)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(pnlButtons, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)) // set
-																														// fixed
+						.addPreferredGap(ComponentPlacement.RELATED).addComponent(pnlButtons,
+								GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)) // set
+		// fixed
 		);
 
 		JLabel lblInstruction = new JLabel("Trim the file below.");
 		pnlInstr.add(lblInstruction);
 
 		JCButton btnCancel = new JCButton("Cancel", JCButton.BUTTON_QUIT);
-		
+
 		ActionListener quitAction = new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				dispose();
-				// this is a JDialog, so code calling it will hang. When they return they can get values as needed.
+				// this is a JDialog, so code calling it will hang. When they return they can
+				// get values as needed.
 
 			}
 		};
@@ -228,7 +233,6 @@ public class TrimGUI extends JDialog {
 
 		JLabel lblRight = new JLabel("Right");
 
-		
 		JTextArea lblSelInstruction = new JTextArea(
 				"Press \"1\" on graph to select the left trim. Press \"2\" to select the right trim. Press \"R\" to reset both.");
 		lblSelInstruction.setFont(normalText);
@@ -265,24 +269,24 @@ public class TrimGUI extends JDialog {
 		btnResetRight.setFont(normalText);
 		GroupLayout gl_panel_2 = new GroupLayout(pnlButtons);
 		gl_panel_2.setHorizontalGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_2.createSequentialGroup().addGap(3).addComponent(lblTrimVals, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
-				.addGroup(gl_panel_2.createSequentialGroup().addContainerGap()
-						.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING).addGroup(gl_panel_2
-								.createSequentialGroup().addPreferredGap(ComponentPlacement.RELATED)
+				.addGroup(gl_panel_2.createSequentialGroup().addGap(3).addComponent(lblTrimVals,
+						GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+				.addGroup(gl_panel_2.createSequentialGroup().addContainerGap().addGroup(gl_panel_2
+						.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_panel_2.createSequentialGroup().addPreferredGap(ComponentPlacement.RELATED)
 								.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING).addComponent(lblRight)
 										.addComponent(lblLeft))
 								.addPreferredGap(ComponentPlacement.RELATED)
 								.addGroup(gl_panel_2.createParallelGroup(Alignment.LEADING)
 										.addGroup(gl_panel_2.createSequentialGroup()
 												.addComponent(txtLeft, size * 10, size * 10, size * 10)
-												.addPreferredGap(ComponentPlacement.RELATED)
-												.addComponent(btnResetLeft))
+												.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnResetLeft))
 										.addGroup(gl_panel_2.createSequentialGroup()
 												.addComponent(txtRight, size * 10, size * 10, size * 10)
 												.addPreferredGap(ComponentPlacement.RELATED)
 												.addComponent(btnResetRight)))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(jscr, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)))
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(jscr,
+										GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)))
 						.addPreferredGap(ComponentPlacement.UNRELATED)
 						.addComponent(separator, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 								GroupLayout.PREFERRED_SIZE)
@@ -319,13 +323,13 @@ public class TrimGUI extends JDialog {
 						.addContainerGap()));
 		pnlButtons.setLayout(gl_panel_2);
 		contentPane.setLayout(gl_contentPane);
-		
+
 		_setupTxtFields();
-		
+
 		Utils.setFont(Utils.getSubTitleFont(), lblInstruction);
-		
+
 		Utils.setFont(Utils.getTextFont(false), lblSelInstruction, lblLeft, lblRight);
-		
+
 		if (trimIndices != null) {
 			if (isSet(trimIndices[0])) {
 				setTrimLeft(data.getXData()[trimIndices[0]]);
@@ -334,16 +338,21 @@ public class TrimGUI extends JDialog {
 				setTrimRight(data.getXData()[trimIndices[1]]);
 			}
 		}
-		
+
 		chartPanel.requestFocusInWindow();
 
 	}
 
+	/**
+	 * Retrieves the start and end indices for the trim based on user selections.
+	 * 
+	 * @return An array of two integers: the left trim index and the right trim
+	 *         index. Returns -1 for an index if it was not set.
+	 */
 	public int[] getTrimIndices() {
 
 		double[] xVals = this.data.getXData();
 
-		
 		int[] indices = new int[2];
 		if (!Double.isNaN(this.trimXLeft)) {
 
@@ -375,8 +384,8 @@ public class TrimGUI extends JDialog {
 		} else {
 			indices[1] = -1;
 		}
-		
-		if (indices[0] < -1 ) { // remember -1 means not selected
+
+		if (indices[0] < -1) { // remember -1 means not selected
 			indices[0] = 0;
 		}
 		if (indices[1] >= xVals.length) {
@@ -387,6 +396,12 @@ public class TrimGUI extends JDialog {
 
 	}
 
+	/**
+	 * Checks if a given screen point is within the chart's data area.
+	 * 
+	 * @param p The point on the screen.
+	 * @return {@code true} if the point is over the chart, {@code false} otherwise.
+	 */
 	private boolean pointIsOverChart(Point p) {
 		Rectangle2D chartrect = this.chartPanel.getScreenDataArea();
 		Point parentUp = chartPanel.getLocationOnScreen();
@@ -397,6 +412,11 @@ public class TrimGUI extends JDialog {
 
 	}
 
+	/**
+	 * Creates and initializes the chart panel.
+	 * 
+	 * @throws IllegalStateException if the chart panel has already been created.
+	 */
 	private void _createChartPanel() {
 		if (this.chartPanel != null)
 			throw new IllegalStateException("Chart panel already created");
@@ -405,6 +425,12 @@ public class TrimGUI extends JDialog {
 		this.chartPanel.setFocusable(true);
 	}
 
+	/**
+	 * Translates a screen coordinate to an x-value on the chart's domain axis.
+	 * 
+	 * @param point The screen point to translate.
+	 * @return The corresponding x-value on the chart.
+	 */
 	private double getXValueFromScreenPos(Point point) {
 		SwingUtilities.convertPointFromScreen(point, chartPanel); // edits in place without return
 		Point2D point2d = chartPanel.translateScreenToJava2D(point);
@@ -459,8 +485,6 @@ public class TrimGUI extends JDialog {
 			plot.removeDomainMarker(this.trimXMarkerLeft);
 		}
 
-
-
 		if (Double.isNaN(trimLeft)) {
 			this.txtLeft.setText("");
 			this.trimXLeft = Double.NaN;
@@ -491,7 +515,6 @@ public class TrimGUI extends JDialog {
 			plot.removeDomainMarker(this.trimXMarkerRight);
 		}
 
-
 		if (Double.isNaN(trimRight)) {
 			this.txtRight.setText("");
 			this.trimXRight = Double.NaN;
@@ -521,26 +544,38 @@ public class TrimGUI extends JDialog {
 		this.txtRight.setFocusable(true);
 
 	}
-	
+
+	/**
+	 * Checks if an index is set (i.e., not -1).
+	 * 
+	 * @param xValueIndex The index to check.
+	 * @return {@code true} if the index is not -1, {@code false} otherwise.
+	 */
 	private boolean isSet(Integer xValueIndex) {
 		return xValueIndex != -1;
 	}
-	
+
+	/**
+	 * Checks if a given index is within the bounds of the {@link HemoData} x-axis data.
+	 * @param hd The {@link HemoData} object.
+	 * @param xValueIndex The index to check.
+	 * @return {@code true} if the index is within bounds, {@code false} otherwise.
+	 */
 	private boolean isWithinBounds(HemoData hd, Integer xValueIndex) {
 		return xValueIndex >= -1 && xValueIndex < hd.getXData().length;
 	}
-	
+
 	/**
 	 * 
 	 * @param input the number to prune
 	 * @return number with only 1 digit after (to the right of) the decimal point
 	 */
-    private static String getRoundedDecimalPart(double input) {
-        // Round the number to one decimal place
-        double roundedValue = Math.round(input * 10) / 10.0;
-        
-        // Return as a string
-        return String.valueOf(roundedValue);
-    }
+	private static String getRoundedDecimalPart(double input) {
+		// Round the number to one decimal place
+		double roundedValue = Math.round(input * 10) / 10.0;
+
+		// Return as a string
+		return String.valueOf(roundedValue);
+	}
 
 }
