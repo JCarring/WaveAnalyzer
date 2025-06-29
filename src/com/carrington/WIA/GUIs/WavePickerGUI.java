@@ -53,7 +53,6 @@ import com.carrington.WIA.GUIs.Components.JCDimension;
 import com.carrington.WIA.GUIs.Components.JCToggleButton;
 import com.carrington.WIA.GUIs.Components.WaveTable;
 import com.carrington.WIA.GUIs.Components.WaveTable.WaveTableListener;
-import com.carrington.WIA.GUIs.Configs.ComboFileConfigGUI;
 import com.carrington.WIA.GUIs.Configs.WIASaveSettingsChoices;
 import com.carrington.WIA.GUIs.Configs.WIASaveSettingsGUI;
 import com.carrington.WIA.Graph.ComboChartSaver;
