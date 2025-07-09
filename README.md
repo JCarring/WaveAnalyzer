@@ -67,5 +67,3 @@ Contributions are welcome! If you have suggestions for improvements or want to a
 
 This project is licensed under the MIT License. See the `LICENSE.md` file for details.
 
----
-*This README was generated to provide a comprehensive guide for users and developers of the Wave Analyzer project.*
