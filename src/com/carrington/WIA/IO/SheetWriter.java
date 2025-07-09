@@ -2,6 +2,7 @@ package com.carrington.WIA.IO;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,17 +23,27 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.carrington.WIA.Utils;
 
+/**
+ * Utility class for writing data to an Excel (.xlsx) spreadsheet using Apache
+ * POI. It handles the creation of workbooks, sheets, cells, and applying
+ * various styles.
+ */
 public class SheetWriter {
 
 	private XSSFWorkbook workbook = null;
 	private XSSFSheet sheet = null;
 	private int nextRowNum = 0;
 
+	/** Font style for main text. */
 	public static final int FONT_MAIN = 0;
+	/** Font style for bold text. */
 	public static final int FONT_BOLD = 1;
 
+	/** Font style for green-colored text (RGB 25, 107, 36). */
 	public static final int FONT_GREEN = 2;
-	public static final int FONT_RED = 3;
+	/** Font style for red-colored text (RGB 255, 0, 0). */
+	private static final int FONT_RED = 3;
+	/** Font style for large title text. */
 	public static final int FONT_TITLE_LARGE = 4;
 
 	private final CellStyle styleMain;
@@ -41,6 +52,10 @@ public class SheetWriter {
 	private final CellStyle styleRed;
 	private final CellStyle styleTitle;
 
+	/**
+	 * Constructs a new writer, initializing the workbook and predefined cell styles
+	 * for fonts, colors, and patterns.
+	 */
 	public SheetWriter() {
 
 		workbook = new XSSFWorkbook();
@@ -101,6 +116,12 @@ public class SheetWriter {
 				new XSSFColor(new byte[] { (byte) 192, (byte) 230, (byte) 245 }, new DefaultIndexedColorMap()));
 	}
 
+	/**
+	 * Creates a new sheet in the workbook with the specified name and resets the
+	 * row counter
+	 *
+	 * @param name The name for the new sheet
+	 */
 	public void newSheet(String name) {
 		if (sheet != null) {
 			int numColumns = getNumColumns();
@@ -112,10 +133,22 @@ public class SheetWriter {
 		nextRowNum = 0;
 	}
 
+	/**
+	 * Gets the currently active sheet
+	 *
+	 * @return The current {@link XSSFSheet} instance
+	 */
 	public XSSFSheet getCurrentSheet() {
 		return this.sheet;
 	}
 
+	/**
+	 * Sets the widths for multiple columns based on a map of column indices to
+	 * width values
+	 *
+	 * @param widths A map where keys are column indices and values are the desired
+	 *               widths (in units of 1/256th of a character width)
+	 */
 	public void setCurrentWidths(Map<Integer, Integer> widths) {
 		if (this.sheet != null) {
 			for (Entry<Integer, Integer> en : widths.entrySet()) {
@@ -123,7 +156,15 @@ public class SheetWriter {
 			}
 		}
 	}
-	
+
+	/**
+	 * Sets a uniform width for a specified range of columns.
+	 *
+	 * @param colStart The starting column index (inclusive)
+	 * @param colEnd   The ending column index (inclusive)
+	 * @param width    The width to apply to the columns (in units of 1/256th of a
+	 *                 character width)
+	 */
 	public void setCurrentWidths(int colStart, int colEnd, int width) {
 		if (this.sheet != null) {
 			for (int i = colStart; i <= colEnd; i++) {
@@ -133,7 +174,14 @@ public class SheetWriter {
 		}
 	}
 
-	public void saveFile(File file) {
+	/**
+	 * Saves the workbook content to the specified file.
+	 *
+	 * @param file The file to save the workbook to. Must have a '.xlsx' extension.
+	 * @throws IOException              if any error with writing
+	 * @throws IllegalArgumentException if no file extension '.xlsx'
+	 */
+	public void saveFile(File file) throws IOException {
 
 		int numColumns = getNumColumns();
 		if (numColumns > 0) {
@@ -143,20 +191,19 @@ public class SheetWriter {
 		if (!Utils.hasOkayExtension(file, ".xlsx")) {
 			throw new IllegalArgumentException("Only '.xlsx' extension allowed, but trid to save " + file.getName());
 		}
+		FileOutputStream out = new FileOutputStream(file);
+		workbook.write(out);
 
-		try {
+		out.close();
 
-			FileOutputStream out = new FileOutputStream(file);
-			workbook.write(out);
-
-			out.close();
-		}
-
-		catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
+	/**
+	 * Writes a single row of data to the sheet with default styling. Does not
+	 * actually do any saving. That must be done with {@link #saveFile(File)}
+	 *
+	 * @param data An array of objects to be written as a row.
+	 */
 	public void writeData(Object[] data) {
 
 		XSSFRow row = sheet.createRow(nextRowNum);
@@ -192,6 +239,14 @@ public class SheetWriter {
 
 	}
 
+	/**
+	 * Writes a single row of data to the sheet with specified cell formatting. Does
+	 * not actually do any saving. That must be done with {@link #saveFile(File)}
+	 *
+	 * @param data          An array of objects to be written as a row.
+	 * @param fontSelection An array of integers corresponding to font styles for
+	 *                      each cell.
+	 */
 	public void writeData(Object[] data, int[] fontSelection) {
 
 		XSSFRow row = sheet.createRow(nextRowNum);
@@ -246,6 +301,12 @@ public class SheetWriter {
 
 	}
 
+	/**
+	 * Writes a multiple row of data to the sheet with default cell formatting. Does
+	 * not actually do any saving. That must be done with {@link #saveFile(File)}
+	 *
+	 * @param rows An array of Object[] (rows) to be written.
+	 */
 	public void writeData(Object[][] rows) {
 
 		for (Object[] row : rows) {
@@ -260,8 +321,12 @@ public class SheetWriter {
 	 *
 	 * @param value         the value to write in the merged cell
 	 * @param mergeToColumn the last column index to merge (0-based, inclusive)
-	 * @param fontSelection the formatting selection; one of FONT_MAIN, FONT_BOLD,
-	 *                      FONT_GREEN, FONT_RED, FONT_TITLE_LARGE
+	 * @param fontSelection the formatting selection; one of
+	 *                      {@link SheetWriter#FONT_MAIN},
+	 *                      {@link SheetWriter#FONT_BOLD},
+	 *                      {@link SheetWriter#FONT_GREEN},
+	 *                      {@link SheetWriter#FONT_RED},
+	 *                      {@link SheetWriter#FONT_TITLE_LARGE}
 	 */
 	public void writeMergedRow(Object value, int mergeToColumn, int fontSelection) {
 		XSSFRow row = sheet.createRow(nextRowNum);
@@ -301,6 +366,15 @@ public class SheetWriter {
 		nextRowNum++;
 	}
 
+	/**
+	 * Writes multiple rows of data to the sheet with specified cell formatting.
+	 * Does not actually do any saving. That must be done with
+	 * {@link #saveFile(File)}
+	 *
+	 * @param rows       A 2D array of objects to write.
+	 * @param formatting A 2D array of integers specifying the font style for each
+	 *                   cell.
+	 */
 	public void writeData(Object[][] rows, int[][] formatting) {
 
 		for (int i = 0; i < rows.length; i++) {
@@ -310,6 +384,14 @@ public class SheetWriter {
 
 	}
 
+	/**
+	 * Calculates the maximum number of columns in the current sheet. This is a more
+	 * time intense process than would be expected, because maximum column number
+	 * isn't stored or retrievable from {@link XSSFSheet} by default. This method
+	 * iterates over every row to find the max
+	 *
+	 * @return The number of columns as an integer.
+	 */
 	private int getNumColumns() {
 		int colNumber = -1;
 		Iterator<Row> rowItr = sheet.rowIterator();

@@ -40,6 +40,11 @@ import com.carrington.WIA.Utils;
 import com.carrington.WIA.GUIs.CombowireGUI;
 import com.carrington.WIA.Math.Savgol;
 
+/**
+ * A {@link JDialog} window for managing configuration settings for the Combowire
+ * analysis process. It provides UI for setting general options, run
+ * configurations like flow offset and column mapping, and filter parameters.
+ */
 public class ComboFileConfigGUI extends JDialog {
 
 	private static final long serialVersionUID = 5137417115882742282L;
@@ -123,24 +128,10 @@ public class ComboFileConfigGUI extends JDialog {
 	}
 
 	/**
-	 * Create the frame.
+	 * Creates the configuration settings frame for Combowire analysis. Initializes
+	 * all UI components and loads existing properties from the configuration file.
 	 */
 	public ComboFileConfigGUI() {
-//		try {
-//			String path = getClass().getProtectionDomain().getCodeSource().getLocation().getPath();
-//			File file = new File(path);
-//			
-//			//File jarFile = new File(path);
-//			//String jarDir = jarFile.getParentFile().getAbsolutePath();
-//			Utils.showInfo("No error: " + file.getPath(), null);
-//			Utils.showInfo("No error: " + file.getCanonicalPath(), null);
-//			Utils.showInfo("No error: " + file.getAbsolutePath(), null);
-//
-//
-//		} catch (Exception e) {
-//			Utils.showInfo("Error: " + e, null);
-//
-//		}
 
 		try {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -394,6 +385,12 @@ public class ComboFileConfigGUI extends JDialog {
 
 	}
 
+	/**
+	 * Opens the settings dialog, making it visible and modal.
+	 *
+	 * @param component The {@link Component} to which the dialog should be positioned
+	 * relative. Can be null.
+	 */
 	public void open(Component component) {
 		setLocationRelativeTo(component);
 		setModal(true);
@@ -401,10 +398,17 @@ public class ComboFileConfigGUI extends JDialog {
 		setVisible(true);
 	}
 
+	/**
+	 * Closes the dialog by setting its visibility to false. Does not dispose of it.
+	 */
 	public void close() {
 		setVisible(false);
 	}
 
+	/**
+	 * Populates the GUI fields with the current option values stored in the
+	 * instance variables.
+	 */
 	public void setDisplayValues() {
 
 		this.chAutoHeader.setSelected(this.opAutoHeader);
@@ -423,6 +427,14 @@ public class ComboFileConfigGUI extends JDialog {
 
 	}
 
+	/**
+	 * Validates the data entered into the GUI fields. Checks for a valid flow
+	 * offset, unique column names across types, and valid Savitzky-Golay filter
+	 * parameters.
+	 *
+	 * @return A {@code String} containing an error message if validation fails, or
+	 * {@code null} if all values are valid.
+	 */
 	public String validateDisplayValues() {
 
 		try {
@@ -478,6 +490,10 @@ public class ComboFileConfigGUI extends JDialog {
 
 	}
 
+	/**
+	 * Records the values from the GUI components into their corresponding instance
+	 * variables.
+	 */
 	public void recordDisplayValues() {
 		this.opFlowOffset = Integer.parseInt(this.txtOffset.getText());
 		this.opAutoHeader = this.chAutoHeader.isSelected();
@@ -495,6 +511,11 @@ public class ComboFileConfigGUI extends JDialog {
 
 	}
 
+	/**
+	 * Reads configuration settings from the "config_WIA.properties" file and loads
+	 * them into the instance variables. If the file does not exist, default values
+	 * are retained.
+	 */
 	public void readProperties() {
 		if (configFile.exists()) {
 			Properties prop = new Properties();
@@ -595,7 +616,11 @@ public class ComboFileConfigGUI extends JDialog {
 
 		}
 	}
-
+	
+	/**
+	 * Writes the current configuration settings from the instance variables to the
+	 * "config_WIA.properties" file.
+	 */
 	public void writeProperties() {
 		Properties prop = new Properties();
 		prop.setProperty(keyFlowOffset, String.valueOf(opFlowOffset));
@@ -632,6 +657,13 @@ public class ComboFileConfigGUI extends JDialog {
 
 	}
 
+	/**
+	 * Parses a string representation of a list (e.g., "[item1,item2]") into a
+	 * {@code List<String>}.
+	 *
+	 * @param str The string to parse.
+	 * @return A {@code List<String>} containing the parsed items.
+	 */
 	public List<String> parseStringList(String str) {
 		List<String> list = new ArrayList<String>();
 		try {
@@ -649,6 +681,15 @@ public class ComboFileConfigGUI extends JDialog {
 		return list;
 	}
 
+	/**
+	 * Converts a multi-line string from a JTextArea into a list of non-blank
+	 * strings.
+	 *
+	 * @param str The string from the display component, with lines separated by
+	 * the system's line separator.
+	 * @return A {@code List<String>} where each element is a line from the input
+	 * string.
+	 */
 	public List<String> recordStringDisplay(String str) {
 		List<String> list = new ArrayList<String>();
 		String[] split = str.split(System.getProperty("line.separator"));
@@ -660,6 +701,13 @@ public class ComboFileConfigGUI extends JDialog {
 		return list;
 	}
 
+	/**
+	 * Converts a list of strings into a comma-separated string enclosed in square
+	 * brackets, suitable for saving in a properties file.
+	 *
+	 * @param list The list of strings to convert.
+	 * @return A formatted string representation of the list.
+	 */
 	public String listToSaveString(List<String> list) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("[");
@@ -681,6 +729,13 @@ public class ComboFileConfigGUI extends JDialog {
 		return sb.toString();
 	}
 
+	/**
+	 * Converts a list of strings into a single string where each item is on a new
+	 * line, for display in a JTextArea.
+	 *
+	 * @param list The list of strings to convert.
+	 * @return A multi-line string representation of the list.
+	 */
 	public String listToDisplayString(List<String> list) {
 		StringBuilder sb = new StringBuilder();
 		boolean isFirst = true;
@@ -695,11 +750,22 @@ public class ComboFileConfigGUI extends JDialog {
 		return sb.toString();
 
 	}
-
+	
+	/**
+	 * Gets the path of the last directory accessed by the user.
+	 *
+	 * @return The last used directory path as a string.
+	 */
 	public String getLastDirectoryPath() {
 		return this.opLastDir;
 	}
 
+	/**
+	 * Sets and saves the path of the last accessed directory based on a given
+	 * file.
+	 *
+	 * @param file The file or directory from which to derive the path.
+	 */
 	public void tryToSetLastDir(File file) {
 		if (!file.exists())
 			return;
@@ -712,67 +778,149 @@ public class ComboFileConfigGUI extends JDialog {
 		writeProperties();
 	}
 
+	/**
+	 * Gets the R-Wave synchronization setting.
+	 *
+	 * @return {@code true} if snap to R-Wave is enabled, {@code false} otherwise.
+	 */
 	public boolean getRWaveSync() {
 		return this.opSnapToR;
 	}
 
+	/**
+	 * Sets and saves the R-Wave synchronization preference.
+	 *
+	 * @param sync The new synchronization state.
+	 */
 	public void tryToSetRWaveSync(boolean sync) {
 		this.opSnapToR = sync;
 		writeProperties();
 	}
-
+	
+	/**
+	 * Gets the configured flow offset value.
+	 *
+	 * @return The flow offset as an integer.
+	 */
 	public int getFlowOffset() {
 		return opFlowOffset;
 	}
 
+	/**
+	 * Gets the status of the "Auto-detect headers" checkbox.
+	 *
+	 * @return {@code true} if auto-detect headers is selected, {@code false}
+	 * otherwise.
+	 */
 	public boolean getAutoHeader() {
 		return chAutoHeader.isSelected();
 	}
 
+	/**
+	 * Gets the status of the "Auto name files" checkbox.
+	 *
+	 * @return {@code true} if auto-name files is selected, {@code false}
+	 * otherwise.
+	 */
 	public boolean getAutoName() {
 		return chAutoName.isSelected();
 	}
 
+	/**
+	 * Gets the status of the "Auto Save to directory" checkbox.
+	 *
+	 * @return {@code true} if auto-save is selected, {@code false} otherwise.
+	 */
 	public boolean getAutoSaveInDirectory() {
 		return chAutoSaveDir.isSelected();
 	}
 
+	/**
+	 * Gets the list of column names designated as pressure columns.
+	 *
+	 * @return A list of strings representing the pressure columns.
+	 */
 	public List<String> getColumnsPressure() {
 		return this.opColPressure;
 	}
 
+	/**
+	 * Gets the list of column names designated as flow columns.
+	 *
+	 * @return A list of strings representing the flow columns.
+	 */
 	public List<String> getColumnsFlow() {
 		return this.opColFlow;
 	}
 
+	/**
+	 * Gets the list of column names designated as ECG columns.
+	 *
+	 * @return A list of strings representing the ECG columns.
+	 */
 	public List<String> getColumnsECG() {
 		return this.opColECG;
 	}
 
+	/**
+	 * Gets the list of column names designated as R-Wave columns.
+	 *
+	 * @return A list of strings representing the R-Wave columns.
+	 */
 	public List<String> getColumnsRWave() {
 		return this.opColRWave;
 	}
 
+	/**
+	 * Gets the object containing choices for how to save WIA results.
+	 *
+	 * @return The {@code WIASaveSettingsChoices} object.
+	 */
 	public WIASaveSettingsChoices getSaveSettingsChoices() {
 		return this.wiaSettings;
 	}
 
+	/**
+	 * Gets the resample rate from the corresponding text field.
+	 *
+	 * @return The resample rate as a string.
+	 */
 	public String getResampleString() {
 		return txtResampleRate.getText();
 	}
 	
+	/**
+	 * Checks if the pre-WIA Savitzky-Golay filter is enabled.
+	 *
+	 * @return {@code true} if the filter is enabled, {@code false} otherwise.
+	 */
 	public boolean isPreWIAFilterEnabled() {
 		return opPreWIAFilterEnable;
 	}
 
+	/**
+	 * Gets the window size for the pre-WIA Savitzky-Golay filter.
+	 *
+	 * @return The window size as a string.
+	 */
 	public String getPreWIAFilterWindowString() {
 		return opPreWIAFilterWindow;
 	}
 
+	/**
+	 * Gets the polynomial order for the pre-WIA Savitzky-Golay filter.
+	 *
+	 * @return The polynomial order as a string.
+	 */
 	public String getPreWIAFilterPolyString() {
 		return opPreWIAFilterPoly;
 	}
 
+	/**
+	 * Gets the selected ensemble type for waveform analysis.
+	 *
+	 * @return The ensemble type as a string.
+	 */
 	public String getEnsembleType() {
 		return opEnsembleType;
 	}

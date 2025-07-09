@@ -648,8 +648,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				if (resampleFreq != null) {
 					try {
 						double[][] domains = dataManager.getDomains();
-						double resampleRate = DataResampler.calculateReSampleFrequency(resampleFreq, -1, domains[0],
-								domains[1]);
+						double resampleRate = DataResampler.calculateReSampleFrequency(resampleFreq, domains[0], domains[1]);
 
 						HemoData resampled1 = dataManager.data1.resampleAt(resampleRate);
 						HemoData resampled2 = dataManager.data2.resampleAt(resampleRate);
@@ -1417,14 +1416,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		SheetDataReader dataReader = new SheetDataReader(file, numRowsIgnore);
 		// Attempt to get headers
 		HeaderResult hr = dataReader.readHeaders();
-		if (!hr.success) {
-			Utils.showError(hr.errorMsg, this);
+		if (!hr.isSuccess()) {
+			Utils.showError(hr.getErrors(), this);
 			return;
 		}
-		if (hr.headers.isEmpty()) {
+		if (hr.getHeaders().isEmpty()) {
 			Utils.showError("No headers found in file", this);
 			return;
-		} else if (hr.headers.size() < 2) {
+		} else if (hr.getHeaders().size() < 2) {
 			Utils.showError("Must have at least two headers - one domain and at least one range.", this);
 			return;
 		}
@@ -1433,7 +1432,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		// We will take EKG to to be the default
 		Header defaultHeader = null;
 		List<Header> excludes = new ArrayList<Header>();
-		for (Header header : hr.headers) {
+		for (Header header : hr.getHeaders()) {
 			if (config.getColumnsAlign().contains(header.getName())) {
 				defaultHeader = header;
 			} else if (config.getColumnsExclude().contains(header.getName())) {
@@ -1443,7 +1442,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		}
 
 		SheetOptionsSelectionGUI optionsDialog = new SheetOptionsSelectionGUI(
-				FilenameUtils.removeExtension(file.getName()), hr.headers, excludes, defaultHeader, this);
+				FilenameUtils.removeExtension(file.getName()), hr.getHeaders(), excludes, defaultHeader, this);
 		optionsDialog.setVisible(true);
 		// Code will hang until it is closed
 
@@ -1465,8 +1464,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		}, progressBar, readResult -> {
 			// sync code, AFTER async code above
 			setProgressBarEnabled(false, -1, -1);
-			if (readResult.errors != null) {
-				Utils.showError(readResult.errors, ref.get());
+			if (readResult.getErrors() != null) {
+				Utils.showError(readResult.getErrors(), ref.get());
 				// will set the open file button enabled/disabled
 				if (isFileOne) {
 					setPanelState(STATE_INIT);
@@ -1478,16 +1477,16 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 			_setColumnList(list, options.selectedHeaders);
 			_setFileName(text, options.name + " (" + file.getName() + ")");
-			readResult.data.setName(options.name);
-			readResult.data.addFlags(options.headerForAlign, HemoData.OTHER_ALIGN);
+			readResult.getData().setName(options.name);
+			readResult.getData().addFlags(options.headerForAlign, HemoData.OTHER_ALIGN);
 			options.headerForAlign.addAdditionalMeta(Header.META_ALIGN, null);
 			options.headerForAlign.addAdditionalMeta(Header.META_COLOR, Color.RED);
 
 			if (isFileOne) {
-				dataManager.data1 = readResult.data;
+				dataManager.data1 = readResult.getData();
 				setPanelState(STATE_FILE_ONE_SELECTED);
 			} else {
-				dataManager.data2 = readResult.data;
+				dataManager.data2 = readResult.getData();
 				setPanelState(STATE_RESAMPLE);
 			}
 
@@ -2026,7 +2025,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 				String append = value.hasAdditionalMeta(Header.META_ALIGN) ? " [ALIGN]" : "";
 				JLabel label = new JLabel(value.getName() + " (Col " + value.getCol() + ")" + append);
-				if (value.isPrimaryX()) {
+				if (value.isX()) {
 					label.setForeground(Color.BLUE);
 				}
 

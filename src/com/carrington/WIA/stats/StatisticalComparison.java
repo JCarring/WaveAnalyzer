@@ -13,15 +13,30 @@ import java.util.stream.Collectors;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.IO.SheetWriter;
 
+/**
+ * Manages and reports on a set of statistical outcomes for a named comparison.
+ * It can organize, run statistics on, and write the results of multiple
+ * outcomes to a spreadsheet.
+ */
 public class StatisticalComparison {
 
 	private final String nameOfComparison;
 	private ArrayList<Outcome> outcomes = new ArrayList<Outcome>();
 
+	/**
+	 * Constructs a new statistical comparison with a given name.
+	 * 
+	 * @param nameOfComparison The name for this set of comparisons.
+	 */
 	public StatisticalComparison(String nameOfComparison) {
 		this.nameOfComparison = nameOfComparison;
 	}
 
+	/**
+	 * Gets the name of the comparison.
+	 * 
+	 * @return The name of the comparison.
+	 */
 	public String getNameOfComparison() {
 		return this.nameOfComparison;
 	}
@@ -33,6 +48,11 @@ public class StatisticalComparison {
 		return this.outcomes;
 	}
 
+	/**
+	 * Adds one or more outcomes to the comparison and runs the statistical tests.
+	 * 
+	 * @param outcomesToAdd A variable number of Outcome objects to add.
+	 */
 	public void addOutcome(Outcome... outcomesToAdd) {
 		for (Outcome out : outcomesToAdd) {
 			this.outcomes.add(out);
@@ -40,6 +60,11 @@ public class StatisticalComparison {
 		}
 	}
 
+	/**
+	 * Prints a summary of the comparison and its outcomes to the console.
+	 * 
+	 * @param includeRawVals If true, raw data values are included in the output.
+	 */
 	public void print(boolean includeRawVals) {
 
 		System.out.println("=================================");
@@ -78,13 +103,20 @@ public class StatisticalComparison {
 
 	}
 
+	/**
+	 * Writes the results of the statistical comparison to a spreadsheet using a
+	 * {@link SheetWriter}
+	 * 
+	 * @param sw The {@link SheetWriter} instance to use for writing the data.
+	 */
 	public void write(SheetWriter sw) {
-		sw.writeMergedRow(nameOfComparison, 5,  SheetWriter.FONT_TITLE_LARGE);
-		sw.setCurrentWidths(Map.of(0,50));
+		sw.writeMergedRow(nameOfComparison, 5, SheetWriter.FONT_TITLE_LARGE);
+		sw.setCurrentWidths(Map.of(0, 50));
 		sw.setCurrentWidths(2, 26, 20);
 		sw.writeData(new Object[] { " " }); // print space
 
-		List<Outcome> continuous = outcomes.stream().filter(out -> out.getDataType() == DataType.CONTINUOUS).collect(Collectors.toList());
+		List<Outcome> continuous = outcomes.stream().filter(out -> out.getDataType() == DataType.CONTINUOUS)
+				.collect(Collectors.toList());
 		List<Outcome> binary = outcomes.stream().filter(out -> out.getDataType() == DataType.DISCRETE_BOOLEAN)
 				.collect(Collectors.toList());
 
@@ -92,7 +124,7 @@ public class StatisticalComparison {
 			printSubList(continuous, sw, "Continuous");
 			sw.writeData(new Object[] { " " }); // print space
 		}
-		
+
 		if (!binary.isEmpty()) {
 			printSubList(binary, sw, "Binary");
 			sw.writeData(new Object[] { " " }); // print space
@@ -101,7 +133,15 @@ public class StatisticalComparison {
 
 	}
 
-
+	/**
+	 * Prints a sub-list of outcomes (either continuous or binary) to the provided
+	 * {@link SheetWriter}
+	 * 
+	 * @param comparisonSubList The list of outcomes to print.
+	 * @param sw                The SheetWriter to write the data to.
+	 * @param typeOfOutcome     A string describing the type of outcome (e.g.,
+	 *                          "Continuous", "Binary").
+	 */
 	private void printSubList(List<Outcome> comparisonSubList, SheetWriter sw, String typeOfOutcome) {
 
 		int compSize = comparisonSubList.size();
@@ -246,7 +286,7 @@ public class StatisticalComparison {
 			rowFormat.add(SheetWriter.FONT_MAIN);
 
 			for (Entry<String, SummaryStats[]> sum : groups.entrySet()) {
-				
+
 				int numberNeededToFill = getMaximumFieldsSize(sum.getValue());
 				SummaryStats ss = sum.getValue()[counter];
 				if (ss != null) {
@@ -270,92 +310,31 @@ public class StatisticalComparison {
 
 	}
 
+	/**
+	 * Determines the maximum number of summary statistic fields across an array of
+	 * SummaryStats.
+	 * 
+	 * @param sumStats An array of {@link SummaryStats} objects.
+	 * @return The maximum number of fields.
+	 */
 	public int getMaximumFieldsSize(SummaryStats[] sumStats) {
 		SummaryStats sampleStat = Arrays.stream(sumStats).filter(Objects::nonNull).findFirst().orElse(null);
 		List<String> fields = sampleStat != null ? sampleStat.getFields() : Collections.emptyList();
 		return fields.size();
 	}
-	
+
+	/**
+	 * Retrieves the list of field names from a representative SummaryStats object
+	 * in an array.
+	 * 
+	 * @param sumStats An array of SummaryStats objects.
+	 * @return A list of field names.
+	 */
 	public List<String> getMaximumFieldsNames(SummaryStats[] sumStats) {
 		SummaryStats sampleStat = Arrays.stream(sumStats).filter(Objects::nonNull).findFirst().orElse(null);
 		List<String> fields = sampleStat != null ? sampleStat.getFields() : Collections.emptyList();
 		return fields;
 	}
-//
-//	public String[][] getReport() {
-//
-//		ArrayList<String[]> rows = new ArrayList<String[]>();
-//		rows.add(new String[] { nameOfComparison });
-//
-//		// Builder headers
-//		ArrayList<String> headerGroups = new ArrayList<String>();
-//
-//		ArrayList<String> headerColumnName = new ArrayList<String>();
-//		headerGroups.add("");
-//		headerColumnName.add("Outcome");
-//
-//		for (StatTest st : StatTest.values()) {
-//			headerGroups.add("");
-//			headerColumnName.add(st.toString());
-//		}
-//
-//		headerGroups.add("");
-//		headerColumnName.add("");
-//
-//		InsensitiveNonDupList groups = new InsensitiveNonDupList();
-//
-//		for (Outcome outcome : outcomes) {
-//			for (String group : outcome.getGroups()) {
-//				groups.add(group);
-//			}
-//		}
-//
-//		for (String group : groups) {
-//			boolean first = true;
-//			for (OutcomeParameter outParam : OutcomeParameter.values()) {
-//				if (first) {
-//					first = false;
-//					headerGroups.add(group);
-//				} else {
-//					headerGroups.add("");
-//				}
-//				headerColumnName.add(outParam.toString());
-//			}
-//		}
-//
-//		rows.add(headerGroups.toArray(new String[0]));
-//		rows.add(headerColumnName.toArray(new String[0]));
-//
-//		for (Outcome outcome : outcomes) {
-//			ArrayList<String> outcomeString = new ArrayList<String>();
-//			outcomeString.add(outcome.getName());
-//			Map<StatTest, String> statsValues = outcome.getArrayOfStatsStringAll();
-//			for (StatTest statTest : StatTest.values()) {
-//				String value = statsValues.get(statTest);
-//				if (value == null)
-//					value = "--";
-//				outcomeString.add(value);
-//			}
-//			outcomeString.add("");
-//			TreeMap<String, Map<OutcomeParameter, String>> parameterValues = outcome.getArrayOfData();
-//
-//			for (String group : groups) {
-//				Map<OutcomeParameter, String> params = parameterValues.get(group);
-//
-//				for (OutcomeParameter outParam : OutcomeParameter.values()) {
-//					String paramValue = params == null ? null : params.get(outParam);
-//					if (paramValue == null || paramValue.isBlank()) {
-//						paramValue = "--";
-//					}
-//					outcomeString.add(paramValue);
-//				}
-//			}
-//
-//			rows.add(outcomeString.toArray(new String[0]));
-//		}
-//
-//		return rows.toArray(new String[0][]);
-//
-//	}
+
 
 }

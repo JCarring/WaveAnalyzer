@@ -1054,26 +1054,26 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		// Attempt to get headers;
 		HeaderResult hr = dataReader.readHeaders();
-		if (!hr.success) {
-			Utils.showError(hr.errorMsg, this);
+		if (!hr.isSuccess()) {
+			Utils.showError(hr.getErrors(), this);
 			return;
 		}
 
-		if (hr.headers.isEmpty()) {
+		if (hr.getHeaders().isEmpty()) {
 			Utils.showError("No headers found in file", this);
 			return;
-		} else if (hr.headers.size() < 2) {
+		} else if (hr.getHeaders().size() < 2) {
 			Utils.showError("Must have at least two headers - one domain and at least one range.", this);
 			return;
 		}
 
-		ReadResult dataResult = dataReader.readData(hr.headers);
-		if (dataResult.errors != null) {
-			Utils.showError(dataResult.errors, this);
+		ReadResult dataResult = dataReader.readData(hr.getHeaders());
+		if (dataResult.getErrors() != null) {
+			Utils.showError(dataResult.getErrors(), this);
 			return;
 		}
 
-		this.data = dataResult.data;
+		this.data = dataResult.getData();
 
 		currFile = file;
 		txtFileName.setText(file.getName());

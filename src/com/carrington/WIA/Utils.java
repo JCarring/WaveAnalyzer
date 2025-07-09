@@ -77,7 +77,7 @@ public abstract class Utils {
 
 	// Standard icon for be used for standalone question mark buttons which are used
 	// to provide user help
-	
+
 	/** Question icon */
 	public static final ImageIcon IconQuestion;
 	/** Question icon, to be displayed when hovering */
@@ -89,7 +89,7 @@ public abstract class Utils {
 
 	// Standard fonts used by this program which are scaled to the size of the
 	// user's screen
-	
+
 	/** Arial, bold, size is screen height / 50 (with a maximum 24 pt) */
 	private static final Font fontTitle;
 	/** Arial, bold, size is screen height / 75 (with a maximum 18 pt) */
@@ -189,7 +189,7 @@ public abstract class Utils {
 	 * Default value for an disabled panel, {@link Color#LIGHT_GRAY}
 	 */
 	public static final Color colorPnlDisabled = Color.LIGHT_GRAY;
-	
+
 	/** A custom purple color used for UI elements. */
 	public static final Color colorPurple = new Color(161, 0, 132, 255);
 	/** A custom darker purple color used for UI elements. */
@@ -726,6 +726,42 @@ public abstract class Utils {
 	}
 
 	/**
+	 * Finds the bounds (min and max) of the array with the smallest difference
+	 * between max and min.
+	 *
+	 * @param arrays A variable number of double arrays to search.
+	 * @return A double array of size 2, where index 0 is the min and index 1 is the
+	 *         max of the array with the smallest range.
+	 */
+	public static double[] getMinimumBounds(double[]... arrays) {
+		double[] result = null;
+		double minRange = Double.MAX_VALUE;
+
+		for (double[] array : arrays) {
+			if (array.length == 0)
+				continue;
+
+			double min = Double.MAX_VALUE;
+			double max = -Double.MAX_VALUE;
+
+			for (double v : array) {
+				if (v < min)
+					min = v;
+				if (v > max)
+					max = v;
+			}
+
+			double range = max - min;
+			if (range < minRange) {
+				minRange = range;
+				result = new double[] { min, max };
+			}
+		}
+
+		return result;
+	}
+
+	/**
 	 * Calculates the total range (max - min) across one or more double arrays.
 	 *
 	 * @param arrays A variable number of double arrays to process.
@@ -734,6 +770,18 @@ public abstract class Utils {
 	 */
 	public static double getRange(double[]... arrays) {
 		double[] bounds = getBounds(arrays);
+		return (Math.abs(bounds[0]) + Math.abs(bounds[1]));
+	}
+
+	/**
+	 * Calculates the minimum range (max - min) across one or more double arrays.
+	 *
+	 * @param arrays A variable number of double arrays to process.
+	 * @return The smallest difference between maximum and minimum in one of the
+	 *         arrays
+	 */
+	public static double getMinimumRange(double[]... arrays) {
+		double[] bounds = getMinimumBounds(arrays);
 		return (Math.abs(bounds[0]) + Math.abs(bounds[1]));
 	}
 
@@ -1955,6 +2003,21 @@ public abstract class Utils {
 	}
 
 	/**
+	 * This function returns the input array after reversing the order of the
+	 * elements in it.
+	 * 
+	 * @param arr Array to be reversed
+	 * @return double[] Reversed array
+	 */
+	public static double[] reverse(double[] arr) {
+		double[] inv = new double[arr.length];
+		for (int i = 0; i < inv.length; i++) {
+			inv[i] = arr[arr.length - 1 - i];
+		}
+		return inv;
+	}
+
+	/**
 	 * Converts a 1D double array into a 2D array where the first column is the
 	 * original index and the second column is the value.
 	 *
@@ -2083,7 +2146,6 @@ public abstract class Utils {
 		}
 	}
 
-
 	/**
 	 * Determines the pressure unit, given the inputs which are expected to be blood
 	 * pressure readings. Will return one of {@link PressureUnit}. If cannot
@@ -2151,7 +2213,6 @@ public abstract class Utils {
 		// Blood pressure in Pascals typically ranges between 8000 and 24000 Pascals
 		return value >= 8000 && value <= 24000;
 	}
-
 
 	/**
 	 * Determines the flow unit, given the inputs which are expected to be coronary

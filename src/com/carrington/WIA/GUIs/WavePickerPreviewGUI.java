@@ -115,11 +115,29 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	private Component compForPosition = null;
 
 	/**
-	 * Create the frame.
+	 * Creates the preview frame.
+	 *
+	 * @param selectionName        The name of the current data selection.
+	 * @param data                 The hemodynamic data to be previewed.
+	 * @param pr                   The result from a previous preview, if any.
+	 * @param hasPreviousPreview   True if a "previous" preview option should be
+	 *                             available.
+	 * @param hasNextPreview       True if a "next" preview option should be
+	 *                             available.
+	 * @param filterSettings       The initial settings for the Savitzky-Golay
+	 *                             filter.
+	 * @param filterEnabled        True if the filter should be enabled by default.
+	 * @param allowAlignWrap       True if wrap-around alignment is permitted.
+	 * @param allowWrapDiscordance True if excessive discordance during wrap-around
+	 *                             should be ignored.
+	 * @param maintainSettings     True if settings should be maintained for the
+	 *                             next preview.
+	 * @param relative             The component to position this dialog relative
+	 *                             to.
 	 */
 	public WavePickerPreviewGUI(String selectionName, HemoData data, PreviewResult pr, boolean hasPreviousPreview,
 			boolean hasNextPreview, SavGolSettings filterSettings, boolean filterEnabled, boolean allowAlignWrap,
-			boolean allowAlignWrapExcessiveDiscordance, boolean maintainSettings, Component relative) {
+			boolean allowWrapDiscordance, boolean maintainSettings, Component relative) {
 
 		this.data = data;
 		this.hasPreviousPreview = hasPreviousPreview;
@@ -169,11 +187,11 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			}
 		});
 
-		generateWIA(this.filterEnabled, false, allowAlignWrap, allowAlignWrapExcessiveDiscordance);
+		generateWIA(this.filterEnabled, false, allowAlignWrap, allowWrapDiscordance);
 
 		initPnlTop(selectionName);
 		initWIA();
-		initPnlDisplaySetting(allowAlignWrap, allowAlignWrapExcessiveDiscordance, maintainSettings);
+		initPnlDisplaySetting(allowAlignWrap, allowWrapDiscordance, maintainSettings);
 		initPnlButtons();
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -1010,7 +1028,8 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	}
 
 	/**
-	 * A container for the results of a wave-picking preview, including filter settings and alignment data.
+	 * A container for the results of a wave-picking preview, including filter
+	 * settings and alignment data.
 	 */
 	public static class PreviewResult {
 		private final SavGolSettings filterSettings;
@@ -1021,6 +1040,19 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		private final int indexPressureAlign;
 		private final int indexFlowAlign;
 
+		/**
+		 * Constructs a PreviewResult object to store the state of the preview session.
+		 *
+		 * @param filterSettings      The Savitzky-Golay filter settings used.
+		 * @param filterEnabled       Whether the filter was enabled.
+		 * @param wiaData             The resulting WIAData after adjustments.
+		 * @param settingsPersist     Not used in current implementation.
+		 * @param allowWrap           Whether wrap-around alignment was allowed.
+		 * @param allowWrapIgnoreEnds Whether ignoring excessive discordance was
+		 *                            allowed.
+		 * @param pressureAlign       The alignment index for pressure.
+		 * @param flowAlign           The alignment index for flow.
+		 */
 		private PreviewResult(SavGolSettings filterSettings, boolean filterEnabled, WIAData wiaData,
 				boolean settingsPersist, boolean allowWrap, boolean allowWrapIgnoreEnds, int pressureAlign,
 				int flowAlign) {
@@ -1032,31 +1064,66 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			this.indexPressureAlign = pressureAlign;
 			this.indexFlowAlign = flowAlign;
 		}
-		
+
+		/**
+		 * Gets the Savitzky-Golay filter settings.
+		 * 
+		 * @return The SavGolSettings object.
+		 */
 		public SavGolSettings getSettings() {
 			return this.filterSettings;
 		}
-		
+
+		/**
+		 * Checks if the filter was enabled.
+		 * 
+		 * @return True if the filter was enabled.
+		 */
 		public boolean isFilterEnabled() {
 			return this.filterEnabled;
 		}
-		
+
+		/**
+		 * Checks if wrap-around alignment was allowed.
+		 * 
+		 * @return True if wrap-around was allowed.
+		 */
 		public boolean isAllowWrap() {
 			return this.allowWrap;
 		}
-		
+
+		/**
+		 * Checks if ignoring excessive discordance during wrap-around was allowed.
+		 * 
+		 * @return True if ignoring excessive discordance was allowed.
+		 */
 		public boolean isAllowWrapIgnoreEnds() {
 			return this.allowWrapIgnoreEnds;
 		}
-		
+
+		/**
+		 * Gets the resulting WIA data from the preview.
+		 * 
+		 * @return The WIAData object.
+		 */
 		public WIAData getWIAData() {
 			return this.wiaData;
 		}
-		
+
+		/**
+		 * Gets the alignment index for the pressure data.
+		 * 
+		 * @return The pressure alignment index.
+		 */
 		public int getIndexPressureAlign() {
 			return this.indexPressureAlign;
 		}
-		
+
+		/**
+		 * Gets the alignment index for the flow data.
+		 * 
+		 * @return The flow alignment index.
+		 */
 		public int getIndexFlowAlign() {
 			return this.indexFlowAlign;
 		}

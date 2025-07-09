@@ -1,8 +1,14 @@
 package com.carrington.WIA.stats;
 
+/**
+ * Calculates Fisher's Exact Test for 2x2 contingency tables. This test is used
+ * to determine if there are nonrandom associations between two categorical
+ * variables.
+ */
 public class FisherExact {
+
 	private double[] f;
-	int maxSize;
+	private int maxSize;
 
 	/**
 	 * constructor for FisherExact table
@@ -20,12 +26,16 @@ public class FisherExact {
 	}
 
 	/**
-	 * calculates the P-value for this specific state. a, b, c, d are the four cells
-	 * in a 2x2 matrix
+	 * Calculates the exact probability of observing a specific 2x2 table
+	 * configuration, given the marginal totals.
 	 *
-	 * @return the P-value
+	 * @param a cell count
+	 * @param b cell count
+	 * @param c cell count
+	 * @param d cell count
+	 * @return the P-value for this specific table configuration.
 	 */
-	public final double getP(int a, int b, int c, int d) {
+	private final double getP(int a, int b, int c, int d) {
 		int n = a + b + c + d;
 		if (n > maxSize) {
 			return Double.NaN;
@@ -38,12 +48,15 @@ public class FisherExact {
 	/**
 	 * Calculates the one-tail P-value for the Fisher Exact test. Determines whether
 	 * to calculate the right- or left- tail, thereby always returning the smallest
-	 * p-value. a, b, c, d are the four cells in a 2x2 matrix
+	 * p-value.
 	 *
-	 * 
+	 * @param a cell count for the 2x2 matrix
+	 * @param b cell count for the 2x2 matrix
+	 * @param c cell count for the 2x2 matrix
+	 * @param d cell count for the 2x2 matrix
 	 * @return one-tailed P-value (right or left, whichever is smallest)
 	 */
-	public final double getCumlativeP(int a, int b, int c, int d) {
+	public double getCumlativeP(int a, int b, int c, int d) {
 		int min, i;
 		int n = a + b + c + d;
 		if (n > maxSize) {
@@ -68,68 +81,21 @@ public class FisherExact {
 	}
 
 	/**
-	 * Calculates the right-tail P-value for the Fisher Exact test. a, b, c, d are
-	 * the four cells in a 2x2 matrix
-	 *
-	 * @return one-tailed P-value (right-tail)
-	 */
-	public final double getRightTailedP(int a, int b, int c, int d) {
-		int min, i;
-		int n = a + b + c + d;
-		if (n > maxSize) {
-			return Double.NaN;
-		}
-		double p = 0;
-
-		p += getP(a, b, c, d);
-		min = (c < b) ? c : b;
-		for (i = 0; i < min; i++) {
-			p += getP(++a, --b, --c, ++d);
-
-		}
-		return p;
-	}
-
-	/**
-	 * Calculates the left-tail P-value for the Fisher Exact test. a, b, c, d are
-	 * the four cells in a 2x2 matrix
-	 *
-	 * @return one-tailed P-value (left-tail)
-	 */
-	public final double getLeftTailedP(int a, int b, int c, int d) {
-		int min, i;
-		int n = a + b + c + d;
-		if (n > maxSize) {
-			return Double.NaN;
-		}
-		double p = 0;
-
-		p += getP(a, b, c, d);
-		min = (a < d) ? a : d;
-		for (i = 0; i < min; i++) {
-			double pTemp = getP(--a, ++b, ++c, --d);
-			p += pTemp;
-		}
-
-		return Double.isNaN(p) ? 1.0 : p;
-	}
-
-	/**
 	 * Calculates the two-tailed P-value for the Fisher Exact test.
 	 *
 	 * In order for a table under consideration to have its p-value included in the
-	 * final result, it must have a p-value less than the original table's P-value,
-	 * i.e. Fisher's exact test computes the probability, given the observed
-	 * marginal frequencies, of obtaining exactly the frequencies observed and any
-	 * configuration more extreme. By "more extreme," we mean any configuration
-	 * (given observed marginals) with a smaller probability of occurrence in the
-	 * same direction (one-tailed) or in both directions (two-tailed). a, b, c, d
-	 * are the four cells in a 2x2 matrix
+	 * final result, it must have a p-value less than or equal to the original
+	 * table's P-value. This method sums the probabilities of all tables that are as
+	 * extreme or more extreme than the observed table.
 	 *
-	 * 
-	 * @return two-tailed P-value or NaN if the table sum exceeds the maxSize
+	 * @param a cell count for the 2x2 matrix
+	 * @param b cell count for the 2x2 matrix
+	 * @param c cell count for the 2x2 matrix
+	 * @param d cell count for the 2x2 matrix
+	 * @return two-tailed P-value or NaN if the table sum exceeds the maxSize.
+	 *         Returns 1.0 if p is NaN.
 	 */
-	public final double getTwoTailedP(int a, int b, int c, int d) {
+	public double getTwoTailedP(int a, int b, int c, int d) {
 		int min, i;
 		int n = a + b + c + d;
 		if (n > maxSize) {
@@ -164,41 +130,6 @@ public class FisherExact {
 			}
 		}
 		return Double.isNaN(p) ? 1.0 : p;
-	}
-
-	/** Returns OR, lower, upper */
-	public static double[] getOddsRatioAnd95thConfidenceInterval(double a, double b, double c, double d) {
-
-		// Where zeros cause problems with computation of the odds ratio or its standard
-		// error, 0.5 is added to all cells (a, b, c, d) (Pagano & Gauvreau, 2000; Deeks
-		// & Higgins, 2010).
-		if (a == 0.0 || b == 0.0 || c == 0.0 || d == 0.0) {
-			a += 0.5;
-			b += 0.5;
-			c += 0.5;
-			d += 0.5;
-		}
-
-		double oddsRatio = (a * d) / (b * c);
-
-		double inner = 1.96 * Math.sqrt(1.0 / a + 1.0 / b + 1.0 / c + 1.0 / d);
-		double lnOR = Math.log(oddsRatio);
-
-		// Upper 95% CI = e ^ [ln(OR) + 1.96 sqrt(1/a + 1/b + 1/c + 1/d)]
-		double upper = Math.pow(Math.E, (lnOR + inner));
-
-		// Lower 95% CI = e ^ [ln(OR) - 1.96 sqrt(1/a + 1/b + 1/c + 1/d)]
-		double lower = Math.pow(Math.E, (lnOR - inner));
-
-		return new double[] { oddsRatio, lower, upper };
-	}
-
-	/**
-	 * Measure of how far from independence the 2x2 table is. 1= independent. Ratio
-	 * of ratios. Will return Infinity or 0 if cells are zero.
-	 */
-	public static double getOddsRatio(double a, double b, double c, double d) {
-		return ((a * d) / (b * c));
 	}
 
 }

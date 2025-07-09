@@ -13,17 +13,24 @@ import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.GUIs.BackgroundProgressRecorder;
 
+/**
+ * Reads data from various sheet-based file formats like Excel (.xls, .xlsx),
+ * CSV, and tab-delimited text (.txt). It can automatically detect headers or
+ * skip a specified number of lines.
+ */
 public class SheetDataReader {
 
 	private File file;
 	private String fileName = null;
 	private int ignoreLines = -1;
-	
+
 	/**
 	 * New sheet reader
 	 * 
-	 * @param file			file to read
-	 * @param ignoreLines	Number of lines at the top to ignore (i.e. extraneous information like patient ID). If -1, will try to auto-detect start of data.
+	 * @param file        file to read
+	 * @param ignoreLines Number of lines at the top to ignore (i.e. extraneous
+	 *                    information like patient ID). If -1, will try to
+	 *                    auto-detect start of data.
 	 */
 	public SheetDataReader(File file, int ignoreLines) {
 		this.file = file;
@@ -31,7 +38,13 @@ public class SheetDataReader {
 		this.ignoreLines = ignoreLines;
 	}
 
-
+	/**
+	 * Reads the header row from the input file. It auto-detects the file type and
+	 * attempts to locate the header row if not specified.
+	 *
+	 * @return A {@link HeaderResult} containing the list of headers or an error
+	 *         message.
+	 */
 	public HeaderResult readHeaders() {
 		String namelower = this.file.getName().toLowerCase();
 		int readerType = -1;
@@ -44,7 +57,7 @@ public class SheetDataReader {
 		} else {
 			return new HeaderResult(null, "Input file did not have the extension .csv, .txt,  .xls, or .xlsx", false);
 		}
-		
+
 		Reader reader;
 		try {
 			reader = new Reader(this.file, readerType, 1, this.ignoreLines);
@@ -54,7 +67,7 @@ public class SheetDataReader {
 			boolean notAllNumbers = false;
 			for (int i = 0; i < reader.getRow(0).length; i++) {
 				String str = reader.getText(0, i);
- 
+
 				if (!str.isBlank()) {
 
 					if (!NumberUtils.isParsable(str)) {
@@ -64,32 +77,45 @@ public class SheetDataReader {
 					isPrimary = false;
 				}
 			}
-			
+
 			if (headers.isEmpty() || !notAllNumbers)
 				return new HeaderResult(null, "No headers in Excel file", false);
-			
+
 			return new HeaderResult(headers, null, true);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new HeaderResult(null, e.getMessage(), false);
 
 		}
-		
-
 
 	}
-	
+
+	/**
+	 * Reads data from the file for the specified columns.
+	 *
+	 * @param columns A list of {@link Header} objects indicating which columns to
+	 *                read.
+	 * @return A {@link ReadResult} containing the data or an error message.
+	 */
 	public ReadResult readData(List<Header> columns) {
 		return readData(columns, null);
 	}
 
+	/**
+	 * Reads data from the file for the specified columns, providing progress
+	 * updates.
+	 *
+	 * @param columns       A list of {@link Header} objects indicating which
+	 *                      columns to read.
+	 * @param progDisplayer A recorder to display progress; can be null.
+	 * @return A {@link ReadResult} containing the read data or an error message.
+	 */
 	public ReadResult readData(List<Header> columns, BackgroundProgressRecorder progDisplayer) {
-		
+
 		if (columns.isEmpty())
 			return new ReadResult(null, "No headers supplied when trying to read sheet");
-		
-		
+
 		String namelower = this.file.getName().toLowerCase();
 		int readerType = -1;
 		if (namelower.endsWith(".csv")) {
@@ -108,32 +134,31 @@ public class SheetDataReader {
 				progDisplayer.setProgressBarEnabled(true, 1, 100);
 			}
 			reader = new Reader(this.file, readerType, -1, this.ignoreLines);
-			
+
 			int maximum = columns.size() * reader.getRows();
 			int divisor = maximum / 100;
 			int counter = 0;
 			if (progDisplayer != null) {
 				progDisplayer.setProgressBarEnabled(true, 0, maximum);
 			}
-			
-			LinkedHashMap<Header, double[]> data = new LinkedHashMap<Header,double[]>();
+
+			LinkedHashMap<Header, double[]> data = new LinkedHashMap<Header, double[]>();
 			boolean primary = true;
 			for (int colI = 0; colI < reader.getRow(0).length; colI++) {
 				String possibHeader = reader.getText(0, colI);
 
 				if (possibHeader != null && !possibHeader.isBlank()) {
 					Header header = new Header(possibHeader, colI, primary);
-					
-					
+
 					if (Utils.isHeaderContained(columns, header)) {
 						ArrayList<Double> values = new ArrayList<Double>();
 						for (int rowI = 1; rowI < reader.getRows(); rowI++) {
-							//prog bar update
-							if (progDisplayer != null && counter %divisor == 0) {
+							// prog bar update
+							if (progDisplayer != null && counter % divisor == 0) {
 								progDisplayer.setProgressBarProgress(counter);
-								
+
 							}
-							//end prog bar update
+							// end prog bar update
 							Double d = reader.getNumber(rowI, colI);
 							if (d.isNaN()) {
 								throw new IOException("Data area contained a non-numerical value.");
@@ -150,30 +175,25 @@ public class SheetDataReader {
 				}
 
 			}
-			
+
 			HemoData hd = new HemoData(file, fileName, null); // don't know name yet.
 			for (Entry<Header, double[]> en : data.entrySet()) {
-				if (en.getKey().isPrimaryX()) {
+				if (en.getKey().isX()) {
 					hd.setXData(en.getKey(), en.getValue());
 				} else {
 
 					hd.addYData(en.getKey(), en.getValue());
 				}
 			}
-			
-			
+
 			return new ReadResult(hd, null);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ReadResult(null, e.getMessage());
 
 		}
 
-	} 
-	
-
+	}
 
 }
-
-

@@ -29,11 +29,23 @@ public class Outcome {
 	private StatTestResults stats = null;
 	private ArrayList<SummaryStats> summaryStats = new ArrayList<SummaryStats>();
 
-
+	/**
+	 * Constructs a new Outcome with a specified name.
+	 * 
+	 * @param name The name of the outcome.
+	 */
 	public Outcome(String name) {
 		this.name = name;
 	}
 
+	/**
+	 * Adds a dataset for a specific group to this outcome.
+	 * 
+	 * @param group The name of the group.
+	 * @param data  The DataCollection for the group.
+	 * @throws IllegalArgumentException if the data type does not match existing
+	 *                                  datasets.
+	 */
 	public void addDataSet(String group, DataCollection data) {
 		if (dataType == null) {
 			dataType = data.getDataType();
@@ -44,12 +56,23 @@ public class Outcome {
 		values.add(data);
 
 	}
-	
+
+	/**
+	 * Gets the data type of the datasets in this outcome.
+	 * 
+	 * @return The DataType.
+	 */
 	public DataType getDataType() {
 		return this.dataType;
-		
+
 	}
 
+	/**
+	 * Gets all datasets associated with this outcome.
+	 * 
+	 * @return A {@link LinkedHashMap} mapping group names to their
+	 *         {@link DataCollection}
+	 */
 	public LinkedHashMap<String, DataCollection> getDataSets() {
 		Iterator<String> itrGr = groups.iterator();
 		Iterator<DataCollection> itrVal = values.iterator();
@@ -60,15 +83,29 @@ public class Outcome {
 		return datasets;
 	}
 
+	/**
+	 * Gets the name of the outcome.
+	 * 
+	 * @return The outcome name.
+	 */
 	public String getName() {
 		return this.name;
 	}
 
+	/**
+	 * Gets the list of group names for this outcome.
+	 * 
+	 * @return A list of strings representing the groups.
+	 */
 	public List<String> getGroups() {
 		return this.groups;
 	}
-	
 
+	/**
+	 * Gets the summary statistics for each data group in the outcome.
+	 * 
+	 * @return A list of {@link SummaryStats} objects.
+	 */
 	public List<SummaryStats> getSummaryStats() {
 		return this.summaryStats;
 	}
@@ -120,14 +157,14 @@ public class Outcome {
 				MannWhitneyUTest mwut = new MannWhitneyUTest();
 				double[] dc1 = values.get(0).getDoubleValues();
 				double[] dc2 = values.get(1).getDoubleValues();
-				
+
 				try {
-					stats.addResult(StatTest.KOLMOGOROV_SMIRNOV,TestUtils.kolmogorovSmirnovTest(dc1, dc2));
+					stats.addResult(StatTest.KOLMOGOROV_SMIRNOV, TestUtils.kolmogorovSmirnovTest(dc1, dc2));
 				} catch (Exception e) {
 					stats.addResult(StatTest.KOLMOGOROV_SMIRNOV, Double.NaN);
 				}
 
-				if (StudentTTest.getP(dc1, dc2, true) == 0) {
+				if (StudentTTest.calculatePValue(dc1, dc2, true) == 0) {
 					System.out.println(" ");
 					System.out.println("Name: " + name);
 					System.out.println(" " + Arrays.toString(dc1));
@@ -143,13 +180,12 @@ public class Outcome {
 
 					}
 
-
 				}
-				stats.addResult(StatTest.STUDENT_T_TEST_TWOTAIL, StudentTTest.getP(dc1, dc2, true));
-				stats.addResult(StatTest.STUDENT_T_TEST_ONETAIL, StudentTTest.getP(dc1, dc2, false));
-				stats.addResult(StatTest.WELCH_T_TEST_TWOTAIL, WelchTTest.getP(dc1, dc2, true));
+				stats.addResult(StatTest.STUDENT_T_TEST_TWOTAIL, StudentTTest.calculatePValue(dc1, dc2, true));
+				stats.addResult(StatTest.STUDENT_T_TEST_ONETAIL, StudentTTest.calculatePValue(dc1, dc2, false));
+				stats.addResult(StatTest.WELCH_T_TEST_TWOTAIL, WelchTTest.calculatePValue(dc1, dc2, true));
 
-				stats.addResult(StatTest.WELCH_T_TEST_ONETAIL, WelchTTest.getP(dc1, dc2, false));
+				stats.addResult(StatTest.WELCH_T_TEST_ONETAIL, WelchTTest.calculatePValue(dc1, dc2, false));
 				stats.addResult(StatTest.MANN_WHITNEY, mwut.mannWhitneyUTest(dc1, dc2));
 
 				break;
@@ -161,11 +197,12 @@ public class Outcome {
 				int numTrueb2 = Utils.countTrue(b2);
 				int numFalseb2 = b2.length - numTrueb2;
 
-
 				stats = new StatTestResults(name);
 				FisherExact fe = new FisherExact(b1.length + b2.length);
-				stats.addResult(StatTest.FISHER_EXACT_TWOTAIL, fe.getTwoTailedP(numTrueb1, numFalseb1, numTrueb2, numFalseb2));
-				stats.addResult(StatTest.FISHER_EXACT_ONETAIL, fe.getCumlativeP(numTrueb1, numFalseb1, numTrueb2, numFalseb2));
+				stats.addResult(StatTest.FISHER_EXACT_TWOTAIL,
+						fe.getTwoTailedP(numTrueb1, numFalseb1, numTrueb2, numFalseb2));
+				stats.addResult(StatTest.FISHER_EXACT_ONETAIL,
+						fe.getCumlativeP(numTrueb1, numFalseb1, numTrueb2, numFalseb2));
 				ArrayList<int[]> list = new ArrayList<int[]>();
 				for (DataCollection dc : values) {
 					int countTrue = Utils.countTrue(dc.getBooleanValues());
@@ -174,10 +211,10 @@ public class Outcome {
 
 				}
 				stats.addResult(StatTest.CHI_SQUARE, ChiSqaureTest.calculatePValue(list.toArray(new int[0][])));
-				stats.addResult(StatTest.ZTEST_PROP_TWOTAIL, TwoSampleProportionZTest.calcPValueTwoTail(numTrueb1, numTrueb2, 
-						b1.length, b2.length));
-				stats.addResult(StatTest.ZTEST_PROP_ONETAIL, TwoSampleProportionZTest.calcPValueOneTail(numTrueb1, numTrueb2, 
-						b1.length, b2.length));
+				stats.addResult(StatTest.ZTEST_PROP_TWOTAIL,
+						TwoSampleProportionZTest.calcPValueTwoTail(numTrueb1, numTrueb2, b1.length, b2.length));
+				stats.addResult(StatTest.ZTEST_PROP_ONETAIL,
+						TwoSampleProportionZTest.calcPValueOneTail(numTrueb1, numTrueb2, b1.length, b2.length));
 				break;
 
 			}
@@ -197,7 +234,7 @@ public class Outcome {
 					list.add(new int[] { countTrue, countFalse });
 
 				}
-				stats.addResult(StatTest.CHI_SQUARE,ChiSqaureTest.calculatePValue(list.toArray(new int[0][])));
+				stats.addResult(StatTest.CHI_SQUARE, ChiSqaureTest.calculatePValue(list.toArray(new int[0][])));
 
 				break;
 
@@ -208,75 +245,38 @@ public class Outcome {
 	}
 
 	/**
-	 * @return most recently computed statistics returned by {@link #runStats()}. If not computed, then null.
+	 * @return most recently computed statistics returned by {@link #runStats()}. If
+	 *         not computed, then null.
 	 */
 	public StatTestResults getStats() {
 		return this.stats;
 	}
-	
+
+	/**
+	 * Prints the outcome details, including groups and data, to the console.
+	 */
 	public void printOutcome() {
 		System.out.println(this.name);
 		System.out.println("Groups: " + String.join(", ", this.groups));
 		for (DataCollection value : this.values) {
 			if (value.isBinary()) {
-				System.out.println(value.getGroupName() + ": " + Utils.getStringFromArray(value.getBooleanValues(), 10000));
+				System.out.println(
+						value.getGroupName() + ": " + Utils.getStringFromArray(value.getBooleanValues(), 10000));
 
 			} else {
-				System.out.println(value.getGroupName() + ": " + Utils.getStringFromArray(value.getDoubleValues(), 10000));
+				System.out.println(
+						value.getGroupName() + ": " + Utils.getStringFromArray(value.getDoubleValues(), 10000));
 			}
 		}
 	}
-//
-//	public TreeMap<String, Map<OutcomeParameter, String>> getArrayOfData() {
-//
-//		TreeMap<String, Map<OutcomeParameter, String>> map = new TreeMap<String, Map<OutcomeParameter, String>>(
-//				String.CASE_INSENSITIVE_ORDER);
-//
-//		Iterator<String> grpItr = groups.iterator();
-//		Iterator<DataCollection> dcItr = values.iterator();
-//		while (grpItr.hasNext()) {
-//
-//			String group = grpItr.next();
-//			DataCollection dc = dcItr.next();
-//
-//			Map<OutcomeParameter, String> subMap = new HashMap<OutcomeParameter, String>();
-//			if (dc.isBinary()) {
-//
-//				for (OutcomeParameter outParam : OutcomeParameter.getParameters(false)) {
-//					subMap.put(outParam, "--");
-//				}
-//
-//				subMap.put(OutcomeParameter.N, dc.getBooleanValues().length + "");
-//
-//				SummaryStatisticsBool ssb = dc.getSummaryStatsBinary();
-//
-//				subMap.put(OutcomeParameter.NumberTrue, ssb.getNumTrue() + "");
-//				subMap.put(OutcomeParameter.NumberFalse, ssb.getNumFalse() + "");
-//				subMap.put(OutcomeParameter.Proportion, ssb.getProportionTrue() + "");
-//
-//			} else {
-//				for (OutcomeParameter outParam : OutcomeParameter.getParameters(true)) {
-//					subMap.put(outParam, "--");
-//				}
-//				subMap.put(OutcomeParameter.N, dc.getDoubleValues().length + "");
-//
-//				DescriptiveStatistics ds = dc.getSummaryStatsContinuous();
-//				subMap.put(OutcomeParameter.Mean, ds.getMean() + "");
-//				subMap.put(OutcomeParameter.Max, ds.getMax() + "");
-//				subMap.put(OutcomeParameter.Min, ds.getMin() + "");
-//				subMap.put(OutcomeParameter.StDev, ds.getStandardDeviation() + "");
-//				subMap.put(OutcomeParameter.Variance, ds.getVariance() + "");
-//
-//			}
-//
-//			map.put(group, subMap);
-//
-//		}
-//
-//		return map;
-//
-//	}
 
+	/**
+	 * Retrieves all statistical test results as a map of test enum to
+	 * string-formatted p-value.
+	 * 
+	 * @return A map containing all statistical tests and their string-formatted
+	 *         results.
+	 */
 	public Map<StatTest, String> getArrayOfStatsStringAll() {
 		Map<StatTest, String> mapWithAllStatTests = new HashMap<StatTest, String>();
 		Map<StatTest, Double> existingResults = stats.getResults();
@@ -284,7 +284,7 @@ public class Outcome {
 
 			Double result = existingResults.get(st);
 			if (Double.isNaN(result)) {
-				
+
 				mapWithAllStatTests.put(st, result + "n to small");
 
 			} else {
@@ -297,6 +297,10 @@ public class Outcome {
 
 	}
 
+	/**
+	 * Enum representing parameters for summary statistics of an outcome.
+	 */
+	@SuppressWarnings("javadoc")
 	public static enum OutcomeParameter {
 
 		N(null), Mean(false), Max(false), Min(false), StDev(false), Variance(false), NumberTrue(true),
@@ -308,6 +312,12 @@ public class Outcome {
 			this.dt = dt;
 		}
 
+		/**
+		 * Gets the applicable parameters based on whether the data is binary.
+		 * 
+		 * @param isBinary True if the data is binary, false for continuous.
+		 * @return An array of applicable OutcomeParameter enums.
+		 */
 		public static OutcomeParameter[] getParameters(boolean isBinary) {
 
 			ArrayList<OutcomeParameter> params = new ArrayList<OutcomeParameter>(values().length);
@@ -330,7 +340,5 @@ public class Outcome {
 		}
 
 	}
-	
-	
 
 }

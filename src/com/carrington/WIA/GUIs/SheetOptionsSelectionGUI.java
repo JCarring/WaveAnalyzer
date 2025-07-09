@@ -155,7 +155,7 @@ public class SheetOptionsSelectionGUI extends JDialog {
 					label.setBackground(list.getBackground());
 					label.setForeground(list.getForeground());
 				}
-				if (value.isPrimaryX()) {
+				if (value.isX()) {
 					label.setForeground(Color.BLUE);
 				}
 				return label;
@@ -260,7 +260,7 @@ public class SheetOptionsSelectionGUI extends JDialog {
 		} else {
 			boolean xPrimaryFound = false;
 			for (Header header : selectedHeaders) {
-				if (header.isPrimaryX()) {
+				if (header.isX()) {
 					xPrimaryFound = true;
 					break;
 				}
