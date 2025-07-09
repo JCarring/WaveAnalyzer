@@ -20,12 +20,23 @@ import com.carrington.WIA.Utils;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
+/**
+ * A versatile file reader designed to parse data from Excel (.xls, .xlsx), CSV,
+ * and tab-delimited text (.txt) files. It can automatically determine where the
+ * data starts or skip a specified number of header lines.
+ */
 public class Reader {
 
+	/** Constant representing an Excel file type. */
 	public static final int EXCEL = 1;
+	/** Constant representing a CSV file type. */
 	public static final int CSV = 2;
+	/** Constant representing a tab-delimited text file type. */
 	public static final int TXT_TABBED = 3;
-
+	/**
+	 * Constant indicating that no lines should be skipped (auto-detection will be
+	 * used).
+	 */
 	public static final int NO_SKIP = -1;
 
 	private final File file;
@@ -36,8 +47,9 @@ public class Reader {
 
 	/**
 	 * 
-	 * @param file					The file to read from
-	 * @param type					the type of file, one of {@link #EXCEL}, {@link #CSV}, or {@link #TXT_TABBED}
+	 * @param file                The file to read from
+	 * @param type                the type of file, one of {@link #EXCEL},
+	 *                            {@link #CSV}, or {@link #TXT_TABBED}
 	 * @param numberOfLinesToRead Number lines to read, i.e. for only getting
 	 *                            headers so we don't need to read whole file
 	 * @param skipLines           Number of lines to skip or zero; If -1, will
@@ -76,14 +88,33 @@ public class Reader {
 
 	}
 
+	/**
+	 * Gets the total number of data rows (after skipping initial lines).
+	 *
+	 * @return The number of rows.
+	 */
 	public int getRows() {
 		return this.mainData.length - this.skipLines;
 	}
 
+	/**
+	 * Gets a specific row of data as an array of strings.
+	 *
+	 * @param row The index of the row to retrieve (0-based, relative to the start
+	 *            of data).
+	 * @return A string array representing the row, or null if out of bounds.
+	 */
 	public String[] getRow(int row) {
 		return this.mainData[row + this.skipLines];
 	}
 
+	/**
+	 * Gets the text value of a specific cell.
+	 *
+	 * @param row    The row index (0-based, relative to the start of data).
+	 * @param column The column index (0-based).
+	 * @return The string value of the cell, or null if out of bounds.
+	 */
 	public String getText(int row, int column) {
 		row = row + this.skipLines;
 		if (row < this.mainData.length) {
@@ -128,7 +159,13 @@ public class Reader {
 		return null;
 	}
 
-	public void _initExcel(int numLines) throws IOException {
+	/**
+	 * Initializes the reader by parsing an Excel file.
+	 *
+	 * @param numLines The number of lines to read; if -1, reads the entire sheet.
+	 * @throws IOException if the file cannot be read or parsed.
+	 */
+	private void _initExcel(int numLines) throws IOException {
 		if (this.mainData == null) {
 			Workbook workbook = WorkbookFactory.create(file);
 			if (workbook == null)
@@ -189,6 +226,12 @@ public class Reader {
 		}
 	}
 
+	/**
+	 * Initializes the reader by parsing a CSV file.
+	 *
+	 * @param numLines The number of lines to read; if -1, reads the entire file.
+	 * @throws IOException if the file cannot be read or parsed.
+	 */
 	private void _initCSV(int numLines) throws IOException {
 
 		if (this.mainData == null) {
@@ -227,6 +270,8 @@ public class Reader {
 					} catch (CsvValidationException | IOException e) {
 						e.printStackTrace();
 						throw new IOException("Not enough rows or could not read.");
+					} finally {
+						reader.close();
 					}
 
 					if (s == null) {
@@ -250,6 +295,12 @@ public class Reader {
 		}
 	}
 
+	/**
+	 * Initializes the reader by parsing a tab-delimited text file.
+	 *
+	 * @param numLines The number of lines to read; if -1, reads the entire file.
+	 * @throws IOException if the file cannot be read or parsed.
+	 */
 	@SuppressWarnings("resource")
 	private void _initTXT(int numLines) throws IOException {
 
@@ -315,10 +366,24 @@ public class Reader {
 
 	}
 
-	public static int _determineMeaningfulStart(List<String[]> data) {
+	/**
+	 * Determines the starting row of meaningful data by finding the first row of
+	 * numeric values that is preceded by a header row.
+	 *
+	 * @param data A list of string arrays representing the raw file data.
+	 * @return The 0-based index of the header row, or -1 if not found.
+	 */
+	private static int _determineMeaningfulStart(List<String[]> data) {
 		return _determineMeaningfulStart(data.toArray(new String[0][]));
 	}
 
+	/**
+	 * Determines the starting row of meaningful data by finding the first row of
+	 * numeric values that is preceded by a header row.
+	 *
+	 * @param data A 2D string array representing the raw file data.
+	 * @return The 0-based index of the header row, or -1 if not found.
+	 */
 	private static int _determineMeaningfulStart(String[][] data) {
 
 		int firstLineOfDataIndex = -1;
@@ -380,6 +445,10 @@ public class Reader {
 
 	}
 
+	/**
+	 * Trims the loaded data to have a uniform number of columns based on the
+	 * longest meaningful row and removes trailing nulls.
+	 */
 	private void _trimDataList() {
 		int uniformSize = 0;
 		for (int i = skipLines; i < mainData.length; i++) {
@@ -392,7 +461,14 @@ public class Reader {
 
 	}
 
-	public static int _meaningfulSize(String[] array) {
+	/**
+	 * Calculates the "meaningful" size of an array by counting non-blank elements
+	 * from the end.
+	 *
+	 * @param array The string array to measure.
+	 * @return The number of meaningful elements.
+	 */
+	private static int _meaningfulSize(String[] array) {
 
 		int meaningfulSize = array.length;
 		for (int i = array.length - 1; i > 0; i--) {

@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,6 +17,12 @@ import org.apache.commons.math3.exception.MathIllegalArgumentException;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.IO.Header;
 
+/**
+ * Provides static methods for resampling one-dimensional data series,
+ * particularly for time-series data in hemodynamic analysis. It supports both
+ * spline interpolation for continuous data and a nearest-neighbor approach for
+ * binary-like data.
+ */
 public abstract class DataResampler {
 
 	/**
@@ -57,76 +62,16 @@ public abstract class DataResampler {
 		// Evaluate the spline at equally spaced new x-values.
 		for (int i = 0; i < numberOfSamples; i++) {
 			double x;
-		    if (i == numberOfSamples - 1) {
-		         //Use xMax - epsilon on the last point to stay within the allowed domain.
-		        x = xMax - 1e-8;
-		    } else {
-		        x = xMin + i * step;
-		    }
-		    output[i] = spline.value(x);
+			if (i == numberOfSamples - 1) {
+				// Use xMax - epsilon on the last point to stay within the allowed domain.
+				x = xMax - 1e-8;
+			} else {
+				x = xMin + i * step;
+			}
+			output[i] = spline.value(x);
 		}
 
 		return output;
-	}
-
-	private static int roundDown(double d) {
-		return (int) d;
-	}
-
-	@SuppressWarnings("unused")
-	private static int roundUp(double d) {
-		return roundDown(d) + 1;
-	}
-
-	public static void main(String[] args) {
-		Header headerX = new Header("name", 2, true);
-		Header headerY = new Header("values", 2, true);
-		Header headerY2 = new Header("binary", 2, true);
-
-		double x[] = new double[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-		double y[] = new double[] { 2, 6, 7, 8, 10, 12, 14, 16, 18, 20 };
-		double y2[] = new double[] { 0, 0, 0, 0, 0, 0, 1, 0, 0, 0 };
-		
-		
-
-		for (double d : resample(y, 19)) {
-			System.out.println(d);
-		}
-
-		for (double d : x) {
-			System.out.println(d);
-
-		}
-
-		for (double d : y) {
-			System.out.println(d);
-
-		}
-		LinkedHashMap<Header, double[]> yValues = new LinkedHashMap<Header, double[]>();
-		yValues.put(headerY, y);
-		yValues.put(headerY2, y2);
-
-		try {
-			LinkedHashMap<Header, double[]> newValues = resample(yValues, headerX, x, 0.5, true);
-			for (Entry<Header, double[]> en : newValues.entrySet()) {
-				System.out.println(en.getKey().getName());
-				for (double d : en.getValue()) {
-					System.out.println(d);
-				}
-			}
-
-			ResampleResult rr = resample(0.5, true, x, new double[][] { y, y2 });
-			for (double[] en : rr.values) {
-				System.out.println("NEXT");
-				for (double d : en) {
-					System.out.println(d);
-				}
-			}
-		} catch (ResampleException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
 	}
 
 	/**
@@ -229,7 +174,6 @@ public abstract class DataResampler {
 		for (int i = 0; i < yValues.length; i++) {
 			isBinaryArray[i] = isBinary(yValues[i]);
 		}
-		
 
 		// For continuous series, create spline interpolators using the adjusted xData.
 		SplineInterpolator interpolator = new SplineInterpolator();
@@ -245,7 +189,8 @@ public abstract class DataResampler {
 		}
 
 		BigDecimal sampleRateBD = BigDecimal.valueOf(resampleRate);
-		// Loop over new x values and compute resampled y values, for arrays that are NOT binary
+		// Loop over new x values and compute resampled y values, for arrays that are
+		// NOT binary
 		for (int i = 0; i < numberOfResamples; i++) {
 			double newX = lstart.doubleValue();
 			newXVals[i] = newX;
@@ -258,20 +203,21 @@ public abstract class DataResampler {
 			}
 			lstart = lstart.add(sampleRateBD);
 		}
-		
-		// Loop over new x values and compute resampled y values, for arrays that ARE BINARY
+
+		// Loop over new x values and compute resampled y values, for arrays that ARE
+		// BINARY
 		for (int j = 0; j < yValues.length; j++) {
-		    if (isBinaryArray[j]) {
-		        // For each original data point in the binary array
-		        for (int k = 0; k < yValues[j].length; k++) {
-		            if (yValues[j][k] > 0.00001) {  // detected non-zero (active) binary state
-		                double origX = xData[k];
-		                // Determine the closest new sample index for this original x value.
-		                int idx = Utils.getClosestIndex(origX, newXVals);
-		                newYVals[j][idx] = yValues[j][k]; // assign the binary value (typically 1)
-		            }
-		        }
-		    }
+			if (isBinaryArray[j]) {
+				// For each original data point in the binary array
+				for (int k = 0; k < yValues[j].length; k++) {
+					if (yValues[j][k] > 0.00001) { // detected non-zero (active) binary state
+						double origX = xData[k];
+						// Determine the closest new sample index for this original x value.
+						int idx = Utils.getClosestIndex(origX, newXVals);
+						newYVals[j][idx] = yValues[j][k]; // assign the binary value (typically 1)
+					}
+				}
+			}
 		}
 		return new ResampleResult(newXVals, newYVals);
 	}
@@ -297,67 +243,60 @@ public abstract class DataResampler {
 		return true;
 	}
 
-
+	/**
+	 * Checks if an array of doubles is sorted in ascending order.
+	 *
+	 * @param list The array to check.
+	 * @return True if the array is ascending, false otherwise.
+	 */
 	private static boolean isAscending(double[] list) {
 		return ArrayUtils.isSorted(list);
 	}
 
-	public static int numberOfDecimals(String str) {
-		if (!str.contains("."))
-			return 0;
+	/**
+	 * Calculates the appropriate resample frequency based on the string, such that
+	 * it can't be invalid or too big based on the passed arrays
+	 *
+	 * @param sampleFreq    The user-supplied desired sample frequency as a string.
+	 * @param lists         The data lists to analyze for determining the longest
+	 *                      frequency.
+	 * @return The resample frequency
+	 */
+	public static double calculateReSampleFrequency(String sampleFreq, double[]... lists) {
 
-		str = Utils.removeTrailingZeros(str);
-		return str.length() - str.indexOf('.') - 1;
+		double suppliedResFreq;
+		try {
+			suppliedResFreq = Double.valueOf(sampleFreq);
 
-	}
-
-	@SafeVarargs
-	public static double _minimumAverageDifference(double[]... lists) {
-
-		double minAvgDiff = Double.NaN;
-		for (double[] list : lists) {
-			int size = list.length;
-			List<Double> differences = new ArrayList<Double>();
-			for (int i = 0; i < (size - 1); i++) {
-				differences.add(Math.abs(list[i + 1] - list[i]));
-			}
-
-			double sum = 0;
-			for (double d : differences) {
-				sum = sum + d;
-			}
-
-			double difference = sum / ((double) differences.size());
-			if (Double.isNaN(minAvgDiff)) {
-				minAvgDiff = difference;
-			} else if (difference < minAvgDiff) {
-				minAvgDiff = difference;
-			}
-
+		} catch (NumberFormatException e) {
+			throw new ResampleException("Sample frequency is invalid");
 		}
 
-		return minAvgDiff;
+		if (suppliedResFreq <= 0) {
+			throw new ResampleException("Sample frequency is invalid");
+		}
+		double minimumDiff = Utils.getMinimumRange(lists);
 
-	}
-
-	@SafeVarargs
-	public static double calculateReSampleFrequency(String sampleFreq, int overSampleLvl, double[]... lists) {
-		double suppliedResReq = Double.valueOf(sampleFreq);
-
-		if (overSampleLvl <= 0) {
-			return suppliedResReq;
+		if (suppliedResFreq >= minimumDiff) {
+			throw new ResampleException("Sample frequency is largr than range");
 		}
 
-		double longestResFreq = _minimumAverageDifference(lists) / (double) overSampleLvl;
-
-		return Math.min(longestResFreq, suppliedResReq);
+		return suppliedResFreq;
 
 	}
 
+	/**
+	 * Custom exception for errors occurring during the data resampling process.
+	 */
 	public static class ResampleException extends RuntimeException {
 
 		private static final long serialVersionUID = 5907837010601024697L;
 
+		/**
+		 * Constructs a ResampleException with the specified detail message.
+		 *
+		 * @param msg The detail message.
+		 */
 		public ResampleException(String msg) {
 			super(msg);
 		}

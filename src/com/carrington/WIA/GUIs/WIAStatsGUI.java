@@ -8,6 +8,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Set;
@@ -281,8 +282,12 @@ public class WIAStatsGUI extends JFrame
 			return;
 		}
 		fileToSave = Utils.appendExtensionIfDoesNotHaveExt(fileToSave, ".xlsx");
-
-		wiastat.save(fileToSave);
+		
+		try {
+			wiastat.save(fileToSave);
+		} catch (IOException e) {
+			Utils.showError("<html>Could not save file.<br><br>Error msg: " + e.getMessage() + "</html>", ref.get());
+		}
 	}
 
 	/**

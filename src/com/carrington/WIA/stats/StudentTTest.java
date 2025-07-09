@@ -2,10 +2,23 @@ package com.carrington.WIA.stats;
 
 import org.apache.commons.math3.distribution.TDistribution;
 
-public class StudentTTest {
+/**
+ * Performs a Student's t-test to compare the means of two independent samples.
+ * This implementation assumes equal variances between samples.
+ */
+public abstract class StudentTTest {
 
-	// Function to perform T-test
-	public static double getP(double[] sample1, double[] sample2, boolean twoTailed) {
+	/**
+	 * Performs a Student's T-test and returns the p-value.
+	 * 
+	 * @param sample1   The first data sample.
+	 * @param sample2   The second data sample.
+	 * @param twoTailed If true, a two-tailed test is performed; otherwise, a
+	 *                  one-tailed test is performed.
+	 * @return The calculated p-value, or Double.NaN if samples are too small. A
+	 *         value of 2.2e-16 is returned for p-values of 0.
+	 */
+	public static double calculatePValue(double[] sample1, double[] sample2, boolean twoTailed) {
 
 		if (sample1.length < 2 || sample2.length < 2) {
 			return Double.NaN;
@@ -46,7 +59,15 @@ public class StudentTTest {
 
 	}
 
-	// Function to perform T-test
+	/**
+	 * Performs a Student's T-test and returns the p-value as a formatted string.
+	 * 
+	 * @param sample1   The first data sample.
+	 * @param sample2   The second data sample.
+	 * @param twoTailed If true, a two-tailed test is performed; otherwise, a
+	 *                  one-tailed test is performed.
+	 * @return A string representation of the p-value.
+	 */
 	public static String perform(double[] sample1, double[] sample2, boolean twoTailed) {
 
 		if (sample1.length < 2 || sample2.length < 2) {
@@ -77,6 +98,13 @@ public class StudentTTest {
 
 	}
 
+	/**
+	 * Calculates the t-statistic for two samples.
+	 * 
+	 * @param sample1 The first data sample.
+	 * @param sample2 The second data sample.
+	 * @return The calculated t-statistic.
+	 */
 	private static double calculateTStatistic(double[] sample1, double[] sample2) {
 		double mean1 = calculateMean(sample1);
 		double mean2 = calculateMean(sample2);
@@ -91,7 +119,12 @@ public class StudentTTest {
 		return tStatistic;
 	}
 
-	// Function to calculate the mean
+	/**
+	 * Calculates the mean of a single data sample.
+	 * 
+	 * @param sample The data sample.
+	 * @return The mean of the sample.
+	 */
 	private static double calculateMean(double[] sample) {
 		double sum = 0;
 		for (double value : sample) {
@@ -100,7 +133,13 @@ public class StudentTTest {
 		return sum / sample.length;
 	}
 
-	// Function to calculate the variance
+	/**
+	 * Calculates the variance of a single data sample.
+	 * 
+	 * @param sample The data sample.
+	 * @param mean   The pre-calculated mean of the sample.
+	 * @return The variance of the sample.
+	 */
 	private static double calculateVariance(double[] sample, double mean) {
 		float sum = 0;
 		for (double value : sample) {
@@ -109,7 +148,13 @@ public class StudentTTest {
 		return sum / (sample.length - 1);
 	}
 
-	// Function to calculate the degrees of freedom
+	/**
+	 * Calculates the degrees of freedom for the t-test.
+	 * 
+	 * @param sample1 The first data sample.
+	 * @param sample2 The second data sample.
+	 * @return The degrees of freedom.
+	 */
 	private static int calculateDegreesOfFreedom(double[] sample1, double[] sample2) {
 		int n1 = sample1.length;
 		int n2 = sample2.length;

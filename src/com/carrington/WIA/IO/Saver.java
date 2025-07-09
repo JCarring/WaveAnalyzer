@@ -8,8 +8,18 @@ import java.util.Map.Entry;
 
 import com.opencsv.CSVWriter;
 
+/**
+ * An abstract utility class for saving data to files, primarily in CSV format.
+ */
 public abstract class Saver {
 
+	/**
+	 * Saves a 2D string array to a specified file in CSV format.
+	 *
+	 * @param file The file to save the data to.
+	 * @param data A 2D string array representing the rows and columns.
+	 * @return null on success, or an error message string on failure.
+	 */
 	public static String saveData(File file, String[][] data) {
 
 		FileWriter outputfile;
@@ -31,27 +41,13 @@ public abstract class Saver {
 
 	}
 
-//	public static String saveData(File file, String[][] data) {
-//
-//		FileWriter outputfile;
-//		try {
-//			outputfile = new FileWriter(file);
-//			CSVWriter writer = new CSVWriter(outputfile);
-//
-//			for (String[] row : data) {
-//				writer.writeNext(row);
-//			}
-//
-//			writer.close();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//			return e.getMessage();
-//		}
-//
-//		return null;
-//
-//	}
-
+	/**
+	 * Saves a map of data columns to a specified file in CSV format.
+	 *
+	 * @param file The file to save the data to.
+	 * @param data A LinkedHashMap where keys are {@link Header}s and values are double arrays of column data.
+	 * @return true on success, false on failure.
+	 */
 	public static boolean saveData(File file, LinkedHashMap<Header, double[]> data) {
 
 		try {

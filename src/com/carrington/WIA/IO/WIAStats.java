@@ -3,6 +3,7 @@ package com.carrington.WIA.IO;
 import java.awt.Color;
 import java.awt.Component;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -129,7 +130,8 @@ public class WIAStats {
 	}
 
 	/**
-	 * Identifies and aggregates all unique waves across loaded data.
+	 * Identifies and aggregates all unique waves based on their names and direction
+	 * (proximal/distal) across all loaded {@link WIAData} samples.
 	 */
 	private void _findStandardWaves() {
 		standardWaves.clear();
@@ -176,7 +178,8 @@ public class WIAStats {
 	}
 
 	/**
-	 * Identifies and aggregates treatments across loaded samples.
+	 * Identifies and aggregates all unique treatment groups based on the selection
+	 * name in each loaded {@link WIAData} sample.
 	 */
 	private void _findStandardTreatments() {
 		standardTreatments.clear();
@@ -331,11 +334,12 @@ public class WIAStats {
 	}
 
 	/**
-	 * Collects .wia files in a single directory.
-	 * 
-	 * @param file the directory or file to inspect
-	 * @param set  the list to populate with deserialized WIAData
-	 * @return error message or null
+	 * Collects .wia files from a specified directory or loads a single .wia file.
+	 * This method is not recursive.
+	 *
+	 * @param file The directory or file to inspect.
+	 * @param set  The list to populate with deserialized {@link WIAData} objects.
+	 * @return An error message if reading fails, otherwise null.
 	 */
 	private String getFiles(File file, List<WIAData> set) {
 		String errorRead = Utils.checkCanReadFile(file);
@@ -347,11 +351,12 @@ public class WIAStats {
 	}
 
 	/**
-	 * Recursively collects .wia files in nested directories.
+	 * Recursively collects .wia files from a root directory and all its
+	 * subdirectories.
 	 * 
-	 * @param file the root directory
-	 * @param set  the list to populate with deserialized WIAData
-	 * @return error message or null
+	 * @param file The root directory to start searching from.
+	 * @param set  The list to populate with deserialized {@link WIAData} objects.
+	 * @return An error message if reading fails at any point, otherwise null.
 	 */
 	private String getFilesRecursively(File file, List<WIAData> set) {
 
@@ -934,10 +939,12 @@ public class WIAStats {
 	}
 
 	/**
-	 * Checks whether all provided groups contain at least one element.
-	 * 
-	 * @param input mapping of group names to data collections
-	 * @return true if every collection is non-empty
+	 * Checks whether all data collections in the provided map are non-empty.
+	 *
+	 * @param <T>   The type of data in the collections.
+	 * @param input A map of group names to data collections.
+	 * @return true if every collection contains at least one element, false
+	 *         otherwise.
 	 */
 	private <T> boolean _hasData(LinkedHashMap<String, Collection<T>> input) {
 		for (Entry<String, Collection<T>> en : input.entrySet()) {
@@ -1474,8 +1481,9 @@ public class WIAStats {
 	 * overwriting existing files.
 	 * 
 	 * @param fileToSave target file path
+	 * @throws IOException if there are issues with writing the data
 	 */
-	public void save(File fileToSave) {
+	public void save(File fileToSave) throws IOException {
 		if (fileToSave == null)
 			throw new IllegalArgumentException("File to save shouldn't be null");
 		if (fileToSave.exists()) {
@@ -1915,25 +1923,23 @@ public class WIAStats {
 				DataCollection waveSepCumDC = new DataCollection(
 						group.getKey() + " " + sw.getName() + " Cumul Intensity", DataType.CONTINUOUS, false);
 
-				DataCollection waveSepCumRatioDC = new DataCollection(sw.getName() + " Cumul Intensity / Total "
-						+ (sw.isProximal() ? "Forw" : "Back") + " Intensity", DataType.CONTINUOUS, true);
+				DataCollection waveSepCumRatioDC = new DataCollection(
+						sw.getName() + " Cumul Intensity / Total " + (sw.isProximal() ? "Forw" : "Back") + " Intensity",
+						DataType.CONTINUOUS, true);
 
 				for (Entry<WIAData, Wave> waveEn : sw.getWaves(group.getValue()).entrySet()) {
-					
+
 					double cumIntensWave = waveEn.getValue().getCumulativeIntensity();
 					double cumIntensSep = sw.isProximal() ? waveEn.getKey().getCumWIForward()
 							: waveEn.getKey().getCumWIBackward();
-					
-					
+
 					waveSepCumDC.addValue(Math.abs(cumIntensWave));
 					waveSepCumRatioDC.addValue(Math.abs(cumIntensWave / cumIntensSep));
-					
-					
+
 				}
 
 				waveSepCum.addDataSet(group.getKey(), waveSepCumDC);
 				waveSepCumRatio.addDataSet(group.getKey(), waveSepCumRatioDC);
-
 
 			}
 
@@ -2106,9 +2112,11 @@ public class WIAStats {
 		return outcome;
 
 	}
-	
+
 	/**
-	 * A simple data structure to hold the response from the {@link Utils#promptTwoDoubles(String, String, Double, String, Double, String, Component)} method.
+	 * A simple data structure to hold the response from the
+	 * {@link Utils#promptTwoDoubles(String, String, Double, String, Double, String, Component)}
+	 * method.
 	 */
 	private static class DoubleResponse {
 		/** First double prompted */
@@ -2553,13 +2561,22 @@ public class WIAStats {
 
 	}
 
+	/**
+	 * Represents a standard treatment (like acetylcholine, adenosine)
+	 */
 	public static class StandardTreatment {
 
 		private String name;
 		private List<WIAData> samples = new ArrayList<WIAData>();
 		private StandardTreatmentType txType;
 
-		public StandardTreatment(String name) {
+		/**
+		 * Constructs a new StandardTreatment.
+		 *
+		 * @param name The name of the treatment, used to identify its type (e.g.,
+		 *             "Rest", "Adenosine").
+		 */
+		private StandardTreatment(String name) {
 			this.name = name;
 
 			txType = StandardTreatmentType.getMatching(name, true);
@@ -2572,46 +2589,99 @@ public class WIAStats {
 
 		}
 
+		/**
+		 * Adds a {@link WIAData} sample to this treatment group.
+		 * 
+		 * @param data The sample to add.
+		 */
 		private void addSample(WIAData data) {
 			this.samples.add(data);
 		}
 
+		/**
+		 * Removes a {@link WIAData} sample from this treatment group.
+		 * 
+		 * @param data The sample to remove.
+		 */
 		private void removeSample(WIAData data) {
 			this.samples.remove(data);
 		}
 
+		/**
+		 * Gets the file names of the samples in this treatment group.
+		 * 
+		 * @return An unmodifiable list of sample file names.
+		 */
 		public List<String> getSampleNames() {
 			List<String> list = samples.stream().map(data -> data.getFileName()).toList();
 
 			return Collections.unmodifiableList(list);
 		}
 
+		/**
+		 * Gets the WIAData samples belonging to this treatment.
+		 * 
+		 * @return An unmodifiable list of {@link WIAData} objects.
+		 */
 		public List<WIAData> getSamples() {
 			return Collections.unmodifiableList(samples);
 		}
 
+		/**
+		 * Gets the name of this treatment.
+		 * 
+		 * @return The treatment name.
+		 */
 		public String getName() {
 			return this.name;
 		}
 
+		/**
+		 * Gets the number of samples in this treatment group.
+		 * 
+		 * @return The sample count.
+		 */
 		public int getCount() {
 			return this.samples.size();
 		}
 
+		/**
+		 * Gets the classified type of this treatment.
+		 * 
+		 * @return The {@link StandardTreatmentType}.
+		 */
 		public StandardTreatmentType getTreatmentType() {
 			return this.txType;
 		}
 
+		/**
+		 * Sets the classified type for this treatment.
+		 * 
+		 * @param type The new {@link StandardTreatmentType}.
+		 */
 		public void setTreatmentType(StandardTreatmentType type) {
 			this.txType = type;
 		}
 
+		/**
+		 * Checks if a given query string matches this treatment's name
+		 * (case-insensitive).
+		 * 
+		 * @param query The string to match against.
+		 * @return true if the names match, false otherwise.
+		 */
 		public boolean matches(String query) {
 			return this.name.equalsIgnoreCase(query.trim());
 		}
 
 	}
 
+	/**
+	 * An enum representing standardized treatment types, used for classification
+	 * and analysis. Each type has a display name, a color for UI rendering, and a
+	 * list of aliases for matching against raw data labels.
+	 */
+	@SuppressWarnings("javadoc")
 	public static enum StandardTreatmentType {
 
 		REST("Rest", Color.BLUE, Arrays.asList(new String[] { "rest", "base", "baseline" })),
@@ -2625,6 +2695,15 @@ public class WIAStats {
 		private List<String> alias;
 		private Color color;
 
+		/**
+		 * Constructs a StandardTreatmentType enum constant.
+		 *
+		 * @param dispName The display name for the treatment type.
+		 * @param color    The color associated with this treatment type for UI
+		 *                 purposes.
+		 * @param aliases  A list of alternative names or aliases for this treatment
+		 *                 type.
+		 */
 		private StandardTreatmentType(String dispName, Color color, List<String> aliases) {
 			this.alias = aliases;
 			this.dispName = dispName;
@@ -2632,14 +2711,29 @@ public class WIAStats {
 
 		}
 
+		/**
+		 * Gets the color associated with this treatment type.
+		 * 
+		 * @return The UI color.
+		 */
 		public Color getColor() {
 			return this.color;
 		}
 
+		/**
+		 * Gets the display name of this treatment type.
+		 * 
+		 * @return The display name.
+		 */
 		public String getDisplayName() {
 			return this.dispName;
 		}
 
+		/**
+		 * Gets the display name of this treatment type.
+		 * 
+		 * @return The display name.
+		 */
 		public static StandardTreatmentType getMatching(String query, boolean strict) {
 
 			if (strict) {
