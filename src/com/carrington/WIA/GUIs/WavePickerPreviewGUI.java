@@ -39,6 +39,7 @@ import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.Wave;
 import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.DataStructures.WIAData;
+import com.carrington.WIA.GUIs.Components.JCHelpButton;
 import com.carrington.WIA.GUIs.Components.JCLabel;
 import com.carrington.WIA.GUIs.Components.JCToggleButton;
 import com.carrington.WIA.Graph.NetWaveChartPanel;
@@ -46,6 +47,7 @@ import com.carrington.WIA.Graph.PressureFlowChartPanel;
 import com.carrington.WIA.Graph.PressureFlowChartPanel.PFPickListener;
 import com.carrington.WIA.Graph.SepWavePanel;
 import com.carrington.WIA.Graph.SepWavePanel.WavePickListener;
+import com.carrington.WIA.IO.EnclosedTxtFileReader;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.Savgol.SavGolSettings;
@@ -78,7 +80,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	private JTextField txtCVal;
 	private JTextField txtFlowAvg;
 	private JTextField txtPressAvg;
-	private JButton btnPF;
+	private JCHelpButton btnPF;
 	private JButton btnAlign;
 	private JButton btnResetAlign;
 	private JTextField txtSavWindow;
@@ -112,7 +114,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 	private PreviewResult previewResult = null;
 
-	private Component compForPosition = null;
+	private final Component compForPosition;
 
 	/**
 	 * Creates the preview frame.
@@ -324,11 +326,13 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		txtWaveIntensity.setFocusable(false);
 
 		JLabel lblPF = new JLabel("Pressure and Flow");
-		btnPF = new JButton("");
-		btnPF.setIcon(Utils.IconQuestionLarger);
-		btnPF.setContentAreaFilled(false);
-		btnPF.setBorder(null);
-		btnPF.setRolloverIcon(Utils.IconQuestionLargerHover);
+		btnPF = new JCHelpButton(EnclosedTxtFileReader.getWavesAlignPFHelp());
+		btnPF.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent action) {
+				Utils.showInfo(btnPF.getHelpMessage(), compForPosition);
+			}
+		});
+	
 
 		JLabel lblSelectionMode = new JLabel("Selection mode");
 

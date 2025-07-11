@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 public class EnclosedTxtFileReader {
 
 	/**
-	 * Reads and returns the content of the 'waveshelp.txt' resource file.
+	 * Reads and returns the content of the 'waveshelp.html' resource file.
 	 *
 	 * @return The file content as a single string with line separators removed, or
 	 *         an empty string on error.
@@ -18,7 +18,49 @@ public class EnclosedTxtFileReader {
 	public static String getWavesHelp() {
 
 		try {
-			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/waveshelp.txt").readAllBytes();
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/waveshelp.html").readAllBytes();
+
+			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+			return "";
+		}
+
+	}
+	
+	/**
+	 * Reads and returns the content of the 'mainframehelp.html' resource file.
+	 *
+	 * @return The file content as a single string with line separators removed, or
+	 *         an empty string on error.
+	 */
+	public static String getMainFrameHelp() {
+
+		try {
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/mainframehelp.html").readAllBytes();
+
+			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+			return "";
+		}
+
+	}
+	
+	/**
+	 * Reads and returns the content of the 'wavealignpfhelp.html' resource file.
+	 *
+	 * @return The file content as a single string with line separators removed, or
+	 *         an empty string on error.
+	 */
+	public static String getWavesAlignPFHelp() {
+
+		try {
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/wavealignpfhelp.html").readAllBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
 
@@ -31,7 +73,7 @@ public class EnclosedTxtFileReader {
 	}
 
 	/**
-	 * Reads and returns the content of the 'diameterhelp.txt' resource file.
+	 * Reads and returns the content of the 'diameterhelp.html' resource file.
 	 *
 	 * @return The file content as a single string with line separators removed, or
 	 *         an empty string on error.
@@ -39,7 +81,7 @@ public class EnclosedTxtFileReader {
 	public static String getDiameterHelp() {
 
 		try {
-			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/diameterhelp.txt")
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/diameterhelp.html")
 					.readAllBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
@@ -53,14 +95,14 @@ public class EnclosedTxtFileReader {
 	}
 
 	/**
-	 * Reads and returns the content of the 'wavepickerpanelhelp.txt' resource file.
+	 * Reads and returns the content of the 'wavepickerpanelhelp.html' resource file.
 	 *
 	 * @return The file content as a single string with line separators removed, or
 	 *         an empty string on error.
 	 */
 	public static String getWavePanelHelp() {
 		try {
-			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/wavepickerpanelhelp.txt")
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/wavepickerpanelhelp.html")
 					.readAllBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
@@ -73,14 +115,14 @@ public class EnclosedTxtFileReader {
 	}
 
 	/**
-	 * Reads and returns the content of the 'selectbeatshelp.txt' resource file.
+	 * Reads and returns the content of the 'selectbeatshelp.html' resource file.
 	 *
 	 * @return The file content as a single string with line separators removed, or
 	 *         an empty string on error.
 	 */
 	public static String getSelectBeatPanelHelp() {
 		try {
-			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/selectbeatshelp.txt")
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/selectbeatshelp.html")
 					.readAllBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
@@ -93,14 +135,14 @@ public class EnclosedTxtFileReader {
 	}
 
 	/**
-	 * Reads and returns the content of the 'alignbytimehelp.txt' resource file.
+	 * Reads and returns the content of the 'alignbytimehelp.html' resource file.
 	 *
 	 * @return The file content as a single string with line separators removed, or
 	 *         an empty string on error.
 	 */
 	public static String getAlignByTimeHelp() {
 		try {
-			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/alignbytimehelp.txt")
+			byte[] bytes = EnclosedTxtFileReader.class.getResourceAsStream("/textfiles/alignbytimehelp.html")
 					.readAllBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
