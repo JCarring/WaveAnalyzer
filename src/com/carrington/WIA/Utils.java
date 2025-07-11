@@ -4,7 +4,6 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Dimension;
 import java.awt.FileDialog;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -12,7 +11,6 @@ import java.awt.Frame;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.Rectangle;
-import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FilenameFilter;
@@ -90,47 +88,28 @@ public abstract class Utils {
 	// Standard fonts used by this program which are scaled to the size of the
 	// user's screen
 
-	/** Arial, bold, size is screen height / 50 (with a maximum 24 pt) */
-	private static final Font fontTitle;
-	/** Arial, bold, size is screen height / 75 (with a maximum 18 pt) */
-	private static final Font fontSubtitle;
-	/** Arial, bold, size is screen height / 75 (with a maximum 18 pt) */
-	private static final Font fontSubtitlePlain;
-	/**
-	 * Arial, bold, size screen height / 83 (with a maximum 14 pt and minimum 6 pt)
-	 */
-	private static final Font fontSubtitleSub;
-	/**
-	 * Arial, bold, size screen height / 90 (with a maximum 14 pt and minimum 6 pt)
-	 */
-	private static final Font fontNormalPlain;
-	/**
-	 * Arial, bold, size screen height / 90 (with a maximum 14 pt and minimum 6 pt)
-	 */
-	private static final Font fontNormalBold;
-	/**
-	 * Arial, bold, size screen height / 110 (with a maximum 12 pt and minimum 6 pt)
-	 */
-	private static final Font fontSmall;
-	static {
-		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-		double scaled = (int) (screenSize.getHeight() / 50d);
-		fontTitle = (new Font("Arial", Font.BOLD, (int) Math.max(scaled, 24)));
-
-		double scaledSub = (int) (screenSize.getHeight() / 75d);
-		fontSubtitle = new Font("Arial", Font.BOLD, (int) Math.max(scaledSub, 18));
-		fontSubtitlePlain = new Font("Arial", Font.PLAIN, (int) Math.max(scaledSub, 18));
-
-		double scaledSubSub = (int) (screenSize.getHeight() / 83d);
-		fontSubtitleSub = new Font("Arial", Font.BOLD, (int) Math.min(Math.max(scaledSubSub, 14), 6));
-
-		double scaledNormal = (int) (screenSize.getHeight() / 90d);
-		fontNormalPlain = new Font("Arial", Font.PLAIN, (int) Math.min(Math.max(scaledNormal, 14), 6));
-		fontNormalBold = new Font("Arial", Font.BOLD, (int) Math.min(Math.max(scaledNormal, 14), 6));
-
-		double scaledSmall = (int) (screenSize.getHeight() / 110d);
-		fontSmall = new Font("Arial", Font.PLAIN, (int) Math.min(Math.max(scaledSmall, 12), 6));
-	}
+	/** Arial, bold, size 24 pt */
+	private static final Font fontTitle = new Font("Arial", Font.BOLD, 24);
+	
+	/** Arial, bold, size 18 pt */
+	private static final Font fontSubtitle = new Font("Arial", Font.BOLD, 18);
+	
+	/** Arial, plain, size 18 pt */
+	private static final Font fontSubtitlePlain = new Font("Arial", Font.PLAIN, 18);
+	
+	/** Arial, bold, size 14 pt */
+	private static final Font fontSubtitleSub = new Font("Arial", Font.BOLD, 16);
+	
+	/** Arial, plain, size 14 */
+	private static final Font fontNormalPlain = new Font("Arial", Font.PLAIN, 14);
+	
+	/** Arial, bold, size 14 */
+	private static final Font fontNormalBold = new Font("Arial", Font.BOLD, 14);
+	
+	/** Arial, plain, size 10 */
+	private static final Font fontSmall = new Font("Arial", Font.PLAIN, 10);
+	
+	
 	static {
 
 		ImageIcon iconS = null;
@@ -1368,6 +1347,8 @@ public abstract class Utils {
 			}
 		}
 	}
+	
+	
 
 	/**
 	 * Calculates the nearest power of ten that is greater than or equal to the

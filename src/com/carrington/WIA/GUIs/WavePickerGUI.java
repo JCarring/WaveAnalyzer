@@ -50,6 +50,7 @@ import com.carrington.WIA.DataStructures.WIAData;
 import com.carrington.WIA.GUIs.WavePickerPreviewGUI.PreviewResult;
 import com.carrington.WIA.GUIs.Components.JCButton;
 import com.carrington.WIA.GUIs.Components.JCDimension;
+import com.carrington.WIA.GUIs.Components.JCHelpButton;
 import com.carrington.WIA.GUIs.Components.JCToggleButton;
 import com.carrington.WIA.GUIs.Components.WaveTable;
 import com.carrington.WIA.GUIs.Components.WaveTable.WaveTableListener;
@@ -92,16 +93,16 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private JButton btnAccept;
 	private JButton btnReset;
 	private JTextField txtCVal;
-	private JButton btnWaveHelp;
+	private JCHelpButton btnWaveHelp;
 	private WaveTable tableWaves;
-	private JButton btnPF;
+	private JCHelpButton btnPF;
 	private JButton btnAlign;
 	private JButton btnResetAlign;
 	private JTextField txtSystole;
 	private JTextField txtDiastole;
 	private JTextField txtFlowAvg;
 	private JTextField txtPressAvg;
-	private JButton btnDiameterHelp;
+	private JCHelpButton btnDiameterHelp;
 	private JTextField txtVesselDiameter;
 	private SepWavePanel pnlGraphWIASep;
 	private JPanel pnlBottomGraphs;
@@ -116,14 +117,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private JCheckBox chAllowWrap;
 	private JCheckBox chAllowWrapIgnoreEnds;
 
-	private String wavesHelpMsg;
-	private String diameterHelpMsg;
-	private String wavesPanelHelpMsg;
 
 	private WeakReference<WavePickerGUI> ref = new WeakReference<WavePickerGUI>(this);
 
 	private WIAData wiaData = null;
-	private JButton btnOverallHelp;
+	private JCHelpButton btnOverallHelp;
 
 	private WIASaveSettingsGUI saveSettingsGUI;
 
@@ -343,16 +341,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		JLabel pnlInstruction = new JLabel("Select waves for \"" + selectionName + "\"");
 
-		wavesPanelHelpMsg = EnclosedTxtFileReader.getWavePanelHelp();
 
-		btnOverallHelp = new JButton();
-		btnOverallHelp.setIcon(Utils.IconQuestionLarger);
-		btnOverallHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
-		btnOverallHelp.setContentAreaFilled(false);
-		btnOverallHelp.setBorder(null);
+		btnOverallHelp = new JCHelpButton(EnclosedTxtFileReader.getWavePanelHelp());
+		
 		btnOverallHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(wavesPanelHelpMsg, ref.get());
+				Utils.showInfo(btnOverallHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -443,16 +437,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		JLabel lblExistingWaves = new JLabel("Waves");
 
-		wavesHelpMsg = EnclosedTxtFileReader.getWavesHelp();
 
-		btnWaveHelp = new JButton();
-		btnWaveHelp.setContentAreaFilled(false);
-		btnWaveHelp.setBorder(null);
-		btnWaveHelp.setIcon(Utils.IconQuestionLarger);
-		btnWaveHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
+		btnWaveHelp = new JCHelpButton(EnclosedTxtFileReader.getWavesHelp());
+		
 		btnWaveHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(wavesHelpMsg, ref.get());
+				Utils.showInfo(btnWaveHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -460,11 +450,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		JScrollPane scrWaves = new JScrollPane();
 
 		JLabel lblPF = new JLabel("Pressure and Flow");
-		btnPF = new JButton("");
-		btnPF.setIcon(Utils.IconQuestionLarger);
-		btnPF.setContentAreaFilled(false);
-		btnPF.setBorder(null);
-		btnPF.setRolloverIcon(Utils.IconQuestionLargerHover);
+		btnPF = new JCHelpButton(EnclosedTxtFileReader.getWavesAlignPFHelp());
+		btnPF.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent action) {
+				Utils.showInfo(btnPF.getHelpMessage(), ref.get());
+			}
+		});
 
 		JLabel lblSelectionMode = new JLabel("Selection mode");
 
@@ -584,15 +575,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		});
 
 		JLabel lblDiameter = new JLabel("Vessel Size");
-		diameterHelpMsg = EnclosedTxtFileReader.getDiameterHelp();
-		btnDiameterHelp = new JButton("");
-		btnDiameterHelp.setIcon(Utils.IconQuestionLarger);
-		btnDiameterHelp.setContentAreaFilled(false);
-		btnDiameterHelp.setBorder(null);
-		btnDiameterHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
+		btnDiameterHelp = new JCHelpButton(EnclosedTxtFileReader.getDiameterHelp());
+		
 		btnDiameterHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(diameterHelpMsg, ref.get());
+				Utils.showInfo(btnDiameterHelp.getHelpMessage(), ref.get());
 			}
 
 		});

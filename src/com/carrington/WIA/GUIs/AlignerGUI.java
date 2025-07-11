@@ -27,7 +27,6 @@ import javax.swing.AbstractAction;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -51,6 +50,7 @@ import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.GUIs.Components.BeatsSelectionTable;
 import com.carrington.WIA.GUIs.Components.BeatsSelectionTable.SelectionTableListener;
 import com.carrington.WIA.GUIs.Components.JCButton;
+import com.carrington.WIA.GUIs.Components.JCHelpButton;
 import com.carrington.WIA.Graph.AlignChartPanel;
 import com.carrington.WIA.Graph.AlignChartPanel.AlignChartPanelListener;
 import com.carrington.WIA.IO.Header;
@@ -215,8 +215,14 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		});
 
 		JLabel lblSync = new JLabel("Center at Time Point");
-
-		JButton btnSyncHelp = new JButton();
+		
+		// TODO: make more detailed help message (.txt file)
+		JCHelpButton btnSyncHelp = new JCHelpButton("Sync movements");
+		btnSyncHelp.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				Utils.showInfo(btnSyncHelp.getHelpMessage(), ref.get());
+			}
+		});
 
 		JCheckBox chShowAlignLines = new JCheckBox("Alignment Lines");
 		chShowAlignLines.addActionListener(new ActionListener() {
@@ -695,18 +701,14 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		JLabel lblTopInstruction = new JLabel("Make selections of interest.");
 		pnlTop.add(lblTopInstruction);
 
-		JButton btnHelp = new JButton();
-		btnHelp.setIcon(Utils.IconQuestionLarger);
-		btnHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
-		btnHelp.setContentAreaFilled(false);
-		btnHelp.setBorderPainted(false);
-		btnHelp.setBorder(null);
-
-		btnSyncHelp.setIcon(Utils.IconQuestionLarger);
-		btnSyncHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
-		btnSyncHelp.setContentAreaFilled(false);
-		btnSyncHelp.setBorderPainted(false);
-		btnSyncHelp.setBorder(null);
+		// TODO: Make more detailed
+		JCHelpButton btnHelp = new JCHelpButton("Select beats on top and bottom graph.");
+		btnHelp.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				Utils.showInfo(btnHelp.getHelpMessage(), ref.get());
+			}
+		});
+		
 
 		pnlTop.add(btnHelp);
 

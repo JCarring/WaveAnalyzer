@@ -25,7 +25,6 @@ import javax.swing.AbstractAction;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
@@ -50,10 +49,12 @@ import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.GUIs.Components.BeatsSelectionTableCombo;
 import com.carrington.WIA.GUIs.Components.BeatsSelectionTableCombo.SelectionTableListener;
 import com.carrington.WIA.GUIs.Components.JCButton;
+import com.carrington.WIA.GUIs.Components.JCHelpButton;
 import com.carrington.WIA.GUIs.Components.JCLabel;
 import com.carrington.WIA.Graph.AlignChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel.BeatsChartPanelListener;
+import com.carrington.WIA.IO.EnclosedTxtFileReader;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.FlowUnit;
 import com.carrington.WIA.Math.PressureUnit;
@@ -531,12 +532,12 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener, 
 		JLabel lblTopInstruction = new JLabel("Hover over graph to make selections.");
 		pnlTop.add(lblTopInstruction);
 
-		JButton btnHelp = new JButton();
-		btnHelp.setIcon(Utils.IconQuestionLarger);
-		btnHelp.setRolloverIcon(Utils.IconQuestionLargerHover);
-		btnHelp.setContentAreaFilled(false);
-		btnHelp.setBorderPainted(false);
-		btnHelp.setBorder(null);
+		JCHelpButton btnHelp = new JCHelpButton(EnclosedTxtFileReader.getSelectBeatPanelHelp());
+		btnHelp.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				Utils.showInfo(btnHelp.getHelpMessage(), ref.get());
+			}
+		});
 
 		pnlTop.add(btnHelp);
 		Utils.setFont(Utils.getSmallTextFont(), chAutoBeat, chAutoDetect);
