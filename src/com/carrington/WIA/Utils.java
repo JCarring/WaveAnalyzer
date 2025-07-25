@@ -136,16 +136,16 @@ public abstract class Utils {
 		ImageIcon iconSaveH = null;
 
 		try {
-			BufferedImage successIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/success.png"));
-			BufferedImage failIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/fail.png"));
-			BufferedImage previewIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/preview.png"));
+			BufferedImage successIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/success.png"));
+			BufferedImage failIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/fail.png"));
+			BufferedImage previewIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/preview.png"));
 			BufferedImage previewHoverIconRaw = ImageIO
-					.read(Utils.class.getResourceAsStream("/images/preview_hover.png"));
+					.read(Utils.class.getResourceAsStream("/resources/images/preview_hover.png"));
 
-			BufferedImage qIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/question.png"));
-			BufferedImage qIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/images/question_light.png"));
-			BufferedImage saveIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/save.png"));
-			BufferedImage saveIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/images/save_hover.png"));
+			BufferedImage qIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/question.png"));
+			BufferedImage qIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/question_light.png"));
+			BufferedImage saveIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/save.png"));
+			BufferedImage saveIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/save_hover.png"));
 
 			iconS = new ImageIcon(successIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));
 			iconF = new ImageIcon(failIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));

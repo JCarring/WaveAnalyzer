@@ -12,7 +12,7 @@ import com.carrington.WIA.Utils;
 @SuppressWarnings("javadoc")
 public abstract class WIAResourceReader {
 	
-	private static final String PATH_PREFIX = "/textfiles/";
+	private static final String PATH_PREFIX = "/resources/textfiles/";
 	
 	public static final String HELP_ALIGN_TIME = "alignbytimehelp.html";
 	public static final String HELP_VESSEL_DIAMETER = "diameterhelp.html";

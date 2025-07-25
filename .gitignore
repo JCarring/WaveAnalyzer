@@ -2,6 +2,8 @@ src/com/carrington/WIA/OtherTemporary/
 target/
 bin/
 RnD/*
+config_sep.properties
+config_combo.properties
 *.swp
 *.class
 !plugins/*.class

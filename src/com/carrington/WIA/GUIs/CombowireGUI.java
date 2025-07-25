@@ -58,8 +58,8 @@ import com.carrington.WIA.IO.NamingConvention;
 import com.carrington.WIA.IO.ReadResult;
 import com.carrington.WIA.IO.Saver;
 import com.carrington.WIA.IO.SheetDataReader;
-import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.DataResampler.ResampleException;
+import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.Savgol.SavGolSettings;
 
 /**
@@ -142,7 +142,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private JCButton btnNextSelection;
 	private JLabel lblPreviewFirst;
 
-	private final ComboFileConfigGUI config = new ComboFileConfigGUI();
+	private final ComboFileConfigGUI config;
 
 	private SelectionResult selectionResult;
 	private LinkedList<PreviewResult> previewResultData = null;
@@ -154,8 +154,13 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	 *                        closed. Can be null.
 	 * @param back            A listener to notify when the "back" action is
 	 *                        performed. Can be null.
+	 * @throws IOException if could not interact with configuration file
 	 */
-	public CombowireGUI(JFrame frameToGoBackTo, BackListener back) {
+	public CombowireGUI(JFrame frameToGoBackTo, BackListener back) throws IOException {
+		
+		this.config = new ComboFileConfigGUI();
+
+		
 		System.setProperty("apple.eawt.quitStrategy", "CLOSE_ALL_WINDOWS");
 
 		this.frameToGoBackTo = frameToGoBackTo;
@@ -355,7 +360,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnWaveAnalysis.addSeparator();
 		mnWaveAnalysis.add(mnNextSel);
 		mnWaveAnalysis.add(mnNextFile);
-		
+
 		// Help
 		JMenuItem mnItemGithub = new JMenuItem("Github");
 		mnHelp.add(mnItemGithub);
@@ -378,7 +383,8 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnItemReport.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				try {
-					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
+					java.awt.Desktop.getDesktop()
+							.browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
 				} catch (Exception ex) {
 					Utils.showError("Could not browse internet", ref.get());
 				}
@@ -386,9 +392,8 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		});
-		
-		Utils.setMenuBarFont(Utils.getSubTitleFont(), getJMenuBar());
 
+		Utils.setMenuBarFont(Utils.getSubTitleFont(), getJMenuBar());
 
 		// setSelectFileState(STATE_FILE_INIT, null, null, null);
 		// setBeatsState(STATE_BEATS_INIT, null, null);
@@ -1065,7 +1070,12 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		if (file == null)
 			return;
 
-		config.tryToSetLastDir(file);
+		try {
+			config.tryToSetLastDir(file);
+		} catch (IOException e) {
+			// fail silently, just don't save
+			e.printStackTrace();
+		}
 
 		int numRowsIgnore;
 
@@ -1441,13 +1451,18 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		btnRunWIAPreview.setEnabled(false);
 
 		PreviewResult pr = previewResultData.get(0);
-		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.getWIAData().getSelectionName() + " [Combo]", pr.getWIAData(),
-				config.getSaveSettingsChoices(), ref.get(), this, pr);
+		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.getWIAData().getSelectionName() + " [Combo]",
+				pr.getWIAData(), config.getSaveSettingsChoices(), ref.get(), this, pr);
 		wavepickerGUI.display();
 
 		if (config.getSaveSettingsChoices().hasChanged()) {
-			config.writeProperties();
-			config.getSaveSettingsChoices().setChanged(false);
+			try {
+				config.writeProperties();
+				config.getSaveSettingsChoices().setChanged(false);
+			} catch (IOException e) {
+				// fail silently, just don't save
+				e.printStackTrace();
+			}
 		}
 
 		if (wavepickerGUI.getStatus() == WavePickerGUI.CANCELLED) {
@@ -1501,7 +1516,8 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			sb.append(selectionResult.getBeats().size() - 1).append(" (");
 			String comma = "";
 			for (int i = 1; i < previewResultData.size(); i++) {
-				sb.append(comma).append("\"").append(previewResultData.get(i).getWIAData().getSelectionName()).append("\"");
+				sb.append(comma).append("\"").append(previewResultData.get(i).getWIAData().getSelectionName())
+						.append("\"");
 				comma = ", ";
 			}
 			sb.append(")");
@@ -1791,6 +1807,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the save file path for the main WIA plot as an SVG image.
+	 * 
 	 * @return The {@link File} object for the SVG image.
 	 */
 	@Override
@@ -1804,6 +1821,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the primary output folder where TIFF images will be saved.
+	 * 
 	 * @return The {@link File} object for the output folder.
 	 */
 	@Override
@@ -1813,6 +1831,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the save file path for the wave selections plot as an SVG image.
+	 * 
 	 * @return The {@link File} object for the SVG image.
 	 */
 	@Override

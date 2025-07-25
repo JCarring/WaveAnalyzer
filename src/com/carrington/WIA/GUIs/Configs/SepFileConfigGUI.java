@@ -7,8 +7,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +48,8 @@ import com.carrington.WIA.Math.Savgol;
 public class SepFileConfigGUI extends JDialog {
 
 	private static final long serialVersionUID = 5137417115882742282L;
-	private static final File configFile = new File("./config.properties");
+	private static final String configFileDefaultPath = "/resources/configs/config-sep-default.properties";
+	private static final File configFile = new File("./config_sep.properties");
 	private static final String keyResample = "resample";
 	private static final String keyAutoHeader = "auto_set_header";
 	private static final String keyAutoName = "auto_set_name";
@@ -109,8 +112,10 @@ public class SepFileConfigGUI extends JDialog {
 	/**
 	 * Creates the configuration settings frame. Initializes all UI components and
 	 * loads existing properties from the configuration file.
+	 * 
+	 * @throws IOException if errors with I/O with the configuration file
 	 */
-	public SepFileConfigGUI() {
+	public SepFileConfigGUI() throws IOException {
 
 		Font titleFont = Utils.getTitleFont();
 		Font subtitleFont = Utils.getSubTitleFont();
@@ -145,7 +150,13 @@ public class SepFileConfigGUI extends JDialog {
 				recordDisplayValues();
 
 				if (chSaveSettingsFile.isSelected()) {
-					writeProperties();
+					try {
+						writeProperties();
+					} catch (IOException e1) {
+						Utils.showError("<html>There was an error saving the " + configFile + " file:<br><br>"
+								+ e1.getMessage() + "</html>", ref.get());
+						e1.printStackTrace();
+					}
 				}
 				close();
 
@@ -488,107 +499,125 @@ public class SepFileConfigGUI extends JDialog {
 	/**
 	 * Reads configuration settings from the config file and loads them into the
 	 * instance variables. If the file does not exist, default values are retained.
+	 * 
+	 * @throws IOEception if issues with reading file
 	 */
-	private void readProperties() {
-		if (configFile.exists()) {
-			Properties prop = new Properties();
-			FileInputStream in;
-			try {
-				in = new FileInputStream(configFile);
-				prop.load(in);
+	private void readProperties() throws IOException {
 
-				chSaveSettingsFile.setSelected(true);
-
-				String resample = prop.getProperty(keyResample, "");
-				String autoHeader = prop.getProperty(keyAutoHeader, "true");
-				String autoName = prop.getProperty(keyAutoName, "true");
-				String autoSaveDir = prop.getProperty(keyAutoSaveDir, "false");
-				String colExclude = prop.getProperty(keyColumnsExclude, "[]");
-				String colAlign = prop.getProperty(keyColumnsAlign, "[]");
-				String beatsFiltEnable = prop.getProperty(keyBeatsFilt, "false");
-				String beatsFiltWindow = prop.getProperty(keyBeatsWindow, "51");
-				String beatsFiltPoly = prop.getProperty(keyBeatsPoly, "3");
-				String beatsFiltResamp = prop.getProperty(keyBeatsResample, "0.001");
-				String ensembleType = prop.getProperty(keyEnsembleType,
-						SeparateWireGUI.EnsembleTypeMap.keySet().stream().findFirst().orElse("Trim"));
-				String WIAFiltEnable = prop.getProperty(keyWIAFilt, "true");
-				String WIAFiltWindow = prop.getProperty(keyWIAWindow, "51");
-				String WIAFiltPoly = prop.getProperty(keyWIAPoly, "3");
-
-				if (NumberUtils.isCreatable(resample)) {
-					this.opResample = resample;
+		if (!configFile.exists()) {
+			try (InputStream defaultStream = getClass().getResourceAsStream(configFileDefaultPath)) {
+				if (defaultStream == null) {
+					throw new IOException("Default configuration file not found in resources.");
 				}
 
-				if (autoName.toLowerCase().equals("true") || autoName.toLowerCase().equals("false")) {
-					this.opAutoName = Boolean.valueOf(autoName);
+				try (FileOutputStream out = new FileOutputStream(configFile)) {
+					byte[] buffer = new byte[1024];
+					int bytesRead;
+					while ((bytesRead = defaultStream.read(buffer)) != -1) {
+						out.write(buffer, 0, bytesRead);
+					}
 				}
+			}
+		}
 
-				if (autoHeader.toLowerCase().equals("true") || autoHeader.toLowerCase().equals("false")) {
-					this.opAutoHeader = Boolean.valueOf(autoHeader);
-				}
+		Properties prop = new Properties();
+		try (FileInputStream in = new FileInputStream(configFile)) {
+			prop.load(in);
 
-				if (autoSaveDir.toLowerCase().equals("true") || autoSaveDir.toLowerCase().equals("false")) {
-					this.opAutoSaveDir = Boolean.valueOf(autoSaveDir);
-				}
+			chSaveSettingsFile.setSelected(true);
 
-				if (beatsFiltEnable.toLowerCase().equals("true") || beatsFiltEnable.toLowerCase().equals("false")) {
-					this.opPreAlignFilterEnable = Boolean.valueOf(beatsFiltEnable);
-				}
+			String resample = prop.getProperty(keyResample, "");
+			String autoHeader = prop.getProperty(keyAutoHeader, "true");
+			String autoName = prop.getProperty(keyAutoName, "true");
+			String autoSaveDir = prop.getProperty(keyAutoSaveDir, "false");
+			String colExclude = prop.getProperty(keyColumnsExclude, "[]");
+			String colAlign = prop.getProperty(keyColumnsAlign, "[]");
+			String beatsFiltEnable = prop.getProperty(keyBeatsFilt, "false");
+			String beatsFiltWindow = prop.getProperty(keyBeatsWindow, "51");
+			String beatsFiltPoly = prop.getProperty(keyBeatsPoly, "3");
+			String beatsFiltResamp = prop.getProperty(keyBeatsResample, "0.001");
+			String ensembleType = prop.getProperty(keyEnsembleType,
+					SeparateWireGUI.EnsembleTypeMap.keySet().stream().findFirst().orElse("Trim"));
+			String WIAFiltEnable = prop.getProperty(keyWIAFilt, "true");
+			String WIAFiltWindow = prop.getProperty(keyWIAWindow, "51");
+			String WIAFiltPoly = prop.getProperty(keyWIAPoly, "3");
 
-				if (NumberUtils.isCreatable(beatsFiltWindow)) {
-					this.opPreAlignFilterWindow = beatsFiltWindow;
-				}
-
-				if (NumberUtils.isCreatable(beatsFiltPoly)) {
-					this.opPreAlignFilterPoly = beatsFiltPoly;
-				}
-
-				if (NumberUtils.isCreatable(beatsFiltResamp)) {
-					this.opPreAlignFilterResample = beatsFiltResamp;
-				}
-
-				if (SeparateWireGUI.EnsembleTypeMap.containsKey(ensembleType)) {
-					opEnsembleType = ensembleType;
-				}
-
-				if (WIAFiltEnable.toLowerCase().equals("true") || WIAFiltEnable.toLowerCase().equals("false")) {
-					this.opPreWIAFilterEnable = Boolean.valueOf(WIAFiltEnable);
-				}
-
-				if (NumberUtils.isCreatable(WIAFiltWindow)) {
-					this.opPreWIAFilterWindow = WIAFiltWindow;
-				}
-
-				if (NumberUtils.isCreatable(WIAFiltPoly)) {
-					this.opPreWIAFilterPoly = WIAFiltPoly;
-				}
-
-				for (String col : parseStringList(colExclude)) {
-					this.opColExclude.add(col);
-				}
-
-				for (String col : parseStringList(colAlign)) {
-					this.opColAlign.add(col);
-				}
-
-				this.opLastDir = prop.getProperty(keyLastDirectory, "");
-
-				this.wiaSettings = new WIASaveSettingsChoices(prop);
-
-			} catch (IOException e) {
-				// should be found since we made sure it exists
-				e.printStackTrace();
-				return;
+			if (NumberUtils.isCreatable(resample)) {
+				this.opResample = resample;
 			}
 
+			if (autoName.toLowerCase().equals("true") || autoName.toLowerCase().equals("false")) {
+				this.opAutoName = Boolean.valueOf(autoName);
+			}
+
+			if (autoHeader.toLowerCase().equals("true") || autoHeader.toLowerCase().equals("false")) {
+				this.opAutoHeader = Boolean.valueOf(autoHeader);
+			}
+
+			if (autoSaveDir.toLowerCase().equals("true") || autoSaveDir.toLowerCase().equals("false")) {
+				this.opAutoSaveDir = Boolean.valueOf(autoSaveDir);
+			}
+
+			if (beatsFiltEnable.toLowerCase().equals("true") || beatsFiltEnable.toLowerCase().equals("false")) {
+				this.opPreAlignFilterEnable = Boolean.valueOf(beatsFiltEnable);
+			}
+
+			if (NumberUtils.isCreatable(beatsFiltWindow)) {
+				this.opPreAlignFilterWindow = beatsFiltWindow;
+			}
+
+			if (NumberUtils.isCreatable(beatsFiltPoly)) {
+				this.opPreAlignFilterPoly = beatsFiltPoly;
+			}
+
+			if (NumberUtils.isCreatable(beatsFiltResamp)) {
+				this.opPreAlignFilterResample = beatsFiltResamp;
+			}
+
+			if (SeparateWireGUI.EnsembleTypeMap.containsKey(ensembleType)) {
+				opEnsembleType = ensembleType;
+			}
+
+			if (WIAFiltEnable.toLowerCase().equals("true") || WIAFiltEnable.toLowerCase().equals("false")) {
+				this.opPreWIAFilterEnable = Boolean.valueOf(WIAFiltEnable);
+			}
+
+			if (NumberUtils.isCreatable(WIAFiltWindow)) {
+				this.opPreWIAFilterWindow = WIAFiltWindow;
+			}
+
+			if (NumberUtils.isCreatable(WIAFiltPoly)) {
+				this.opPreWIAFilterPoly = WIAFiltPoly;
+			}
+
+			for (String col : parseStringList(colExclude)) {
+				this.opColExclude.add(col);
+			}
+
+			for (String col : parseStringList(colAlign)) {
+				this.opColAlign.add(col);
+			}
+
+			this.opLastDir = prop.getProperty(keyLastDirectory, "");
+
+			this.wiaSettings = new WIASaveSettingsChoices(prop);
+
+		} catch (IOException e) {
+			// should be found since we made sure it exists
+			e.printStackTrace();
+			return;
 		}
+
 	}
 
 	/**
 	 * Writes the current configuration settings from the instance variables to the
 	 * "config.properties" file.
+	 * 
+	 * @throws IOException           if unable to write and save properties file to
+	 *                               system
 	 */
-	public void writeProperties() {
+	public void writeProperties() throws FileNotFoundException, IOException {
 		Properties prop = new Properties();
 		prop.setProperty(keyResample, opResample);
 
@@ -611,13 +640,10 @@ public class SepFileConfigGUI extends JDialog {
 			this.wiaSettings.writeProperties(prop);
 		}
 
-		try {
-			prop.store(new FileOutputStream(configFile), "Configuration properties");
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
+		
+	    try (FileOutputStream out = new FileOutputStream(configFile)) {
+	        prop.store(out, "Configuration properties");
+	    } // propagate exceptions to caller
 	}
 
 	/**
@@ -727,8 +753,10 @@ public class SepFileConfigGUI extends JDialog {
 	 * Sets and saves the path of the last accessed directory based on a given file.
 	 *
 	 * @param file The file or directory from which to derive the path.
+	 * @throws IOException           if unable to write and save properties file to
+	 *                               system
 	 */
-	public void tryToSetLastDir(File file) {
+	public void tryToSetLastDir(File file) throws FileNotFoundException, IOException {
 		if (!file.exists())
 			return;
 

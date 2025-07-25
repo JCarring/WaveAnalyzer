@@ -11,6 +11,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 
 import javax.swing.AbstractAction;
@@ -59,7 +60,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 	private JScrollPane scrFileName;
 	private JCButton btnRunWIA;
 
-	private final ComboFileConfigGUI config = new ComboFileConfigGUI();
+	private final ComboFileConfigGUI config;
 	private volatile WIAData wiaData = null;
 	private volatile File currFile = null;
 	private JCButton btnSaveMetrics;
@@ -77,9 +78,18 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		try {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 		} catch (Exception e) {
+			
 			e.printStackTrace();
 		}
 
+		ComboFileConfigGUI config;
+		try  {
+			config = new ComboFileConfigGUI();
+		} catch (IOException e) {
+			config = null;
+		}
+		this.config = config;
+		
 		this.backListener = backListener;
 		this.frameToGoBackTo = frameToGoBackTo;
 
@@ -381,7 +391,12 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		this.currFile = file;
 
 		updateWIAFileDisplay();
-		config.tryToSetLastDir(file);
+		try {
+			config.tryToSetLastDir(file);
+		} catch (IOException e) {
+			// fail silently, just don't save
+			e.printStackTrace();
+		}
 		txtFileName.setText(file.getPath());
 		scrFileName.getHorizontalScrollBar().setValue(scrFileName.getHorizontalScrollBar().getMaximum());
 
@@ -399,8 +414,13 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 		// Hangs
 
 		if (config.getSaveSettingsChoices().hasChanged()) {
-			config.writeProperties();
-			config.getSaveSettingsChoices().setChanged(false);
+			try {
+				config.writeProperties();
+				config.getSaveSettingsChoices().setChanged(false);
+			} catch (IOException e) {
+				// fail silently, just don't save
+				e.printStackTrace();
+			}
 		}
 
 		if (wavepickerGUI.getStatus() == WavePickerGUI.CANCELLED) {

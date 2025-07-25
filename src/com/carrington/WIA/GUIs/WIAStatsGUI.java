@@ -84,7 +84,7 @@ public class WIAStatsGUI extends JFrame
 	private static final int STATE_STATS_RUN = 2;
 
 	// Configuration (i.e. used for determining default file search path
-	private final ComboFileConfigGUI config = new ComboFileConfigGUI();
+	private final ComboFileConfigGUI config;
 	// Object with all of the statistics stored
 	private WIAStats wiastat;
 
@@ -114,6 +114,14 @@ public class WIAStatsGUI extends JFrame
 				| UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
+		
+		ComboFileConfigGUI config;
+		try {
+			config = new ComboFileConfigGUI();
+		} catch (IOException e) {
+			config = null;
+		}
+		this.config = config;
 
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -249,7 +257,12 @@ public class WIAStatsGUI extends JFrame
 		if (file == null)
 			return;
 
-		config.tryToSetLastDir(file);
+		try {
+			config.tryToSetLastDir(file);
+		} catch (IOException e) {
+			// fail silently, just don't save
+			e.printStackTrace();
+		}
 
 		wiastat = new WIAStats("test");
 		String errors = wiastat.loadFiles(file, true);

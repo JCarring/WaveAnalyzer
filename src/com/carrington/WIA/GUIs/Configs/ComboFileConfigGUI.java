@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,14 +42,15 @@ import com.carrington.WIA.GUIs.CombowireGUI;
 import com.carrington.WIA.Math.Savgol;
 
 /**
- * A {@link JDialog} window for managing configuration settings for the Combowire
- * analysis process. It provides UI for setting general options, run
+ * A {@link JDialog} window for managing configuration settings for the
+ * Combowire analysis process. It provides UI for setting general options, run
  * configurations like flow offset and column mapping, and filter parameters.
  */
 public class ComboFileConfigGUI extends JDialog {
 
 	private static final long serialVersionUID = 5137417115882742282L;
-	private static final File configFile = new File("./config_WIA.properties");
+	private static final String configFileDefaultPath = "/resources/configs/config-combo-default.properties";
+	private static final File configFile = new File("./config_combo.properties");
 	private static final String keyFlowOffset = "flow_offset";
 	private static final String keyAutoHeader = "auto_set_header";
 	private static final String keyAutoName = "auto_set_name";
@@ -130,8 +132,10 @@ public class ComboFileConfigGUI extends JDialog {
 	/**
 	 * Creates the configuration settings frame for Combowire analysis. Initializes
 	 * all UI components and loads existing properties from the configuration file.
+	 * 
+	 * @throws IOException if errors with I/O with the configuration file
 	 */
-	public ComboFileConfigGUI() {
+	public ComboFileConfigGUI() throws IOException {
 
 		try {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -171,7 +175,13 @@ public class ComboFileConfigGUI extends JDialog {
 				recordDisplayValues();
 
 				if (chSaveSettingsFile.isSelected()) {
-					writeProperties();
+					try {
+						writeProperties();
+					} catch (IOException e1) {
+						Utils.showError("<html>There was an error saving the " + configFile + " file:<br><br>"
+								+ e1.getMessage() + "</html>", ref.get());
+						e1.printStackTrace();
+					}
 				}
 				close();
 
@@ -239,14 +249,13 @@ public class ComboFileConfigGUI extends JDialog {
 		JScrollPane scrColE = new JScrollPane();
 		JScrollPane scrColR = new JScrollPane();
 
-
 		JLabel lblResample = new JLabel("Resample rate:");
 		lblResample.setFont(normalBold);
-		
+
 		txtResampleRate = new JTextField();
 		txtResampleRate.setColumns(10);
 		txtResampleRate.setFont(normalPlain);
-		
+
 		JLabel lblEnsembletype = new JLabel("Ensemble type:");
 		cbEnsembleType = new JComboBox<String>();
 		for (Entry<String, Integer> entry : CombowireGUI.EnsembleTypeMap.entrySet()) {
@@ -267,13 +276,12 @@ public class ComboFileConfigGUI extends JDialog {
 		txtPreWIAWindow = new JTextField("");
 		JLabel lblPreWIAPolyOrder = new JLabel("Polynomial order:");
 		txtPreWIAPoly = new JTextField("");
-		
+
 		Utils.setFont(normalBold, lblColPressure, lblColFlow, lblColECG, lblColRWave);
 		Utils.setFont(Utils.getTextFont(true), lblPreWIAFilter, lblEnsembletype);
-		Utils.setFont(Utils.getTextFont(false), lblPreWIAWindow, lblPreWIAPolyOrder, chPreWIAFilter,
-				txtPreWIAPoly, txtPreWIAWindow);
+		Utils.setFont(Utils.getTextFont(false), lblPreWIAWindow, lblPreWIAPolyOrder, chPreWIAFilter, txtPreWIAPoly,
+				txtPreWIAWindow);
 
-		
 		int width = Utils.getFontParams(Utils.getTextFont(false), "0.0000001")[1];
 
 		GroupLayout gl_panel = new GroupLayout(pnlMain);
@@ -314,7 +322,8 @@ public class ComboFileConfigGUI extends JDialog {
 
 						.addGroup(gl_panel.createSequentialGroup().addGap(10).addComponent(lblResample)
 								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(txtResampleRate,
-										GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE))
+										GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
+										GroupLayout.PREFERRED_SIZE))
 						.addGroup(gl_panel.createSequentialGroup().addGap(10).addComponent(lblEnsembletype)
 								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(cbEnsembleType,
 										GroupLayout.DEFAULT_SIZE, cbEnsembleWidth, cbEnsembleWidth))
@@ -351,8 +360,8 @@ public class ComboFileConfigGUI extends JDialog {
 						.addGroup(gl_panel.createSequentialGroup().addComponent(lblColRWave).addComponent(scrColR,
 								GroupLayout.PREFERRED_SIZE, size * 10, GroupLayout.PREFERRED_SIZE)))
 				.addPreferredGap(ComponentPlacement.UNRELATED)
-				.addGroup(gl_panel.createParallelGroup(Alignment.CENTER).addComponent(lblResample)
-						.addComponent(txtResampleRate))
+				.addGroup(gl_panel
+						.createParallelGroup(Alignment.CENTER).addComponent(lblResample).addComponent(txtResampleRate))
 				.addPreferredGap(ComponentPlacement.RELATED)
 				.addGroup(gl_panel.createParallelGroup(Alignment.CENTER).addComponent(lblEnsembletype)
 						.addComponent(cbEnsembleType))
@@ -388,8 +397,8 @@ public class ComboFileConfigGUI extends JDialog {
 	/**
 	 * Opens the settings dialog, making it visible and modal.
 	 *
-	 * @param component The {@link Component} to which the dialog should be positioned
-	 * relative. Can be null.
+	 * @param component The {@link Component} to which the dialog should be
+	 *                  positioned relative. Can be null.
 	 */
 	public void open(Component component) {
 		setLocationRelativeTo(component);
@@ -433,7 +442,7 @@ public class ComboFileConfigGUI extends JDialog {
 	 * parameters.
 	 *
 	 * @return A {@code String} containing an error message if validation fails, or
-	 * {@code null} if all values are valid.
+	 *         {@code null} if all values are valid.
 	 */
 	public String validateDisplayValues() {
 
@@ -467,11 +476,10 @@ public class ComboFileConfigGUI extends JDialog {
 			return "Column names must be unique to each type";
 		}
 
-
 		if (!this.txtResampleRate.getText().isEmpty() && !NumberUtils.isCreatable(this.txtResampleRate.getText())) {
 			return "Resample rate must be a number.";
 		}
-		
+
 		if (this.txtPreWIAWindow.getText().isEmpty()) {
 			return "Pre-WIA filter window value must be a number.";
 		}
@@ -515,113 +523,126 @@ public class ComboFileConfigGUI extends JDialog {
 	 * Reads configuration settings from the "config_WIA.properties" file and loads
 	 * them into the instance variables. If the file does not exist, default values
 	 * are retained.
+	 * 
+	 * @throws IOException if errors with I/O with the configuration file
 	 */
-	public void readProperties() {
-		if (configFile.exists()) {
-			Properties prop = new Properties();
-			FileInputStream in;
-			try {
-				// String file =
-				// getClass().getProtectionDomain().getCodeSource().getLocation().getPath() +
-				// File.separator + configFile;
-				// in = new FileInputStream(file);
-				in = new FileInputStream(configFile);
+	public void readProperties() throws IOException {
 
-				prop.load(in);
-
-				chSaveSettingsFile.setSelected(true);
-
-				String flowOffset = prop.getProperty(keyFlowOffset, "0");
-				String autoHeader = prop.getProperty(keyAutoHeader, "true");
-				String autoName = prop.getProperty(keyAutoName, "true");
-				String autoSaveDir = prop.getProperty(keyAutoSaveDir, "false");
-				String colPressure = prop.getProperty(keyPressureCols, "[]");
-				String colFlow = prop.getProperty(keyFlowCols, "[]");
-				String colECG = prop.getProperty(keyECGCols, "[]");
-				String colRWave = prop.getProperty(keyRWaveCols, "[]");
-				String resampleRate = prop.getProperty(keyBeatsResample, "0.001");
-				String ensembleType = prop.getProperty(keyEnsembleType,
-						CombowireGUI.EnsembleTypeMap.keySet().stream().findFirst().orElse("Trim"));
-				String WIAFiltEnable = prop.getProperty(keyWIAFilt, "true");
-				String WIAFiltWindow = prop.getProperty(keyWIAWindow, "51");
-				String WIAFiltPoly = prop.getProperty(keyWIAPoly, "3");
-
-				if (NumberUtils.isCreatable(flowOffset)) {
-					this.opFlowOffset = Integer.parseInt(flowOffset);
+		if (!configFile.exists()) {
+			try (InputStream defaultStream = getClass().getResourceAsStream(configFileDefaultPath)) {
+				if (defaultStream == null) {
+					throw new IOException("Default configuration file not found in resources.");
 				}
 
-				if (autoName.toLowerCase().equals("true") || autoName.toLowerCase().equals("false")) {
-					this.opAutoName = Boolean.valueOf(autoName);
+				try (FileOutputStream out = new FileOutputStream(configFile)) {
+					byte[] buffer = new byte[1024];
+					int bytesRead;
+					while ((bytesRead = defaultStream.read(buffer)) != -1) {
+						out.write(buffer, 0, bytesRead);
+					}
 				}
+			} 
+		}
 
-				if (autoHeader.toLowerCase().equals("true") || autoHeader.toLowerCase().equals("false")) {
-					this.opAutoHeader = Boolean.valueOf(autoHeader);
-				}
+		Properties prop = new Properties();
+		try (FileInputStream in = new FileInputStream(configFile)) {
 
-				if (autoSaveDir.toLowerCase().equals("true") || autoSaveDir.toLowerCase().equals("false")) {
-					this.opAutoSaveDir = Boolean.valueOf(autoSaveDir);
-				}
+			prop.load(in);
 
-				for (String col : parseStringList(colPressure)) {
-					this.opColPressure.add(col);
-				}
+			chSaveSettingsFile.setSelected(true);
 
-				for (String col : parseStringList(colFlow)) {
-					this.opColFlow.add(col);
-				}
+			String flowOffset = prop.getProperty(keyFlowOffset, "0");
+			String autoHeader = prop.getProperty(keyAutoHeader, "true");
+			String autoName = prop.getProperty(keyAutoName, "true");
+			String autoSaveDir = prop.getProperty(keyAutoSaveDir, "false");
+			String colPressure = prop.getProperty(keyPressureCols, "[]");
+			String colFlow = prop.getProperty(keyFlowCols, "[]");
+			String colECG = prop.getProperty(keyECGCols, "[]");
+			String colRWave = prop.getProperty(keyRWaveCols, "[]");
+			String resampleRate = prop.getProperty(keyBeatsResample, "0.001");
+			String ensembleType = prop.getProperty(keyEnsembleType,
+					CombowireGUI.EnsembleTypeMap.keySet().stream().findFirst().orElse("Trim"));
+			String WIAFiltEnable = prop.getProperty(keyWIAFilt, "true");
+			String WIAFiltWindow = prop.getProperty(keyWIAWindow, "51");
+			String WIAFiltPoly = prop.getProperty(keyWIAPoly, "3");
 
-				for (String col : parseStringList(colECG)) {
-					this.opColECG.add(col);
-				}
-
-				for (String col : parseStringList(colRWave)) {
-					this.opColRWave.add(col);
-				}
-
-				if (NumberUtils.isCreatable(resampleRate)) {
-					this.opResampleRate = resampleRate;
-				}
-				
-				if (CombowireGUI.EnsembleTypeMap.containsKey(ensembleType)) {
-					opEnsembleType = ensembleType;
-				}
-
-				if (WIAFiltEnable.toLowerCase().equals("true") || WIAFiltEnable.toLowerCase().equals("false")) {
-					this.opPreWIAFilterEnable = Boolean.valueOf(WIAFiltEnable);
-				}
-
-				if (NumberUtils.isCreatable(WIAFiltWindow)) {
-					this.opPreWIAFilterWindow = WIAFiltWindow;
-				}
-
-				if (NumberUtils.isCreatable(WIAFiltPoly)) {
-					this.opPreWIAFilterPoly = WIAFiltPoly;
-				}
-
-				// non user settable
-				this.opLastDir = prop.getProperty(keyLastDirectory, "");
-				if (prop.getProperty(keySnapToR, "false").toLowerCase().equals("true")) {
-					this.opSnapToR = true;
-				} else {
-					this.opSnapToR = false;
-				}
-
-				this.wiaSettings = new WIASaveSettingsChoices(prop);
-
-			} catch (IOException e) {
-				// should be found since we made sure it exists
-				e.printStackTrace();
-				return;
+			if (NumberUtils.isCreatable(flowOffset)) {
+				this.opFlowOffset = Integer.parseInt(flowOffset);
 			}
 
+			if (autoName.toLowerCase().equals("true") || autoName.toLowerCase().equals("false")) {
+				this.opAutoName = Boolean.valueOf(autoName);
+			}
+
+			if (autoHeader.toLowerCase().equals("true") || autoHeader.toLowerCase().equals("false")) {
+				this.opAutoHeader = Boolean.valueOf(autoHeader);
+			}
+
+			if (autoSaveDir.toLowerCase().equals("true") || autoSaveDir.toLowerCase().equals("false")) {
+				this.opAutoSaveDir = Boolean.valueOf(autoSaveDir);
+			}
+
+			for (String col : parseStringList(colPressure)) {
+				this.opColPressure.add(col);
+			}
+
+			for (String col : parseStringList(colFlow)) {
+				this.opColFlow.add(col);
+			}
+
+			for (String col : parseStringList(colECG)) {
+				this.opColECG.add(col);
+			}
+
+			for (String col : parseStringList(colRWave)) {
+				this.opColRWave.add(col);
+			}
+
+			if (NumberUtils.isCreatable(resampleRate)) {
+				this.opResampleRate = resampleRate;
+			}
+
+			if (CombowireGUI.EnsembleTypeMap.containsKey(ensembleType)) {
+				opEnsembleType = ensembleType;
+			}
+
+			if (WIAFiltEnable.toLowerCase().equals("true") || WIAFiltEnable.toLowerCase().equals("false")) {
+				this.opPreWIAFilterEnable = Boolean.valueOf(WIAFiltEnable);
+			}
+
+			if (NumberUtils.isCreatable(WIAFiltWindow)) {
+				this.opPreWIAFilterWindow = WIAFiltWindow;
+			}
+
+			if (NumberUtils.isCreatable(WIAFiltPoly)) {
+				this.opPreWIAFilterPoly = WIAFiltPoly;
+			}
+
+			// non user settable
+			this.opLastDir = prop.getProperty(keyLastDirectory, "");
+			if (prop.getProperty(keySnapToR, "false").toLowerCase().equals("true")) {
+				this.opSnapToR = true;
+			} else {
+				this.opSnapToR = false;
+			}
+
+			this.wiaSettings = new WIASaveSettingsChoices(prop);
+
+		} catch (IOException e) {
+			// should be found since we made sure it exists
+			e.printStackTrace();
+			return;
 		}
+
 	}
-	
+
 	/**
 	 * Writes the current configuration settings from the instance variables to the
-	 * "config_WIA.properties" file.
+	 * config file.
+	 * 
+	 * @throws IOException if unable to write and save properties file to system
 	 */
-	public void writeProperties() {
+	public void writeProperties() throws IOException {
 		Properties prop = new Properties();
 		prop.setProperty(keyFlowOffset, String.valueOf(opFlowOffset));
 		prop.setProperty(keyAutoHeader, Boolean.toString(opAutoHeader));
@@ -643,18 +664,11 @@ public class ComboFileConfigGUI extends JDialog {
 			this.wiaSettings.writeProperties(prop);
 		}
 
-		try {
-			// String file =
-			// getClass().getProtectionDomain().getCodeSource().getLocation().getPath() +
-			// File.separator + configFile;
-			// prop.store(new FileOutputStream(file), "Configuration WIA properties");
-			prop.store(new FileOutputStream(configFile), "Configuration WIA properties");
+		try (FileOutputStream out = new FileOutputStream(configFile)) {
 
-		} catch (Exception e) {
-			Utils.showError("Error " + e.getMessage(), this);
-			e.printStackTrace();
-		}
+			prop.store(out, "Configuration properties");
 
+		} // propagate exceptions to caller
 	}
 
 	/**
@@ -685,10 +699,10 @@ public class ComboFileConfigGUI extends JDialog {
 	 * Converts a multi-line string from a JTextArea into a list of non-blank
 	 * strings.
 	 *
-	 * @param str The string from the display component, with lines separated by
-	 * the system's line separator.
+	 * @param str The string from the display component, with lines separated by the
+	 *            system's line separator.
 	 * @return A {@code List<String>} where each element is a line from the input
-	 * string.
+	 *         string.
 	 */
 	public List<String> recordStringDisplay(String str) {
 		List<String> list = new ArrayList<String>();
@@ -750,7 +764,7 @@ public class ComboFileConfigGUI extends JDialog {
 		return sb.toString();
 
 	}
-	
+
 	/**
 	 * Gets the path of the last directory accessed by the user.
 	 *
@@ -761,12 +775,12 @@ public class ComboFileConfigGUI extends JDialog {
 	}
 
 	/**
-	 * Sets and saves the path of the last accessed directory based on a given
-	 * file.
+	 * Sets and saves the path of the last accessed directory based on a given file.
 	 *
 	 * @param file The file or directory from which to derive the path.
+	 * @throws IOException if unable to write and save properties file to system
 	 */
-	public void tryToSetLastDir(File file) {
+	public void tryToSetLastDir(File file) throws IOException {
 		if (!file.exists())
 			return;
 
@@ -791,12 +805,14 @@ public class ComboFileConfigGUI extends JDialog {
 	 * Sets and saves the R-Wave synchronization preference.
 	 *
 	 * @param sync The new synchronization state.
+	 * @throws IOException if unable to write and save properties file to system
+	 * 
 	 */
-	public void tryToSetRWaveSync(boolean sync) {
+	public void tryToSetRWaveSync(boolean sync) throws IOException {
 		this.opSnapToR = sync;
 		writeProperties();
 	}
-	
+
 	/**
 	 * Gets the configured flow offset value.
 	 *
@@ -810,7 +826,7 @@ public class ComboFileConfigGUI extends JDialog {
 	 * Gets the status of the "Auto-detect headers" checkbox.
 	 *
 	 * @return {@code true} if auto-detect headers is selected, {@code false}
-	 * otherwise.
+	 *         otherwise.
 	 */
 	public boolean getAutoHeader() {
 		return chAutoHeader.isSelected();
@@ -819,8 +835,7 @@ public class ComboFileConfigGUI extends JDialog {
 	/**
 	 * Gets the status of the "Auto name files" checkbox.
 	 *
-	 * @return {@code true} if auto-name files is selected, {@code false}
-	 * otherwise.
+	 * @return {@code true} if auto-name files is selected, {@code false} otherwise.
 	 */
 	public boolean getAutoName() {
 		return chAutoName.isSelected();
@@ -888,7 +903,7 @@ public class ComboFileConfigGUI extends JDialog {
 	public String getResampleString() {
 		return txtResampleRate.getText();
 	}
-	
+
 	/**
 	 * Checks if the pre-WIA Savitzky-Golay filter is enabled.
 	 *

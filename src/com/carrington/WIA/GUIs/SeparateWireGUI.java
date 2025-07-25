@@ -173,8 +173,10 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 *                        program will exit.
 	 * @param closeListener   When navigating back, will call this listener. If
 	 *                        null, program will exit.
+	 * 
+	 * @throws IOException if could not interact with configuration file
 	 */
-	public SeparateWireGUI(JFrame frameToGoBackTo, BackListener closeListener) {
+	public SeparateWireGUI(JFrame frameToGoBackTo, BackListener closeListener) throws IOException {
 
 		this();
 		try {
@@ -246,10 +248,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Creates the main GUI frame and initializes all its components.
+	 * 
+	 * @throws IOException if could not interact with configuration file
 	 */
-	public SeparateWireGUI() {
+	public SeparateWireGUI() throws IOException {
 
 		this.config = new SepFileConfigGUI();
+
+		
 
 		setTitle("Wave Analysis - Separate Flow and Pressure");
 
@@ -771,15 +777,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 		});
 		txtResampFreq.addPropertyChangeListener("enabled", evt -> {
-		    if (!(Boolean) evt.getNewValue()) {
-		        txtResampFreq.setBorder(borderDefaultResamp);
-		    } else {
-		        // On re-enable, re-validate
-		        boolean isValid = validateResamplePanelSilent();
-		        txtResampFreq.setBorder(isValid ? borderDefaultResamp : BorderFactory.createLineBorder(Color.RED, 2));
-		    }
+			if (!(Boolean) evt.getNewValue()) {
+				txtResampFreq.setBorder(borderDefaultResamp);
+			} else {
+				// On re-enable, re-validate
+				boolean isValid = validateResamplePanelSilent();
+				txtResampFreq.setBorder(isValid ? borderDefaultResamp : BorderFactory.createLineBorder(Color.RED, 2));
+			}
 		});
-
 
 		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_RESAMPLE),
 				ref.get());
@@ -826,23 +831,24 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		});
 
 		GroupLayout gl_pnlResample = new GroupLayout(pnlResample);
-		gl_pnlResample.setHorizontalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlResample
-				.createSequentialGroup().addGap(4)
-				.addGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
-						.addGroup(gl_pnlResample.createSequentialGroup().addComponent(lblResamp)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnHelp)
-								.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-								.addComponent(btnSaveResampled))
-						.addGroup(gl_pnlResample.createSequentialGroup().addContainerGap().addComponent(lblResampFreq)
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addComponent(txtResampFreq, fontWidth, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnStartResamp)))
-				.addContainerGap()));
+		gl_pnlResample.setHorizontalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlResample.createSequentialGroup().addGap(4)
+						.addGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
+								.addGroup(gl_pnlResample.createSequentialGroup().addComponent(lblResamp)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnHelp)
+										.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE,
+												Short.MAX_VALUE)
+										.addComponent(btnSaveResampled))
+								.addGroup(gl_pnlResample.createSequentialGroup().addContainerGap()
+										.addComponent(lblResampFreq).addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(txtResampFreq, fontWidth, GroupLayout.PREFERRED_SIZE,
+												Short.MAX_VALUE)
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnStartResamp)))
+						.addContainerGap()));
 		gl_pnlResample.setVerticalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_pnlResample.createSequentialGroup().addGap(4)
-						.addGroup(gl_pnlResample
-								.createParallelGroup(Alignment.CENTER).addComponent(lblResamp).addComponent(btnHelp)
-								.addComponent(btnSaveResampled))
+						.addGroup(gl_pnlResample.createParallelGroup(Alignment.CENTER).addComponent(lblResamp)
+								.addComponent(btnHelp).addComponent(btnSaveResampled))
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlResample.createParallelGroup(Alignment.BASELINE).addComponent(lblResampFreq)
 								.addComponent(txtResampFreq).addComponent(btnStartResamp))
@@ -949,42 +955,38 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		GroupLayout gl_pnlTrim = new GroupLayout(pnlTrim);
 		gl_pnlTrim.setHorizontalGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_pnlTrim.createSequentialGroup()
-						.addGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
-								.addGroup(gl_pnlTrim.createSequentialGroup().addGap(4).addComponent(lblTrim)
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnTrimHelp))
-								.addGroup(gl_pnlTrim.createSequentialGroup()
-										.addContainerGap()
-										.addComponent(btnTrim1)
-										.addPreferredGap(ComponentPlacement.RELATED)
-										.addComponent(btnSaveTrim1)
-										.addPreferredGap(ComponentPlacement.UNRELATED)
-										.addComponent(trimSep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE)
-										.addPreferredGap(ComponentPlacement.UNRELATED)
-										.addComponent(btnTrim2)
-										.addPreferredGap(ComponentPlacement.RELATED)
-										.addComponent(btnSaveTrim2)
-										.addPreferredGap(ComponentPlacement.UNRELATED)
-										.addComponent(trimSepNext, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-										.addPreferredGap(ComponentPlacement.UNRELATED)
-										.addComponent(btnAcceptTrims)))
-						.addContainerGap()));
-		gl_pnlTrim.setVerticalGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING).addGroup(Alignment.TRAILING,
-				gl_pnlTrim.createSequentialGroup().addGap(4)
-						.addGroup(gl_pnlTrim
-								.createParallelGroup(Alignment.CENTER).addComponent(lblTrim).addComponent(btnTrimHelp))
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlTrim.createParallelGroup(Alignment.CENTER)
-								.addComponent(btnTrim1).addComponent(btnSaveTrim1)
+				.addGroup(gl_pnlTrim.createSequentialGroup().addGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_pnlTrim.createSequentialGroup().addGap(4).addComponent(lblTrim)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnTrimHelp))
+						.addGroup(gl_pnlTrim.createSequentialGroup().addContainerGap().addComponent(btnTrim1)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveTrim1)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
 								.addComponent(trimSep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										Short.MAX_VALUE)
-								.addComponent(btnTrim2).addComponent(btnSaveTrim2)
+										GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnTrim2)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveTrim2)
+								.addPreferredGap(ComponentPlacement.UNRELATED)
 								.addComponent(trimSepNext, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-										Short.MAX_VALUE)
-								.addComponent(btnAcceptTrims))
+										GroupLayout.PREFERRED_SIZE)
+								.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnAcceptTrims)))
 						.addContainerGap()));
+		gl_pnlTrim
+				.setVerticalGroup(
+						gl_pnlTrim.createParallelGroup(Alignment.LEADING)
+								.addGroup(Alignment.TRAILING,
+										gl_pnlTrim.createSequentialGroup().addGap(4)
+												.addGroup(gl_pnlTrim.createParallelGroup(Alignment.CENTER)
+														.addComponent(lblTrim).addComponent(btnTrimHelp))
+												.addPreferredGap(ComponentPlacement.RELATED)
+												.addGroup(gl_pnlTrim.createParallelGroup(Alignment.CENTER)
+														.addComponent(btnTrim1).addComponent(btnSaveTrim1)
+														.addComponent(trimSep, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+														.addComponent(btnTrim2).addComponent(btnSaveTrim2)
+														.addComponent(trimSepNext, GroupLayout.PREFERRED_SIZE,
+																GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+														.addComponent(btnAcceptTrims))
+												.addContainerGap()));
 		pnlTrim.setLayout(gl_pnlTrim);
 
 		Utils.setFont(Utils.getSubTitleFont(), lblTrim);
@@ -1433,10 +1435,9 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		case STATE_WIA:
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo, pnlResample, pnlTrim, pnlAlign, pnlWIA);
 			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnStartResamp, txtResampFreq,
-					btnSaveResampled, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2,
-					btnRunAlignment, chPreAlignFilter, txtSavPolynomialOrder, txtSavSampleRate, txtSavWindow,
-					cbAlignEnsembleType, txtSelectionName, btnRunWIA, btnNextSelection, btnNextFiles, btnSaveMetrics,
-					txtSelectionRemaining);
+					btnSaveResampled, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2, btnRunAlignment,
+					chPreAlignFilter, txtSavPolynomialOrder, txtSavSampleRate, txtSavWindow, cbAlignEnsembleType,
+					txtSelectionName, btnRunWIA, btnNextSelection, btnNextFiles, btnSaveMetrics, txtSelectionRemaining);
 			break;
 		}
 	}
@@ -1510,7 +1511,12 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			return;
 		}
 
-		config.tryToSetLastDir(file);
+		try {
+			config.tryToSetLastDir(file);
+		} catch (IOException e) {
+			// fail silently, just don't save
+			e.printStackTrace();
+		}
 
 		int numRowsIgnore = -1;
 
@@ -1923,8 +1929,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		wavepickerGUI.display();
 
 		if (config.getSaveSettingsChoices().hasChanged()) {
-			config.writeProperties();
-			config.getSaveSettingsChoices().setChanged(false);
+			try {
+				config.writeProperties();
+				config.getSaveSettingsChoices().setChanged(false);
+			} catch (IOException e) {
+				// fail silently, just don't save
+				e.printStackTrace();
+			}
+
 		}
 
 		if (wavepickerGUI.getStatus() == WavePickerGUI.CANCELLED) {

@@ -69,10 +69,11 @@ public class MainFrame implements BackListener {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| UnsupportedLookAndFeelException e) {
-			Utils.showError("Unable to set the look and feel for progam. Fatal error.", null);
+			Utils.showError("<html>Unable to set the look and feel for progam. Fatal error.<br><br></html>" + e.getMessage(), null);
 			e.printStackTrace();
+			return;
 		}
-
+		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -276,16 +277,26 @@ public class MainFrame implements BackListener {
 	 * Initializes the GUI for separate wires, and then opens that frame
 	 */
 	public synchronized void initiateSeparateWireGUI() {
-		this.guiSeparateWire = new SeparateWireGUI(this.frame, this);
-		this.guiSeparateWire.navigateInto();
+		
+		try {
+			this.guiSeparateWire = new SeparateWireGUI(this.frame, this);
+			this.guiSeparateWire.navigateInto();
+		} catch (IOException e) {
+			Utils.showError("<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
+		}
+		
 	}
 
 	/**
 	 * Initializes the GUI for combo wires, and then opens that frame
 	 */
 	public synchronized void initiateComboWireGUI() {
-		this.guiComboWire = new CombowireGUI(this.frame, this);
-		this.guiComboWire.navigateInto();
+		try {
+			this.guiComboWire = new CombowireGUI(this.frame, this);
+			this.guiComboWire.navigateInto();
+		} catch (IOException e) {
+			Utils.showError("<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
+		}
 	}
 
 	/**
