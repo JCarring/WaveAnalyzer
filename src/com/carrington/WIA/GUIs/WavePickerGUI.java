@@ -62,7 +62,7 @@ import com.carrington.WIA.Graph.PressureFlowChartPanel;
 import com.carrington.WIA.Graph.PressureFlowChartPanel.PFPickListener;
 import com.carrington.WIA.Graph.SepWavePanel;
 import com.carrington.WIA.Graph.SepWavePanel.WavePickListener;
-import com.carrington.WIA.IO.EnclosedTxtFileReader;
+import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.IO.Header;
 
 /**
@@ -342,7 +342,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		JLabel pnlInstruction = new JLabel("Select waves for \"" + selectionName + "\"");
 
 
-		btnOverallHelp = new JCHelpButton(EnclosedTxtFileReader.getWavePanelHelp());
+		btnOverallHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_PICKER));
 		
 		btnOverallHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -438,7 +438,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		JLabel lblExistingWaves = new JLabel("Waves");
 
 
-		btnWaveHelp = new JCHelpButton(EnclosedTxtFileReader.getWavesHelp());
+		btnWaveHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVES));
 		
 		btnWaveHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -450,7 +450,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		JScrollPane scrWaves = new JScrollPane();
 
 		JLabel lblPF = new JLabel("Pressure and Flow");
-		btnPF = new JCHelpButton(EnclosedTxtFileReader.getWavesAlignPFHelp());
+		btnPF = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_ALIGN_PF));
 		btnPF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent action) {
 				Utils.showInfo(btnPF.getHelpMessage(), ref.get());
@@ -575,7 +575,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		});
 
 		JLabel lblDiameter = new JLabel("Vessel Size");
-		btnDiameterHelp = new JCHelpButton(EnclosedTxtFileReader.getDiameterHelp());
+		btnDiameterHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_VESSEL_DIAMETER));
 		
 		btnDiameterHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {

@@ -45,7 +45,7 @@ public class SheetDataReader {
 	 * @return A {@link HeaderResult} containing the list of headers or an error
 	 *         message.
 	 */
-	public HeaderResult readHeaders() {
+	public HeaderResult readHeaders(BackgroundProgressRecorder prog) {
 		String namelower = this.file.getName().toLowerCase();
 		int readerType = -1;
 		if (namelower.endsWith(".csv")) {
@@ -60,7 +60,7 @@ public class SheetDataReader {
 
 		Reader reader;
 		try {
-			reader = new Reader(this.file, readerType, 1, this.ignoreLines);
+			reader = new Reader(this.file, readerType, 1, this.ignoreLines, prog);
 			ArrayList<Header> headers = new ArrayList<Header>();
 
 			boolean isPrimary = true;
@@ -80,7 +80,6 @@ public class SheetDataReader {
 
 			if (headers.isEmpty() || !notAllNumbers)
 				return new HeaderResult(null, "No headers in Excel file", false);
-
 			return new HeaderResult(headers, null, true);
 
 		} catch (Exception e) {
@@ -130,18 +129,19 @@ public class SheetDataReader {
 
 		Reader reader;
 		try {
-			if (progDisplayer != null) {
-				progDisplayer.setProgressBarEnabled(true, 1, 100);
-			}
-			reader = new Reader(this.file, readerType, -1, this.ignoreLines);
-
+		
+			reader = new Reader(this.file, readerType, -1, this.ignoreLines, progDisplayer);
+			
+			// For progress bar
 			int maximum = columns.size() * reader.getRows();
-			int divisor = maximum / 100;
-			int counter = 0;
-			if (progDisplayer != null) {
+	        int updateIncrement = (maximum > 100) ? maximum / 100 : 1;
+	        int nextUpdate = 0;
+	        int counter = 0;
+	        if (progDisplayer != null) {
 				progDisplayer.setProgressBarEnabled(true, 0, maximum);
 			}
 
+			
 			LinkedHashMap<Header, double[]> data = new LinkedHashMap<Header, double[]>();
 			boolean primary = true;
 			for (int colI = 0; colI < reader.getRow(0).length; colI++) {
@@ -154,8 +154,9 @@ public class SheetDataReader {
 						ArrayList<Double> values = new ArrayList<Double>();
 						for (int rowI = 1; rowI < reader.getRows(); rowI++) {
 							// prog bar update
-							if (progDisplayer != null && counter % divisor == 0) {
+							if (progDisplayer != null && counter >= nextUpdate) {
 								progDisplayer.setProgressBarProgress(counter);
+								nextUpdate += updateIncrement;
 
 							}
 							// end prog bar update

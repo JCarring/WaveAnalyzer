@@ -29,7 +29,6 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.BevelBorder;
-import javax.swing.border.LineBorder;
 
 import com.carrington.WIA.GUIs.BackListener;
 import com.carrington.WIA.GUIs.CombowireGUI;
@@ -38,7 +37,7 @@ import com.carrington.WIA.GUIs.WIAModifierGUI;
 import com.carrington.WIA.GUIs.WIAStatsGUI;
 import com.carrington.WIA.GUIs.Components.JCButton;
 import com.carrington.WIA.GUIs.Components.JCHelpButton;
-import com.carrington.WIA.IO.EnclosedTxtFileReader;
+import com.carrington.WIA.IO.WIAResourceReader;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -50,7 +49,7 @@ import net.miginfocom.swing.MigLayout;
  * <br>
  * 
  * Implements {@link BackListener}, so that this {@link MainFrame} can be called
- * back into visibility of one of the
+ * back into visibility if one of the program functions cancels.
  */
 public class MainFrame implements BackListener {
 
@@ -219,7 +218,7 @@ public class MainFrame implements BackListener {
 		JLabel lblInstructions = new JLabel("Run wave intensity analysis");
 		lblInstructions.setFont(subtitleFontBold);
 
-		JCHelpButton btnHelp = new JCHelpButton(EnclosedTxtFileReader.getMainFrameHelp());
+		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_MAIN));
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				Utils.showInfo(btnHelp.getHelpMessage(), frame);

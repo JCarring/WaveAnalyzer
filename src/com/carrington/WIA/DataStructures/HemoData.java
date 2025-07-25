@@ -205,7 +205,7 @@ public class HemoData implements Serializable {
 			throw new IllegalStateException("Data structure not prepared properly for resampling...");
 		}
 		HemoData resampled = new HemoData(this.file, this.fileName, this.name);
-		ResampleResult rr = DataResampler.resample(resampleRate, true, this.xData,
+		ResampleResult rr = DataResampler.resample(resampleRate, true, progRecorder, this.xData,
 				yValues.values().toArray(new double[0][]));
 
 		String[] flags = this.flaggedHeaders.containsKey(this.xHeader) ? getFlags(this.xHeader).toArray(new String[0])

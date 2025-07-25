@@ -15,6 +15,7 @@ import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.exception.MathIllegalArgumentException;
 
 import com.carrington.WIA.Utils;
+import com.carrington.WIA.GUIs.BackgroundProgressRecorder;
 import com.carrington.WIA.IO.Header;
 
 /**
@@ -87,9 +88,9 @@ public abstract class DataResampler {
 	 *         values
 	 * @throws ResampleException if an error occurs during resampling
 	 */
-	public static ResampleResult resample(double resampleRate, boolean shiftToZero, double[] xData, double[]... yValues)
-			throws ResampleException {
-		return doResample(resampleRate, xData, yValues, shiftToZero);
+	public static ResampleResult resample(double resampleRate, boolean shiftToZero,
+			BackgroundProgressRecorder progressRecorder, double[] xData, double[]... yValues) throws ResampleException {
+		return doResample(resampleRate, xData, yValues, shiftToZero, progressRecorder);
 	}
 
 	/**
@@ -119,7 +120,7 @@ public abstract class DataResampler {
 		}
 
 		// Perform the resampling using the common method.
-		ResampleResult result = doResample(resampleRate, xData, yValues, shiftToZero);
+		ResampleResult result = doResample(resampleRate, xData, yValues, shiftToZero, null);
 
 		// Reassemble the result into a LinkedHashMap
 		LinkedHashMap<Header, double[]> resampledMap = new LinkedHashMap<>();
@@ -133,18 +134,20 @@ public abstract class DataResampler {
 	/**
 	 * The core resampling logic shared by both public methods.
 	 *
-	 * @param resampleRate the sample rate
-	 * @param xData        the original x (time) data, assumed to be in ascending
-	 *                     order
-	 * @param yValues      a 2D array of y values; each row is a data series
-	 * @param shiftToZero  if true, xData is shifted so that the first value becomes
-	 *                     zero.
+	 * @param resampleRate     the sample rate
+	 * @param xData            the original x (time) data, assumed to be in
+	 *                         ascending order
+	 * @param yValues          a 2D array of y values; each row is a data series
+	 * @param shiftToZero      if true, xData is shifted so that the first value
+	 *                         becomes zero.
+	 * @param progressRecorder An object to record background progress (can be
+	 *                         null).
 	 * @return a ResampleResult containing the new time points and resampled y
 	 *         values
 	 * @throws ResampleException if an error occurs during resampling
 	 */
 	private static ResampleResult doResample(double resampleRate, double[] xData, double[][] yValues,
-			boolean shiftToZero) throws ResampleException {
+			boolean shiftToZero, BackgroundProgressRecorder progressRecorder) throws ResampleException {
 
 		if (xData == null)
 			throw new ResampleException("xData cannot be null.");
@@ -152,7 +155,10 @@ public abstract class DataResampler {
 			throw new ResampleException("xData must be in ascending order.");
 		if (!sameSize(yValues, xData))
 			throw new ResampleException("Each y array must have the same length as xData.");
-
+		
+		if (progressRecorder != null) {
+			progressRecorder.setProgressBarEnabled(true, 1, 100);
+		}
 		// Shift xData if requested.
 		double offset = shiftToZero ? xData[0] : 0.0;
 		double[] xDataAdjusted = new double[xData.length];
@@ -167,6 +173,13 @@ public abstract class DataResampler {
 				.divide(BigDecimal.valueOf(resampleRate)).setScale(0, RoundingMode.FLOOR).doubleValue() + 1;
 
 		double[] newXVals = new double[numberOfResamples];
+		BigDecimal currentX = lstart;
+		BigDecimal sampleRateBD = BigDecimal.valueOf(resampleRate);
+		for (int i = 0; i < numberOfResamples; i++) {
+			newXVals[i] = currentX.doubleValue();
+			currentX = currentX.add(sampleRateBD);
+		}
+
 		double[][] newYVals = new double[yValues.length][numberOfResamples];
 
 		// Identify which series are "binary" (only one or two distinct values).
@@ -188,37 +201,46 @@ public abstract class DataResampler {
 			}
 		}
 
-		BigDecimal sampleRateBD = BigDecimal.valueOf(resampleRate);
-		// Loop over new x values and compute resampled y values, for arrays that are
-		// NOT binary
-		for (int i = 0; i < numberOfResamples; i++) {
-			double newX = lstart.doubleValue();
-			newXVals[i] = newX;
-			for (int j = 0; j < yValues.length; j++) {
-				if (!isBinaryArray[j]) {
-					newYVals[j][i] = splineFunctions[j].value(newX);
-				} else {
-					newYVals[j][i] = 0; // will have non-zero binary values applied later
-				}
-			}
-			lstart = lstart.add(sampleRateBD);
-		}
-
-		// Loop over new x values and compute resampled y values, for arrays that ARE
-		// BINARY
+		// Processing each set of Y values
 		for (int j = 0; j < yValues.length; j++) {
+
 			if (isBinaryArray[j]) {
-				// For each original data point in the binary array
+				// For binary arrays, find the closest new X for each original non-zero point.
+
+				// start wtih all zeros
+				for (int i = 0; i < numberOfResamples; i++) {
+					newYVals[j][i] = 0.0;
+				}
+
+				// place the original non-zero values at the closest new time point.
 				for (int k = 0; k < yValues[j].length; k++) {
 					if (yValues[j][k] > 0.00001) { // detected non-zero (active) binary state
-						double origX = xData[k];
-						// Determine the closest new sample index for this original x value.
+						double origX = xDataAdjusted[k]; // Use adjusted X for correct mapping
 						int idx = Utils.getClosestIndex(origX, newXVals);
-						newYVals[j][idx] = yValues[j][k]; // assign the binary value (typically 1)
+						if (idx >= 0 && idx < newYVals[j].length) {
+							newYVals[j][idx] = yValues[j][k]; // assign the binary value
+						}
 					}
 				}
+
+			} else {
+				// For continuous (non-binary) arrays, use spline interpolation.
+				for (int i = 0; i < numberOfResamples; i++) {
+					newYVals[j][i] = splineFunctions[j].value(newXVals[i]);
+				}
+			}
+
+			// Update progress after each series is processed.
+			if (progressRecorder != null) {
+				int progress = (int) Math.round(((double) (j + 1) / yValues.length) * 100.0);
+				progressRecorder.setProgressBarProgress(progress);
 			}
 		}
+		
+		if (progressRecorder != null) {
+			progressRecorder.setProgressBarEnabled(false, -1, -1);
+		}
+
 		return new ResampleResult(newXVals, newYVals);
 	}
 
@@ -257,9 +279,9 @@ public abstract class DataResampler {
 	 * Calculates the appropriate resample frequency based on the string, such that
 	 * it can't be invalid or too big based on the passed arrays
 	 *
-	 * @param sampleFreq    The user-supplied desired sample frequency as a string.
-	 * @param lists         The data lists to analyze for determining the longest
-	 *                      frequency.
+	 * @param sampleFreq The user-supplied desired sample frequency as a string.
+	 * @param lists      The data lists to analyze for determining the longest
+	 *                   frequency.
 	 * @return The resample frequency
 	 */
 	public static double calculateReSampleFrequency(String sampleFreq, double[]... lists) {
@@ -269,16 +291,16 @@ public abstract class DataResampler {
 			suppliedResFreq = Double.valueOf(sampleFreq);
 
 		} catch (NumberFormatException e) {
-			throw new ResampleException("Sample frequency is invalid");
+			throw new ResampleException("Sample frequency is invalid - not a number");
 		}
 
 		if (suppliedResFreq <= 0) {
-			throw new ResampleException("Sample frequency is invalid");
+			throw new ResampleException("Sample frequency is invalid - not greater than zero");
 		}
 		double minimumDiff = Utils.getMinimumRange(lists);
 
 		if (suppliedResFreq >= minimumDiff) {
-			throw new ResampleException("Sample frequency is largr than range");
+			throw new ResampleException("Sample frequency is larger than range");
 		}
 
 		return suppliedResFreq;

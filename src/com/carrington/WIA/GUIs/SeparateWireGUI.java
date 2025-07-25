@@ -7,8 +7,6 @@ import java.awt.FontMetrics;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -20,6 +18,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
@@ -44,7 +43,10 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.BevelBorder;
+import javax.swing.border.Border;
 import javax.swing.border.LineBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import org.apache.commons.io.FilenameUtils;
 
@@ -56,6 +58,8 @@ import com.carrington.WIA.GUIs.AlignerGUI.AlignResult;
 import com.carrington.WIA.GUIs.SheetOptionsSelectionGUI.OptionSelections;
 import com.carrington.WIA.GUIs.WavePickerPreviewGUI.PreviewResult;
 import com.carrington.WIA.GUIs.Components.JCButton;
+import com.carrington.WIA.GUIs.Components.JCHelpButton;
+import com.carrington.WIA.GUIs.Components.JCSaveButton;
 import com.carrington.WIA.GUIs.Configs.SepFileConfigGUI;
 import com.carrington.WIA.Graph.ComboChartSaver;
 import com.carrington.WIA.IO.Header;
@@ -64,6 +68,7 @@ import com.carrington.WIA.IO.NamingConvention;
 import com.carrington.WIA.IO.ReadResult;
 import com.carrington.WIA.IO.Saver;
 import com.carrington.WIA.IO.SheetDataReader;
+import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.Math.DataResampler;
 import com.carrington.WIA.Math.DataResampler.ResampleException;
 import com.carrington.WIA.Math.Savgol;
@@ -104,14 +109,15 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	private JPanel pnlResample;
 	private JTextField txtResampFreq;
 	private JCButton btnStartResamp;
-	private JCButton btnSaveResampToFile;
+	private JCSaveButton btnSaveResampled;
+	private final Border borderDefaultResamp = new JTextField().getBorder();
 
 	// Fields for Trim panel
 	private JPanel pnlTrim;
 	private JCButton btnTrim1;
-	private JCButton btnSaveTrim1;
+	private JCSaveButton btnSaveTrim1;
 	private JCButton btnTrim2;
-	private JCButton btnSaveTrim2;
+	private JCSaveButton btnSaveTrim2;
 	private JCButton btnAcceptTrims;
 
 	// Fields for Align panel
@@ -245,7 +251,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		this.config = new SepFileConfigGUI();
 
-		setTitle("Analyze Separate Wire");
+		setTitle("Wave Analysis - Separate Flow and Pressure");
 
 		int size = Utils.getTextFont(false).getSize();
 		setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -264,11 +270,15 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		JMenuBar menu = new JMenuBar();
 		setJMenuBar(menu);
-		menu.setPreferredSize(new Dimension(menu.getPreferredSize().width, size * 2));
+		// menu.setPreferredSize(new Dimension(menu.getPreferredSize().width, size *
+		// 2));
 
 		JMenu mnFile = new JMenu("File");
+		JMenu mnHelp = new JMenu("Help");
 		menu.add(mnFile);
+		menu.add(mnHelp);
 
+		// File
 		JMenuItem mnItemSettings = new JMenuItem("Settings");
 		mnFile.add(mnItemSettings);
 
@@ -276,7 +286,6 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		JMenuItem mnItemQuit = new JMenuItem("Quit");
 		mnFile.add(mnItemQuit);
-		contentPane = new JPanel();
 
 		mnItemQuit.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -293,6 +302,42 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 
 		});
+
+		// Help
+		JMenuItem mnItemGithub = new JMenuItem("Github");
+		mnHelp.add(mnItemGithub);
+
+		JMenuItem mnItemReport = new JMenuItem("Report issue");
+		mnHelp.add(mnItemReport);
+
+		mnItemGithub.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer"));
+				} catch (Exception ex) {
+					Utils.showError("Could not browse internet", ref.get());
+				}
+
+			}
+
+		});
+
+		mnItemReport.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					java.awt.Desktop.getDesktop()
+							.browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
+				} catch (Exception ex) {
+					Utils.showError("Could not browse internet", ref.get());
+				}
+
+			}
+
+		});
+
+		Utils.setMenuBarFont(Utils.getSubTitleSubFont(), getJMenuBar());
+
+		contentPane = new JPanel();
 
 		setContentPane(contentPane);
 
@@ -375,7 +420,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		middlePanel.setLayout(gl_middlePanel);
 		contentPane.setLayout(mainContentPaneLayout);
 
-		JLabel lblInstructions = new JLabel("Follow the steps below.");
+		JLabel lblInstructions = new JLabel("Proceed with the steps below.");
 		topPanel.add(lblInstructions);
 
 		bottomPanel.setBorder(new LineBorder(new Color(0, 0, 0)));
@@ -385,7 +430,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		Utils.setFont(Utils.getSubTitleFont(), lblInstructions);
 
-		JCButton btnBack = new JCButton("Go Back", JCButton.BUTTON_GO_BACK);
+		JCButton btnBack = new JCButton("Main Menu", JCButton.BUTTON_GO_BACK);
 		btnBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (Utils.confirmAction("Confirm", "You will lose all progress. Sure you want to go back?",
@@ -518,6 +563,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		pnlFileColDisplayOne.add(horizontalGlue);
 		pnlSelectFileOne.setLayout(new BoxLayout(pnlSelectFileOne, BoxLayout.Y_AXIS));
 
+		JPanel pnlSelect1 = new JPanel();
+		pnlSelect1.setLayout(new BoxLayout(pnlSelect1, BoxLayout.X_AXIS));
 		btnSelectFile1 = new JCButton("Select File 1");
 		btnSelectFile1.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -527,13 +574,20 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 		});
 		btnSelectFile1.setAlignmentX(Component.CENTER_ALIGNMENT);
-		pnlSelectFileOne.add(btnSelectFile1);
+		JCHelpButton btnSelectFile1Help = new JCHelpButton(
+				"Select file with extension \".csv\", \".txt\", \".xls\", or \".xlsx\". Should contain one column with X time stamps, column with either pressure or flow, and column with something to align (i.e. ECG trace)",
+				ref.get());
+		pnlSelect1.add(btnSelectFile1);
+		pnlSelect1.add(Box.createHorizontalStrut(5));
+		pnlSelect1.add(btnSelectFile1Help);
+		pnlSelect1.setAlignmentX(Component.LEFT_ALIGNMENT);
+		pnlSelectFileOne.add(pnlSelect1);
 		pnlSelectFileOne.add(Box.createVerticalStrut(5));
-
 		txtFile1 = new JTextField();
-		_setFileName(txtFile1, null);
-		pnlSelectFileOne.add(txtFile1);
 		txtFile1.setColumns(10);
+		_setFileName(txtFile1, null, null);
+		pnlSelectFileOne.add(txtFile1);
+
 		Utils.setFont(Utils.getTextFont(false), txtFile1, lblColumnList1);
 
 		pnlFileOne.setLayout(gl_pnlFileOne_1);
@@ -606,6 +660,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		pnlFileColDisplayTwo.add(horizontalGlue);
 		pnlSelectFileTwo.setLayout(new BoxLayout(pnlSelectFileTwo, BoxLayout.Y_AXIS));
 
+		JPanel pnlSelect2 = new JPanel();
+		pnlSelect2.setLayout(new BoxLayout(pnlSelect2, BoxLayout.X_AXIS));
 		btnSelectFile2 = new JCButton("Select File 2");
 		btnSelectFile2.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -613,11 +669,18 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 		});
 		btnSelectFile2.setAlignmentX(Component.CENTER_ALIGNMENT);
-		pnlSelectFileTwo.add(btnSelectFile2);
+		JCHelpButton btnSelectFile2Help = new JCHelpButton(
+				"Select file with extension \".csv\", \".txt\", \".xls\", or \".xlsx\". Should contain one column with X time stamps, column with either pressure or flow, and column with something to align (i.e. ECG trace)",
+				ref.get());
+		pnlSelect2.add(btnSelectFile2);
+		pnlSelect2.add(Box.createHorizontalStrut(5));
+		pnlSelect2.add(btnSelectFile2Help);
+		pnlSelect2.setAlignmentX(Component.LEFT_ALIGNMENT);
+		pnlSelectFileTwo.add(pnlSelect2);
 		pnlSelectFileTwo.add(Box.createVerticalStrut(5));
 
 		txtFile2 = new JTextField();
-		_setFileName(txtFile2, null);
+		_setFileName(txtFile2, null, null);
 		pnlSelectFileTwo.add(txtFile2);
 		txtFile2.setColumns(10);
 
@@ -645,35 +708,84 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		btnStartResamp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				String resampleFreq = validateResamplePanel();
-				if (resampleFreq != null) {
+				if (resampleFreq == null)
+					return;
+
+				double[][] domains = dataManager.getDomains();
+				double resampleRate;
+				try {
+					resampleRate = DataResampler.calculateReSampleFrequency(resampleFreq, domains[0], domains[1]);
+				} catch (ResampleException e1) {
+					Utils.showError(e1.getMessage(), ref.get());
+					return;
+				}
+				btnStartResamp.setEnabled(false);
+				BackgroundTaskExecutor.executeTask((BackgroundProgressRecorder progress) -> {
 					try {
-						double[][] domains = dataManager.getDomains();
-						double resampleRate = DataResampler.calculateReSampleFrequency(resampleFreq, domains[0], domains[1]);
-
-						HemoData resampled1 = dataManager.data1.resampleAt(resampleRate);
-						HemoData resampled2 = dataManager.data2.resampleAt(resampleRate);
-						dataManager.resampled1 = resampled1;
-						dataManager.resampled2 = resampled2;
-
-						if (resampled1 != null && resampled2 != null) {
-							setPanelState(STATE_TRIM);
-						}
-
+						HemoData resampled1 = dataManager.data1.resampleAt(resampleRate, progress);
+						HemoData resampled2 = dataManager.data2.resampleAt(resampleRate, progress);
+						return new HemoData[] { resampled1, resampled2 };
 					} catch (ResampleException e1) {
-						Utils.showError(e1.getMessage(), ref.get());
-						e1.printStackTrace();
+						return null;
 					}
 
-				}
+				}, progressBar, resampledHD -> {
+
+					if (resampledHD == null) {
+						btnStartResamp.setEnabled(true);
+						Utils.showError("Error occurred while resampling.", ref.get());
+						return;
+					}
+
+					dataManager.resampled1 = resampledHD[0];
+					dataManager.resampled2 = resampledHD[1];
+					setPanelState(STATE_TRIM);
+
+				});
+
 			}
 		});
 
 		txtResampFreq = new JTextField();
 		txtResampFreq.setColumns(10);
+		txtResampFreq.getDocument().addDocumentListener(new DocumentListener() {
+			void validateField() {
+				if (!txtResampFreq.isEnabled()) {
+					txtResampFreq.setBorder(borderDefaultResamp);
+					return;
+				}
+				boolean isValid = validateResamplePanelSilent(); // New method below
+				txtResampFreq.setBorder(isValid ? borderDefaultResamp : BorderFactory.createLineBorder(Color.RED, 2));
+			}
 
-		btnSaveResampToFile = new JCButton("Save to File (Optional)");
-		btnSaveResampToFile.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
+			public void insertUpdate(DocumentEvent e) {
+				validateField();
+			}
+
+			public void removeUpdate(DocumentEvent e) {
+				validateField();
+			}
+
+			public void changedUpdate(DocumentEvent e) {
+				validateField();
+			}
+		});
+		txtResampFreq.addPropertyChangeListener("enabled", evt -> {
+		    if (!(Boolean) evt.getNewValue()) {
+		        txtResampFreq.setBorder(borderDefaultResamp);
+		    } else {
+		        // On re-enable, re-validate
+		        boolean isValid = validateResamplePanelSilent();
+		        txtResampFreq.setBorder(isValid ? borderDefaultResamp : BorderFactory.createLineBorder(Color.RED, 2));
+		    }
+		});
+
+
+		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_RESAMPLE),
+				ref.get());
+		btnSaveResampled = new JCSaveButton("Save resampled file (optional)");
+		btnSaveResampled.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
 				if (dataManager.resampled1 != null && dataManager.resampled2 != null) {
 
 					File file1 = Utils.promptUserForFileName("Save resampled " + dataManager.resampled1.getName(),
@@ -716,19 +828,25 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		GroupLayout gl_pnlResample = new GroupLayout(pnlResample);
 		gl_pnlResample.setHorizontalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlResample
 				.createSequentialGroup().addGap(4)
-				.addGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING).addComponent(lblResamp)
+				.addGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
+						.addGroup(gl_pnlResample.createSequentialGroup().addComponent(lblResamp)
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnHelp)
+								.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+								.addComponent(btnSaveResampled))
 						.addGroup(gl_pnlResample.createSequentialGroup().addContainerGap().addComponent(lblResampFreq)
 								.addPreferredGap(ComponentPlacement.RELATED)
 								.addComponent(txtResampFreq, fontWidth, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnStartResamp))
-						.addGroup(gl_pnlResample.createSequentialGroup().addContainerGap()
-								.addComponent(btnSaveResampToFile)))
+								.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnStartResamp)))
 				.addContainerGap()));
-		gl_pnlResample.setVerticalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING).addGroup(gl_pnlResample
-				.createSequentialGroup().addGap(4).addComponent(lblResamp).addPreferredGap(ComponentPlacement.RELATED)
-				.addGroup(gl_pnlResample.createParallelGroup(Alignment.BASELINE).addComponent(lblResampFreq)
-						.addComponent(txtResampFreq).addComponent(btnStartResamp))
-				.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnSaveResampToFile).addContainerGap()));
+		gl_pnlResample.setVerticalGroup(gl_pnlResample.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlResample.createSequentialGroup().addGap(4)
+						.addGroup(gl_pnlResample
+								.createParallelGroup(Alignment.CENTER).addComponent(lblResamp).addComponent(btnHelp)
+								.addComponent(btnSaveResampled))
+						.addPreferredGap(ComponentPlacement.RELATED)
+						.addGroup(gl_pnlResample.createParallelGroup(Alignment.BASELINE).addComponent(lblResampFreq)
+								.addComponent(txtResampFreq).addComponent(btnStartResamp))
+						.addContainerGap()));
 		pnlResample.setLayout(gl_pnlResample);
 
 		Utils.setFont(Utils.getSubTitleFont(), lblResamp);
@@ -764,7 +882,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 		});
 
-		btnAcceptTrims = new JCButton("Accept Trims");
+		btnAcceptTrims = new JCButton("Accept");
 		btnAcceptTrims.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 
@@ -777,21 +895,13 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		trimSepNext.setBackground(new Color(192, 192, 192));
 		trimSepNext.setForeground(new Color(192, 192, 192));
 
-		JLabel lblTipTrim = new JLabel();
-		lblTipTrim.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				Utils.showInfo("It is best to trim out noisy data at the beginning and end of the samples. "
-						+ "This will help with alignment of the samples.", ref.get());
-			}
-		});
-		lblTipTrim.setIcon(Utils.IconQuestion);
+		JCHelpButton btnTrimHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_TRIM),
+				ref.get());
 
-		btnSaveTrim1 = new JCButton("Save");
-		btnSaveTrim2 = new JCButton("Save");
-		btnSaveTrim1.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
+		btnSaveTrim1 = new JCSaveButton("Save file 1 (optional)");
+		btnSaveTrim2 = new JCSaveButton("Save file 2 (optional)");
+		btnSaveTrim1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
 				File file1 = Utils.promptUserForFileName("Save trim file 1", config.getLastDirectoryPath(),
 						FilenameUtils.removeExtension(dataManager.resampled1.getName()) + " trimmed.csv", ".csv");
 				if (file1 == null) {
@@ -813,9 +923,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				}
 			}
 		});
-		btnSaveTrim2.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
+		btnSaveTrim2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
 
 				File file2 = Utils.promptUserForFileName("Save trim file 2", config.getLastDirectoryPath(),
 						FilenameUtils.removeExtension(dataManager.resampled2.getName()) + " trimmed.csv", ".csv");
@@ -843,33 +952,35 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				.addGroup(gl_pnlTrim.createSequentialGroup()
 						.addGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
 								.addGroup(gl_pnlTrim.createSequentialGroup().addGap(4).addComponent(lblTrim)
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblTipTrim))
-								.addGroup(gl_pnlTrim.createSequentialGroup().addContainerGap()
-										.addGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
-												.addComponent(btnTrim1).addComponent(btnSaveTrim1))
+										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnTrimHelp))
+								.addGroup(gl_pnlTrim.createSequentialGroup()
+										.addContainerGap()
+										.addComponent(btnTrim1)
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(btnSaveTrim1)
 										.addPreferredGap(ComponentPlacement.UNRELATED)
 										.addComponent(trimSep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.PREFERRED_SIZE)
 										.addPreferredGap(ComponentPlacement.UNRELATED)
-										.addGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING)
-												.addComponent(btnTrim2).addComponent(btnSaveTrim2))
+										.addComponent(btnTrim2)
+										.addPreferredGap(ComponentPlacement.RELATED)
+										.addComponent(btnSaveTrim2)
 										.addPreferredGap(ComponentPlacement.UNRELATED)
 										.addComponent(trimSepNext, GroupLayout.PREFERRED_SIZE,
 												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-										.addPreferredGap(ComponentPlacement.UNRELATED).addComponent(btnAcceptTrims)))
+										.addPreferredGap(ComponentPlacement.UNRELATED)
+										.addComponent(btnAcceptTrims)))
 						.addContainerGap()));
 		gl_pnlTrim.setVerticalGroup(gl_pnlTrim.createParallelGroup(Alignment.LEADING).addGroup(Alignment.TRAILING,
 				gl_pnlTrim.createSequentialGroup().addGap(4)
 						.addGroup(gl_pnlTrim
-								.createParallelGroup(Alignment.BASELINE).addComponent(lblTrim).addComponent(lblTipTrim))
+								.createParallelGroup(Alignment.CENTER).addComponent(lblTrim).addComponent(btnTrimHelp))
 						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlTrim.createParallelGroup(Alignment.BASELINE)
-								.addGroup(gl_pnlTrim.createSequentialGroup().addComponent(btnTrim1)
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveTrim1))
+						.addGroup(gl_pnlTrim.createParallelGroup(Alignment.CENTER)
+								.addComponent(btnTrim1).addComponent(btnSaveTrim1)
 								.addComponent(trimSep, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										Short.MAX_VALUE)
-								.addGroup(gl_pnlTrim.createSequentialGroup().addComponent(btnTrim2)
-										.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnSaveTrim2))
+								.addComponent(btnTrim2).addComponent(btnSaveTrim2)
 								.addComponent(trimSepNext, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										Short.MAX_VALUE)
 								.addComponent(btnAcceptTrims))
@@ -1273,8 +1384,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			Utils.setEnabledDeep(true, false, true, pnlFileOne);
 			_setColumnList(listColsFile1, null);
 			_setColumnList(listColsFile2, null);
-			_setFileName(txtFile1, null);
-			_setFileName(txtFile2, null);
+			_setFileName(txtFile1, null, null);
+			_setFileName(txtFile2, null, null);
 			txtSelectionName.setText("");
 			txtSelectionRemaining.setText("");
 			_nullifyButtonIcons();
@@ -1285,29 +1396,29 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo);
 			Utils.setEnabled(false, false, btnSelectFile1);
 			_setColumnList(listColsFile2, null);
-			_setFileName(txtFile2, null);
+			_setFileName(txtFile2, null, null);
 			break;
 		case STATE_RESAMPLE:
 
 			Utils.setEnabledDeep(false, true, true, pnlTrim);
 			Utils.setEnabledDeep(false, false, true, pnlAlign, pnlWIA);
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo, pnlResample);
-			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnSaveResampToFile);
+			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnSaveResampled);
 			this.txtResampFreq.setText(config.getResampleString());
 			break;
 		case STATE_TRIM:
+			txtResampFreq.setBorder(borderDefaultResamp);
 			Utils.setEnabledDeep(false, false, true, pnlAlign, pnlWIA);
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo, pnlResample, pnlTrim);
 			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnStartResamp, txtResampFreq, btnSaveTrim1,
 					btnSaveTrim2);
-			Utils.setEnabled(true, false, btnSaveResampToFile);
-
+			Utils.setEnabled(true, false, btnSaveResampled);
 			break;
 		case STATE_ALIGN:
 			Utils.setEnabledDeep(false, false, true, pnlWIA);
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo, pnlResample, pnlTrim, pnlAlign);
 			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnStartResamp, txtResampFreq,
-					btnSaveResampToFile, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2,
+					btnSaveResampled, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2,
 					btnSaveSelectionEnsembledBeat, btnSaveIndividualBeatImages);
 			cbAlignEnsembleType.setSelectedItem(config.getEnsembleType());
 			chPreAlignFilter.setSelected(config.isPreBeatSelectionFilterEnabled());
@@ -1318,12 +1429,11 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			Utils.setEnabled(config.isPreBeatSelectionFilterEnabled(), false, txtSavWindow, txtSavPolynomialOrder);
 
 			dataManager.applyTrims(false);
-			// TODO: may need to shfit to zero
 			break;
 		case STATE_WIA:
 			Utils.setEnabledDeep(true, false, true, pnlFileOne, pnlFileTwo, pnlResample, pnlTrim, pnlAlign, pnlWIA);
 			Utils.setEnabled(false, false, btnSelectFile1, btnSelectFile2, btnStartResamp, txtResampFreq,
-					btnSaveResampToFile, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2,
+					btnSaveResampled, btnSaveTrim1, btnSaveTrim2, btnAcceptTrims, btnTrim1, btnTrim2,
 					btnRunAlignment, chPreAlignFilter, txtSavPolynomialOrder, txtSavSampleRate, txtSavWindow,
 					cbAlignEnsembleType, txtSelectionName, btnRunWIA, btnNextSelection, btnNextFiles, btnSaveMetrics,
 					txtSelectionRemaining);
@@ -1385,19 +1495,24 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 * @param isFileOne True if selecting the first file, false for the second file.
 	 */
 	private void runFileSelection(boolean isFileOne) {
-		// Disable UI components before starting the task if needed
 
 		JList<Header> list = isFileOne ? this.listColsFile1 : this.listColsFile2;
 		JTextField text = isFileOne ? this.txtFile1 : this.txtFile2;
+		JButton btnSelectFile = isFileOne ? btnSelectFile1 : btnSelectFile2;
 
-		File file = Utils.promptUserForFile("Get Data File (CSV, TXT, XLS, XLSX)", config.getLastDirectoryPath(),
+		final File file = Utils.promptUserForFile("Get Data File (CSV, TXT, XLS, XLSX)", config.getLastDirectoryPath(),
 				new String[] { ".csv", ".txt", ".xls", ".xlsx" });
 		if (file == null)
 			return;
 
+		else if (!isFileOne && dataManager.data1.getFile().getPath().equals(file.getPath())) {
+			Utils.showError("Cannot select the same file twice.", this);
+			return;
+		}
+
 		config.tryToSetLastDir(file);
 
-		int numRowsIgnore;
+		int numRowsIgnore = -1;
 
 		if (config.getAutoHeader()) {
 			numRowsIgnore = -1; // specifies auto determine
@@ -1413,81 +1528,83 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 		}
 
-		SheetDataReader dataReader = new SheetDataReader(file, numRowsIgnore);
-		// Attempt to get headers
-		HeaderResult hr = dataReader.readHeaders();
-		if (!hr.isSuccess()) {
-			Utils.showError(hr.getErrors(), this);
-			return;
-		}
-		if (hr.getHeaders().isEmpty()) {
-			Utils.showError("No headers found in file", this);
-			return;
-		} else if (hr.getHeaders().size() < 2) {
-			Utils.showError("Must have at least two headers - one domain and at least one range.", this);
-			return;
-		}
-
-		// Have user select name, headers to pulls, and the header for alignment
-		// We will take EKG to to be the default
-		Header defaultHeader = null;
-		List<Header> excludes = new ArrayList<Header>();
-		for (Header header : hr.getHeaders()) {
-			if (config.getColumnsAlign().contains(header.getName())) {
-				defaultHeader = header;
-			} else if (config.getColumnsExclude().contains(header.getName())) {
-				excludes.add(header);
-			}
-
-		}
-
-		SheetOptionsSelectionGUI optionsDialog = new SheetOptionsSelectionGUI(
-				FilenameUtils.removeExtension(file.getName()), hr.getHeaders(), excludes, defaultHeader, this);
-		optionsDialog.setVisible(true);
-		// Code will hang until it is closed
-
-		OptionSelections options = optionsDialog.getOptionSelections();
-		if (options == null)
-			return;
-
 		// disable button. Will be further handled by the async process
-		if (isFileOne) {
-			btnSelectFile1.setEnabled(false);
-		} else {
-			btnSelectFile2.setEnabled(false);
-		}
+		btnSelectFile.setEnabled(false);
+		SheetDataReader dataReader = new SheetDataReader(file, numRowsIgnore);
 
-		// async
 		BackgroundTaskExecutor.executeTask((BackgroundProgressRecorder progress) -> {
-			ReadResult rr = dataReader.readData(options.selectedHeaders, progress);
-			return rr;
-		}, progressBar, readResult -> {
-			// sync code, AFTER async code above
-			setProgressBarEnabled(false, -1, -1);
-			if (readResult.getErrors() != null) {
-				Utils.showError(readResult.getErrors(), ref.get());
-				// will set the open file button enabled/disabled
-				if (isFileOne) {
-					setPanelState(STATE_INIT);
-				} else {
-					setPanelState(STATE_FILE_ONE_SELECTED);
-				}
-				return;
+
+			HeaderResult hr = dataReader.readHeaders(progress);
+
+			if (!hr.isSuccess()) {
+				Utils.showError(hr.getErrors(), this);
+				return null;
+			}
+			if (hr.getHeaders().isEmpty()) {
+				Utils.showError("No headers found in file", this);
+				return null;
+			} else if (hr.getHeaders().size() < 2) {
+				Utils.showError("Must have at least two headers - one domain and at least one range.", this);
+				return null;
 			}
 
-			_setColumnList(list, options.selectedHeaders);
-			_setFileName(text, options.name + " (" + file.getName() + ")");
-			readResult.getData().setName(options.name);
-			readResult.getData().addFlags(options.headerForAlign, HemoData.OTHER_ALIGN);
-			options.headerForAlign.addAdditionalMeta(Header.META_ALIGN, null);
-			options.headerForAlign.addAdditionalMeta(Header.META_COLOR, Color.RED);
+			// Have user select name, headers to pulls, and the header for alignment
+			// We will take EKG to to be the default
+			Header defaultHeader = null;
+			List<Header> excludes = new ArrayList<Header>();
+			for (Header header : hr.getHeaders()) {
+				if (config.getColumnsAlign().contains(header.getName())) {
+					defaultHeader = header;
+				} else if (config.getColumnsExclude().contains(header.getName())) {
+					excludes.add(header);
+				}
 
-			if (isFileOne) {
-				dataManager.data1 = readResult.getData();
-				setPanelState(STATE_FILE_ONE_SELECTED);
+			}
+
+			SheetOptionsSelectionGUI optionsDialog = new SheetOptionsSelectionGUI(
+					FilenameUtils.removeExtension(file.getName()), hr.getHeaders(), excludes, defaultHeader, this);
+			optionsDialog.setVisible(true);
+			// Code will hang until it is closed
+
+			OptionSelections options = optionsDialog.getOptionSelections();
+			if (options == null)
+				return null;
+
+			ReadResult rr = dataReader.readData(options.selectedHeaders, progress);
+
+			if (rr.getErrors() != null) {
+				Utils.showError(rr.getErrors(), ref.get());
+				return null;
+			}
+
+			return new AsyncFileSelectionResult(rr, options);
+		}, progressBar, result -> {
+
+			setProgressBarEnabled(false, -1, -1);
+
+			if (result == null) {
+				// There was some sort of error, already handled
+				btnSelectFile.setEnabled(true);
+				return;
 			} else {
-				dataManager.data2 = readResult.getData();
-				setPanelState(STATE_RESAMPLE);
+				_setColumnList(list, result.options().selectedHeaders);
+				_setFileName(text, result.options().name + " (" + file.getName() + ")", file);
+				HemoData hd = result.read().getData();
+				OptionSelections op = result.options();
+
+				hd.setName(op.name);
+				hd.addFlags(op.headerForAlign, HemoData.OTHER_ALIGN);
+				op.headerForAlign.addAdditionalMeta(Header.META_ALIGN, null);
+				op.headerForAlign.addAdditionalMeta(Header.META_COLOR, Color.RED);
+
+				if (isFileOne) {
+					dataManager.data1 = hd;
+					setPanelState(STATE_FILE_ONE_SELECTED);
+				} else {
+					dataManager.data2 = hd;
+					setPanelState(STATE_RESAMPLE);
+				}
+
 			}
 
 		});
@@ -1498,7 +1615,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 * Launches the {@link TrimGUI} to allow the user to visually trim the start and
 	 * end of the resampled data for one of the files.
 	 * 
-	 * @param isFile1 {@code true} to trim the first file's data, {@code false} for the second.
+	 * @param isFile1 {@code true} to trim the first file's data, {@code false} for
+	 *                the second.
 	 */
 	private void runTrimSelection(boolean isFile1) {
 		if (!areBothFilesSelected()) {
@@ -1543,8 +1661,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gathers filtering/resampling settings, applies them to the data, and then
-	 * launches the {@link AlignerGUI} for the user to align the two datasets
-	 * and make beat selections.
+	 * launches the {@link AlignerGUI} for the user to align the two datasets and
+	 * make beat selections.
 	 */
 	private void runAlignmentSelections() {
 
@@ -1754,7 +1872,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 * Prepares the WIA panel for the next available selection. It updates the UI
 	 * with the new selection's name and enables the appropriate controls.
 	 * 
-	 * @param remove If {@code true}, the currently processed selection is removed from the queue.
+	 * @param remove If {@code true}, the currently processed selection is removed
+	 *               from the queue.
 	 */
 	private void prepareNextWIASelection(boolean remove) {
 
@@ -1787,8 +1906,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Runs the final wave intensity analysis for the current selection by launching
-	 * the {@link WavePickerGUI}. After the user defines waves, it calculates metrics
-	 * and enables saving options.
+	 * the {@link WavePickerGUI}. After the user defines waves, it calculates
+	 * metrics and enables saving options.
 	 */
 	private void runNextWIASelection() {
 
@@ -1799,8 +1918,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		btnRunWIAPreview.setEnabled(false);
 
 		PreviewResult pr = previewResultData.get(0);
-		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.getWIAData().getSelectionName() + " [Separate]", pr.getWIAData(),
-				config.getSaveSettingsChoices(), ref.get(), this, pr);
+		WavePickerGUI wavepickerGUI = new WavePickerGUI(pr.getWIAData().getSelectionName() + " [Separate]",
+				pr.getWIAData(), config.getSaveSettingsChoices(), ref.get(), this, pr);
 		wavepickerGUI.display();
 
 		if (config.getSaveSettingsChoices().hasChanged()) {
@@ -1859,7 +1978,8 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			sb.append(alignResult.getBeats().size() - 1).append(" (");
 			String comma = "";
 			for (int i = 1; i < previewResultData.size(); i++) {
-				sb.append(comma).append("\"").append(previewResultData.get(i).getWIAData().getSelectionName()).append("\"");
+				sb.append(comma).append("\"").append(previewResultData.get(i).getWIAData().getSelectionName())
+						.append("\"");
 				comma = ", ";
 			}
 			sb.append(")");
@@ -1877,9 +1997,26 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	}
 
 	/**
+	 * Partial validation of user input of resample frequency in real time, i.e.
+	 * text can be converted to a number, and the number is > 0
+	 * 
+	 * @return {@code true} if valid, {@code false} otherwise.
+	 */
+	private boolean validateResamplePanelSilent() {
+		try {
+			String text = txtResampFreq.getText().trim();
+			double freq = Double.parseDouble(text);
+			return freq > 0;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	/**
 	 * Validates the user input for the resample frequency in the resample panel.
 	 * 
-	 * @return A string representation of the valid frequency, or null if the input is invalid.
+	 * @return A string representation of the valid frequency, or null if the input
+	 *         is invalid.
 	 */
 	private String validateResamplePanel() {
 
@@ -1898,7 +2035,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 				if (range1 == null || range2 == null) {
 					freq = null;
-					errors = "Internal interror";
+					errors = "Internal error";
 				} else {
 					double minRange = Math.max(range1[1] - range1[0], range2[1] - range2[0]);
 					if (freq > minRange) {
@@ -1926,8 +2063,9 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	/**
 	 * Validates the resample rate entered in the alignment panel.
 	 * 
-	 * @return The resample rate as a {@link Double}. Returns {@link Double#NaN} if blank (no resampling),
-	 * or {@code null} if there is a validation error.
+	 * @return The resample rate as a {@link Double}. Returns {@link Double#NaN} if
+	 *         blank (no resampling), or {@code null} if there is a validation
+	 *         error.
 	 */
 	private Double validAlignResampleRate() {
 
@@ -1989,7 +2127,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 * Utility method to set the file name in the text box which displays the
 	 * current file selection name
 	 */
-	private void _setFileName(JTextField txtFile, String name) {
+	private void _setFileName(JTextField txtFile, String name, File file) {
 		txtFile.setFocusable(true);
 		txtFile.setEditable(false);
 		txtFile.setOpaque(true);
@@ -2004,6 +2142,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			txtFile.setForeground(Color.BLACK);
 
 			txtFile.setText(name);
+			txtFile.setToolTipText(file.getPath());
 			txtFile.setEnabled(true);
 
 		}
@@ -2104,6 +2243,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the {@link WIAData} object for the current selection being processed.
+	 * 
 	 * @return The current {@link WIAData}, or null if none is available.
 	 */
 	public WIAData getCurrentData() {
@@ -2115,6 +2255,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the file path for the SVG image of the final WIA plot.
+	 * 
 	 * @return A {@link File} object for the SVG file.
 	 */
 	@Override
@@ -2127,6 +2268,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the primary folder where WIA-related TIFF images are stored.
+	 * 
 	 * @return A {@link File} object representing the folder.
 	 */
 	@Override
@@ -2136,6 +2278,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets the file path for the SVG image of the wave selections view.
+	 * 
 	 * @return A {@link File} object for the SVG file.
 	 */
 	@Override
@@ -2148,11 +2291,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	}
 
 	/**
-	 * Constructs a file path for saving WIA-related output within a specific folder.
+	 * Constructs a file path for saving WIA-related output within a specific
+	 * folder.
 	 * 
-	 * @param fileNameForm The format string for the file name (e.g., "%s WIA.csv").
+	 * @param fileNameForm    The format string for the file name (e.g., "%s
+	 *                        WIA.csv").
 	 * @param fileNameReplace The string to substitute into the file name format.
-	 * @param ignoreExisting If false, prompts the user to confirm overwriting an existing file.
+	 * @param ignoreExisting  If false, prompts the user to confirm overwriting an
+	 *                        existing file.
 	 * @return A {@link File} object for saving, or null if the user cancels.
 	 */
 	private File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
@@ -2209,6 +2355,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 	/**
 	 * Gets or creates the main output folder ("WIA_Data") for all analysis results.
+	 * 
 	 * @return A {@link File} object representing the folder, or null on failure.
 	 */
 	private File getPrimaryDataWIAFolder() {
@@ -2233,22 +2380,27 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		return folder;
 	}
 
+	private record AsyncFileSelectionResult(ReadResult read, OptionSelections options) {
+	}
+
 	/**
-	 * A private inner class used as a data container to hold all the hemodynamic data
-	 * throughout the different stages of the analysis process (Raw, Resampled, Trimmed).
+	 * A private inner class used as a data container to hold all the hemodynamic
+	 * data throughout the different stages of the analysis process (Raw, Resampled,
+	 * Trimmed).
 	 */
 	private static class RASData {
 
-		private HemoData data1 = null;
-		private HemoData data2 = null;
-		private HemoData resampled1 = null;
-		private HemoData resampled2 = null;
+		private volatile HemoData data1 = null;
+		private volatile HemoData data2 = null;
+		private volatile HemoData resampled1 = null;
+		private volatile HemoData resampled2 = null;
 
 		private int[] trimIndices1 = null;
 		private int[] trimIndices2 = null;
 
 		/**
 		 * Gets the X-axis (domain) data from both raw data files.
+		 * 
 		 * @return A 2D array where each sub-array is the X-data for one of the files.
 		 */
 		private double[][] getDomains() {
@@ -2258,7 +2410,9 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		/**
 		 * Applies the stored trim indices to the resampled data.
-		 * @param onCopy If true, applies the trim to a copy of the data; otherwise, modifies the data in-place.
+		 * 
+		 * @param onCopy If true, applies the trim to a copy of the data; otherwise,
+		 *               modifies the data in-place.
 		 */
 		private void applyTrims(boolean onCopy) {
 			applyTrim(trimIndices1, resampled1, onCopy);
@@ -2267,6 +2421,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		/**
 		 * Checks if both datasets have been trimmed.
+		 * 
 		 * @return true if trim indices have been set for both files.
 		 */
 		@SuppressWarnings("unused")
@@ -2277,9 +2432,11 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		/**
 		 * Applies trim indices to a {@link HemoData} object.
 		 * 
-		 * @param trimIndices An array of two integers: the start and end indices for the trim.
-		 * @param data The {@link HemoData} to trim.
-		 * @param onCopy If true, the trim is applied to a copy; otherwise, it's done in-place.
+		 * @param trimIndices An array of two integers: the start and end indices for
+		 *                    the trim.
+		 * @param data        The {@link HemoData} to trim.
+		 * @param onCopy      If true, the trim is applied to a copy; otherwise, it's
+		 *                    done in-place.
 		 * @return The trimmed {@link HemoData} object.
 		 */
 		private static HemoData applyTrim(int[] trimIndices, HemoData data, boolean onCopy) {

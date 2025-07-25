@@ -1,5 +1,9 @@
 package com.carrington.WIA.GUIs.Components;
 
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
 import javax.swing.JButton;
 
 import com.carrington.WIA.Utils;
@@ -28,6 +32,24 @@ public class JCHelpButton extends JButton {
 		setContentAreaFilled(false);
 		setBorderPainted(false);
 		setBorder(null);
+		
+	}
+	
+	/**
+	 * Constructs a new help button. Message cannot be null or empty.
+	 * 
+	 * @param msg the help message
+	 * @param comp component for placement of popup
+	 * @throws IllegalArgumentException if message is null of blank
+	 */
+	public JCHelpButton(String msg, final Component comp) {
+		this(msg);
+		
+		addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent event) {
+				Utils.showInfo(msg, comp);
+			}
+		});
 	}
 	
 	/**
@@ -38,5 +60,7 @@ public class JCHelpButton extends JButton {
 	public String getHelpMessage() {
 		return msg;
 	}
+	
+	
 	
 }

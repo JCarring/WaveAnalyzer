@@ -161,7 +161,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		this.frameToGoBackTo = frameToGoBackTo;
 		this.backListener = back;
 		setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		setTitle("Analyze Combo Wire");
+		setTitle("Wave Analysis - Combined Flow and Pressure");
 		contentPane = new JPanel();
 		// contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
@@ -235,10 +235,12 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		JMenu mnFile = new JMenu("File");
 		JMenu mnBeats = new JMenu("Beats");
 		JMenu mnWaveAnalysis = new JMenu("Waves");
+		JMenu mnHelp = new JMenu("Help");
 
 		menuBar.add(mnFile);
 		menuBar.add(mnBeats);
 		menuBar.add(mnWaveAnalysis);
+		menuBar.add(mnHelp);
 
 		JMenuItem mnSelectFile = new JMenuItem("Select input file...");
 		mnSelectFile.addActionListener(new ActionListener() {
@@ -353,10 +355,40 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		mnWaveAnalysis.addSeparator();
 		mnWaveAnalysis.add(mnNextSel);
 		mnWaveAnalysis.add(mnNextFile);
+		
+		// Help
+		JMenuItem mnItemGithub = new JMenuItem("Github");
+		mnHelp.add(mnItemGithub);
 
-		Utils.setFont(Utils.getSubTitleFont(), mnFile, mnQuit, mnSelectFile, mnSettings, mnReset, mnBackToSTart,
-				mnSaveMetrics, mnWaveAnalysis, mnNextFile, mnNextSel, mnRunWIA, mnBeats, mnRunBeatSel, mnSaveSelections,
-				mnSaveBeatImages);
+		JMenuItem mnItemReport = new JMenuItem("Report issue");
+		mnHelp.add(mnItemReport);
+
+		mnItemGithub.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer"));
+				} catch (Exception ex) {
+					Utils.showError("Could not browse internet", ref.get());
+				}
+
+			}
+
+		});
+
+		mnItemReport.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
+				} catch (Exception ex) {
+					Utils.showError("Could not browse internet", ref.get());
+				}
+
+			}
+
+		});
+		
+		Utils.setMenuBarFont(Utils.getSubTitleFont(), getJMenuBar());
+
 
 		// setSelectFileState(STATE_FILE_INIT, null, null, null);
 		// setBeatsState(STATE_BEATS_INIT, null, null);
@@ -416,7 +448,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		pnlButtons.setLayout(new FlowLayout(FlowLayout.RIGHT, 5, 5));
 
-		JCButton btnBack = new JCButton("Go Back", JCButton.BUTTON_GO_BACK);
+		JCButton btnBack = new JCButton("Main Menu", JCButton.BUTTON_GO_BACK);
 		btnBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (Utils.confirmAction("Confirm", "You will lose all progress. Sure you want to go back?",
@@ -1053,7 +1085,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		SheetDataReader dataReader = new SheetDataReader(file, numRowsIgnore);
 
 		// Attempt to get headers;
-		HeaderResult hr = dataReader.readHeaders();
+		HeaderResult hr = dataReader.readHeaders(null);
 		if (!hr.isSuccess()) {
 			Utils.showError(hr.getErrors(), this);
 			return;

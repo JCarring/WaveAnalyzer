@@ -1,6 +1,7 @@
 package com.carrington.WIA.IO;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,12 +12,16 @@ import java.util.Scanner;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import com.carrington.WIA.Utils;
+import com.carrington.WIA.GUIs.BackgroundProgressRecorder;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 
@@ -57,17 +62,19 @@ public class Reader {
 	 *                            that will be considered the start of the file.
 	 * @throws IOException if there was an error with reading
 	 */
-	public Reader(File file, int type, int numberOfLinesToRead, int skipLines) throws IOException {
+	public Reader(File file, int type, int numberOfLinesToRead, int skipLines, BackgroundProgressRecorder prog) throws IOException {
 		this.file = file;
 
+		
 		if (skipLines >= 0) {
 			this.skipLines = skipLines;
 		} else {
 			this.skipLines = -1; // convert any negative number to -1
 		}
+		
 		switch (type) {
 		case EXCEL:
-			_initExcel(numberOfLinesToRead);
+			_initExcel(numberOfLinesToRead, prog);
 			break;
 		case CSV:
 			_initCSV(numberOfLinesToRead);
@@ -76,6 +83,7 @@ public class Reader {
 			_initTXT(numberOfLinesToRead);
 			break;
 		default:
+			prog.setProgressBarEnabled(false, -1, -1);
 			throw new IllegalArgumentException();
 		}
 
@@ -85,6 +93,9 @@ public class Reader {
 		}
 
 		_trimDataList();
+		if (prog != null) {
+			prog.setProgressBarEnabled(false, -1, -1);
+		}
 
 	}
 
@@ -165,65 +176,86 @@ public class Reader {
 	 * @param numLines The number of lines to read; if -1, reads the entire sheet.
 	 * @throws IOException if the file cannot be read or parsed.
 	 */
-	private void _initExcel(int numLines) throws IOException {
-		if (this.mainData == null) {
-			Workbook workbook = WorkbookFactory.create(file);
-			if (workbook == null)
-				throw new IOException("Could not obtain Excel workbook");
-			Sheet sheet = workbook.getSheetAt(0);
-			if (sheet == null)
-				throw new IOException("Could not obtain Excel sheet");
+	private void _initExcel(int numLines, BackgroundProgressRecorder prog) throws IOException {
 
-			Iterator<Row> rowItr = sheet.rowIterator();
+		if (mainData != null)
+			return;
+		
+		if (prog != null) {
+			prog.setProgressBarEnabled(true, 1, 4);
+		}
+		
+		Workbook workbook = WorkbookFactory.create(file);
+		if (workbook == null)
+			throw new IOException("Could not obtain Excel workbook");
 
-			try {
-				List<String[]> data = new ArrayList<String[]>();
-				if (numLines <= 0) {
+		prog.setProgressBarProgress(2);
 
-					while (rowItr.hasNext()) {
-						Row row = rowItr.next();
-						Iterator<Cell> cells = row.cellIterator();
-						ArrayList<String> str = new ArrayList<String>();
-						while (cells.hasNext()) {
-							str.add(cells.next().getStringCellValue());
-						}
+		Sheet sheet = workbook.getSheetAt(0);
+		if (sheet == null)
+			throw new IOException("Could not obtain Excel sheet");
 
-						data.add(str.toArray(new String[0]));
+		FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+		Iterator<Row> rowItr = sheet.rowIterator();
+
+		try {
+
+			prog.setProgressBarProgress(2);
+
+			List<String[]> data = new ArrayList<String[]>();
+			if (numLines <= 0) {
+
+				while (rowItr.hasNext()) {
+					Row row = rowItr.next();
+					Iterator<Cell> cells = row.cellIterator();
+					ArrayList<String> str = new ArrayList<String>();
+					while (cells.hasNext()) {
+						str.add(_getCellValueAsString(cells.next(), evaluator));
 					}
 
-				} else {
-
-					int linesToRead = (numLines + (skipLines > 0 ? skipLines : 0));
-					while (linesToRead > 0) {
-						if (!rowItr.hasNext()) {
-							throw new IOException("Not enough rows");
-						}
-						Row row = rowItr.next();
-						Iterator<Cell> cells = row.cellIterator();
-						ArrayList<String> str = new ArrayList<String>();
-						while (cells.hasNext()) {
-							str.add(cells.next().getStringCellValue());
-						}
-
-						data.add(str.toArray(new String[0]));
-						linesToRead--;
-
-					}
+					data.add(str.toArray(new String[0]));
 				}
 
-				this.mainData = data.toArray(new String[0][]);
+			} else {
 
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new IOException("Error reading excel - maybe it contained formulas.");
+				int linesToRead = numLines + Math.max(0, skipLines);
+
+				while (linesToRead > 0) {
+					if (!rowItr.hasNext()) {
+						throw new IOException("Not enough rows");
+					}
+					Row row = rowItr.next();
+					Iterator<Cell> cells = row.cellIterator();
+					ArrayList<String> str = new ArrayList<String>();
+					while (cells.hasNext()) {
+						str.add(_getCellValueAsString(cells.next(), evaluator));
+					}
+
+					data.add(str.toArray(new String[0]));
+					linesToRead--;
+
+				}
 			}
+			prog.setProgressBarProgress(3);
 
-			if (this.mainData == null || (this.mainData.length <= skipLines)) {
-				throw new IOException("Not enough data in Excel sheet");
+			this.mainData = data.toArray(new String[0][]);
 
-			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IOException("Error reading excel - maybe it contained formulas.");
+		} finally {
+			if (workbook != null)
+				workbook.close();
+		}
+
+		if (this.mainData == null || (this.mainData.length <= skipLines)) {
+			throw new IOException("Not enough data in Excel sheet");
 
 		}
+		prog.setProgressBarProgress(4);
+
+
+
 	}
 
 	/**
@@ -234,65 +266,53 @@ public class Reader {
 	 */
 	private void _initCSV(int numLines) throws IOException {
 
-		if (this.mainData == null) {
-			CSVReader reader;
-			try {
+		if (this.mainData != null)
+			return;
 
-				reader = new CSVReader(new FileReader(file));
-
-			} catch (Exception e) {
-				throw new IOException(
-						"Could not read CSV file. May it has been deleted, moved, or you do not have permission. "
-								+ e.getMessage());
-			}
+		try (CSVReader reader = new CSVReader(new FileReader(file))) {
 
 			if (numLines <= 0) {
+				// Read all of the lines in the files
 				try {
 
 					this.mainData = reader.readAll().toArray(new String[0][]);
-					reader.close();
 				} catch (Exception e) {
-
 					throw new IOException("Could not open the CSV file.");
-
+				} finally {
+					reader.close();
 				}
 			} else {
-
+				// Read only specified numbers of lines
 				List<String[]> rawData = new ArrayList<String[]>();
-				int linesToRead = (numLines + (skipLines >= 0 ? skipLines : 0));
+				int linesToRead = numLines + Math.max(0, skipLines);
 
-				while (linesToRead > 0) {
-
-					String[] s;
+				for (int i = 0; i < linesToRead; i++) {
+					String[] row;
 					try {
-						s = reader.readNext();
-
+						row = reader.readNext();
+						if (row == null) {
+							throw new IOException("Reached end of file before reading " + linesToRead + " rows.");
+						}
+						rawData.add(row);
 					} catch (CsvValidationException | IOException e) {
-						e.printStackTrace();
-						throw new IOException("Not enough rows or could not read.");
-					} finally {
-						reader.close();
+						throw new IOException("Error reading row " + (i + 1) + ": " + e.getMessage(), e);
 					}
-
-					if (s == null) {
-						throw new IOException("Not enough rows");
-					} else {
-
-						rawData.add(s);
-					}
-
-					linesToRead--;
 				}
+
 				this.mainData = rawData.toArray(new String[0][]);
 
 			}
 
 			if (this.mainData == null || (this.mainData.length <= skipLines)) {
 				throw new IOException("Not enough data in CSV sheet");
-
 			}
 
+		} catch (FileNotFoundException e) {
+			throw new IOException(
+					"Could not read CSV file. May it has been deleted, moved, or you do not have permission. "
+							+ e.getMessage());
 		}
+
 	}
 
 	/**
@@ -488,6 +508,43 @@ public class Reader {
 			}
 		}
 		return trimmedArray;
+	}
+
+	/**
+	 * Safely converts any cell's content to a String.
+	 * 
+	 * @param cell      The cell to read from.
+	 * @param evaluator The workbook's formula evaluator.
+	 * @return The string representation of the cell's value.
+	 */
+	private String _getCellValueAsString(Cell cell, FormulaEvaluator evaluator) {
+		if (cell == null) {
+			return "";
+		}
+
+		// Use the evaluator on formula cells
+		CellType cellType = cell.getCellType();
+		if (cellType == CellType.FORMULA) {
+			cellType = evaluator.evaluateInCell(cell).getCellType();
+		}
+
+		switch (cellType) {
+		case STRING:
+			return cell.getStringCellValue();
+		case NUMERIC:
+			// Check if the cell is a date format
+			if (DateUtil.isCellDateFormatted(cell)) {
+				return cell.getDateCellValue().toString(); // Or use a SimpleDateFormat
+			} else {
+				return Double.toString(cell.getNumericCellValue());
+			}
+		case BOOLEAN:
+			return Boolean.toString(cell.getBooleanCellValue());
+		case BLANK:
+			return "";
+		default:
+			return ""; // Or handle other types like ERROR if needed
+		}
 	}
 
 }

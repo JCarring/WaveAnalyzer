@@ -1,0 +1,36 @@
+<html>
+<div>
+	<h2>Resampling Function</h2>
+	<p>The resampling panel allows you to standardize the sampling
+		frequency for the two selected data files (e.g., one containing
+		pressure data and the other containing flow data). This process is
+		essential because the two files may have been recorded at different or
+		fluctuating sample rates. By resampling, you create new datasets where
+		both signals have data points at the exact same, uniform time
+		intervals, which is required for wave intensity calculations.</p>
+	<p>
+		The user must input the desired sample interval, or period, in <strong>seconds</strong>.
+		For example, entering
+		<code>0.002</code>
+		would resample the data to have a point every 2 milliseconds, which
+		corresponds to a frequency of 500 Hz.
+	</p>
+	<p>This temporal alignment is critical for the subsequent steps in
+		the workflow, such as:</p>
+	<ul>
+		<li><strong>Trimming</strong>: Ensuring that trimming actions
+			apply to the same time windows in both datasets.</li>
+		<li><strong>Alignment</strong>: Facilitating the accurate
+			overlaying of the two signals (e.g., aligning ECG traces).</li>
+		<li><strong>Wave Intensity Analysis (WIA)</strong>: Performing
+			calculations that require simultaneous pressure and flow values.</li>
+	</ul>
+	<p>
+		The data resampler accomplishes this by using <strong>cubic spline
+			interpolation</strong> to calculate the value of the signal at each new,
+		required time point. This method fits a series of polynomials to the
+		original data, creating a smooth function that can be evaluated at any
+		point within the data's time range.
+	</p>
+</div>
+</html>

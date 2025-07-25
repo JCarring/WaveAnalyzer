@@ -432,7 +432,7 @@ public class WIAStatsGUI extends JFrame
 			}
 		});
 
-		JCButton btnBack = new JCButton("Go Back", JCButton.BUTTON_GO_BACK);
+		JCButton btnBack = new JCButton("Main Menu", JCButton.BUTTON_GO_BACK);
 		btnBack.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				if (Utils.confirmAction("Confirm", "You will lose all progress. Sure you want to go back?",

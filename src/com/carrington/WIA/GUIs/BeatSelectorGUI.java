@@ -54,7 +54,7 @@ import com.carrington.WIA.GUIs.Components.JCLabel;
 import com.carrington.WIA.Graph.AlignChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel.BeatsChartPanelListener;
-import com.carrington.WIA.IO.EnclosedTxtFileReader;
+import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.FlowUnit;
 import com.carrington.WIA.Math.PressureUnit;
@@ -532,7 +532,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener, 
 		JLabel lblTopInstruction = new JLabel("Hover over graph to make selections.");
 		pnlTop.add(lblTopInstruction);
 
-		JCHelpButton btnHelp = new JCHelpButton(EnclosedTxtFileReader.getSelectBeatPanelHelp());
+		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_SELECT_BEATS));
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
 				Utils.showInfo(btnHelp.getHelpMessage(), ref.get());

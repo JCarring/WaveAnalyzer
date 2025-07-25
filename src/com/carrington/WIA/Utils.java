@@ -4,6 +4,7 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.FileDialog;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -33,13 +34,18 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JEditorPane;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.MenuElement;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileSystemView;
 
@@ -84,32 +90,38 @@ public abstract class Utils {
 	public static final ImageIcon IconQuestionLarger;
 	/** Question icon, larger, to be displayed when hovering */
 	public static final ImageIcon IconQuestionLargerHover;
+	
+	// Standard icon for save button
+	
+	/** Save icon */
+	public static final ImageIcon IconSave;
+	/** Save icon, to be displayed when hovering */
+	public static final ImageIcon IconSaveHover;
 
 	// Standard fonts used by this program which are scaled to the size of the
 	// user's screen
 
 	/** Arial, bold, size 24 pt */
 	private static final Font fontTitle = new Font("Arial", Font.BOLD, 24);
-	
+
 	/** Arial, bold, size 18 pt */
 	private static final Font fontSubtitle = new Font("Arial", Font.BOLD, 18);
-	
+
 	/** Arial, plain, size 18 pt */
 	private static final Font fontSubtitlePlain = new Font("Arial", Font.PLAIN, 18);
-	
+
 	/** Arial, bold, size 14 pt */
 	private static final Font fontSubtitleSub = new Font("Arial", Font.BOLD, 16);
-	
+
 	/** Arial, plain, size 14 */
 	private static final Font fontNormalPlain = new Font("Arial", Font.PLAIN, 14);
-	
+
 	/** Arial, bold, size 14 */
 	private static final Font fontNormalBold = new Font("Arial", Font.BOLD, 14);
-	
+
 	/** Arial, plain, size 10 */
 	private static final Font fontSmall = new Font("Arial", Font.PLAIN, 10);
-	
-	
+
 	static {
 
 		ImageIcon iconS = null;
@@ -120,6 +132,8 @@ public abstract class Utils {
 		ImageIcon iconQL = null;
 		ImageIcon iconQH = null;
 		ImageIcon iconQLH = null;
+		ImageIcon iconSave = null;
+		ImageIcon iconSaveH = null;
 
 		try {
 			BufferedImage successIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/success.png"));
@@ -130,6 +144,8 @@ public abstract class Utils {
 
 			BufferedImage qIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/question.png"));
 			BufferedImage qIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/images/question_light.png"));
+			BufferedImage saveIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/images/save.png"));
+			BufferedImage saveIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/images/save_hover.png"));
 
 			iconS = new ImageIcon(successIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));
 			iconF = new ImageIcon(failIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));
@@ -143,6 +159,9 @@ public abstract class Utils {
 					qIconRawH.getScaledInstance(fontSubtitle.getSize(), fontSubtitle.getSize(), Image.SCALE_SMOOTH));
 			iconQL = new ImageIcon(
 					qIconRaw.getScaledInstance(fontSubtitle.getSize(), fontSubtitle.getSize(), Image.SCALE_SMOOTH));
+			
+			iconSave = new ImageIcon(saveIconRaw);
+			iconSaveH = new ImageIcon(saveIconRawH);
 
 		} catch (Exception e) {
 			/** won't happen **/
@@ -156,6 +175,8 @@ public abstract class Utils {
 		IconQuestionLargerHover = iconQLH;
 		IconPreview = iconP;
 		IconPreviewHover = iconPH;
+		IconSave = iconSave;
+		IconSaveHover = iconSaveH;
 
 	}
 
@@ -295,12 +316,76 @@ public abstract class Utils {
 	 * Shows info message, positioned according to specified parent
 	 */
 	public static void showInfo(String msg, Component parent) {
+		Font font = fontNormalPlain;
+		int padding = 10;
 
-		JLabel label = new JLabel(msg);
-		label.setFont(fontNormalPlain);
+		// Usable screen area (excludes dock/taskbar/menu bar)
+		Rectangle usableBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+		int screenW = usableBounds.width;
+		int screenH = usableBounds.height;
 
-		JOptionPane.showMessageDialog(parent, label, "Info", JOptionPane.INFORMATION_MESSAGE);
+		int baseMaxWidth = screenW / 3;
+		int baseMaxHeight = screenH / 3;
 
+		int absoluteMaxWidth = (int) (screenW * 0.9);
+		int absoluteMaxHeight = (int) (screenH * 0.9);
+
+		// Use JEditorPane for HTML rendering
+		JEditorPane editorPane = new JEditorPane("text/html", msg);
+		editorPane.setFont(font); // may not affect HTML unless styled in the HTML itself
+		editorPane.setEditable(false);
+		editorPane.setOpaque(false);
+		editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+
+		// Initial width guess based on plain text version
+		JLabel tempLabel = new JLabel(stripHtmlTags(msg));
+		tempLabel.setFont(font);
+		int initialWidth = tempLabel.getFontMetrics(font).stringWidth(tempLabel.getText()) + padding;
+
+		int width = Math.min(initialWidth, baseMaxWidth);
+		int height;
+
+		double scaleFactor = 1.0;
+		final double step = 0.1;
+
+		while (true) {
+			int currentMaxWidth = Math.min((int) (baseMaxWidth * scaleFactor), absoluteMaxWidth);
+			int currentMaxHeight = Math.min((int) (baseMaxHeight * scaleFactor), absoluteMaxHeight);
+
+			editorPane.setSize(currentMaxWidth, Integer.MAX_VALUE);
+			Dimension prefSize = editorPane.getPreferredSize();
+			height = prefSize.height + padding;
+
+			if (height <= currentMaxHeight) {
+				width = currentMaxWidth;
+				break;
+			}
+
+			if (currentMaxWidth >= absoluteMaxWidth && currentMaxHeight >= absoluteMaxHeight) {
+				width = currentMaxWidth;
+				height = currentMaxHeight;
+				break;
+			}
+
+			scaleFactor += step;
+		}
+
+		// add small buffer to avoid scrollbar from off-by-1 sizing
+		int buffer = 5;
+
+		JScrollPane scrollPane = new JScrollPane(editorPane);
+		scrollPane.setBorder(null);
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+		// add buffer to width/height to preempt scrollbars
+		scrollPane.setPreferredSize(new Dimension(width + buffer, height + buffer));
+
+		JOptionPane.showMessageDialog(parent, scrollPane, "Info", JOptionPane.INFORMATION_MESSAGE);
+	}
+
+	private static String stripHtmlTags(String html) {
+		return html.replaceAll("<[^>]+>", "").replace("&nbsp;", " ").trim();
 	}
 
 	/**
@@ -1115,6 +1200,39 @@ public abstract class Utils {
 	}
 
 	/**
+	 * Recursively sets the font for all components within a {@link JMenuBar}.
+	 * 
+	 * @param font    The {@link Font} to apply.
+	 * @param menuBar The {@link JMenuBar} whose items should be updated.
+	 */
+	public static void setMenuBarFont(Font font, JMenuBar menuBar) {
+		for (int i = 0; i < menuBar.getMenuCount(); i++) {
+			JMenu menu = menuBar.getMenu(i);
+			if (menu != null) {
+				menu.setFont(font);
+				setMenuFontRecursive(menu, font);
+			}
+		}
+	}
+
+	/**
+	 * Recursively applies the given {@link Font} to the specified
+	 * {@link MenuElement} and all of its sub-elements.
+	 *
+	 * @param element The {@link MenuElement} to update.
+	 * @param font    The {@link Font} to apply.
+	 */
+	private static void setMenuFontRecursive(MenuElement element, Font font) {
+		Component comp = element.getComponent();
+		if (comp != null) {
+			comp.setFont(font);
+		}
+		for (MenuElement subElement : element.getSubElements()) {
+			setMenuFontRecursive(subElement, font);
+		}
+	}
+
+	/**
 	 * Transposes a 2D integer matrix.
 	 * 
 	 * @param m The matrix to transpose.
@@ -1347,8 +1465,6 @@ public abstract class Utils {
 			}
 		}
 	}
-	
-	
 
 	/**
 	 * Calculates the nearest power of ten that is greater than or equal to the

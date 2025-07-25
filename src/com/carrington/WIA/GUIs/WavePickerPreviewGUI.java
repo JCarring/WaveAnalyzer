@@ -47,7 +47,7 @@ import com.carrington.WIA.Graph.PressureFlowChartPanel;
 import com.carrington.WIA.Graph.PressureFlowChartPanel.PFPickListener;
 import com.carrington.WIA.Graph.SepWavePanel;
 import com.carrington.WIA.Graph.SepWavePanel.WavePickListener;
-import com.carrington.WIA.IO.EnclosedTxtFileReader;
+import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.IO.Header;
 import com.carrington.WIA.Math.Savgol;
 import com.carrington.WIA.Math.Savgol.SavGolSettings;
@@ -326,7 +326,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		txtWaveIntensity.setFocusable(false);
 
 		JLabel lblPF = new JLabel("Pressure and Flow");
-		btnPF = new JCHelpButton(EnclosedTxtFileReader.getWavesAlignPFHelp());
+		btnPF = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_ALIGN_PF));
 		btnPF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent action) {
 				Utils.showInfo(btnPF.getHelpMessage(), compForPosition);
