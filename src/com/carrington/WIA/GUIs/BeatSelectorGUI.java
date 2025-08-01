@@ -31,7 +31,6 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -55,8 +54,8 @@ import com.carrington.WIA.GUIs.Components.JCLabel;
 import com.carrington.WIA.Graph.AlignChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel;
 import com.carrington.WIA.Graph.BeatsChartPanel.BeatsChartPanelListener;
-import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.IO.Header;
+import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.Math.FlowUnit;
 import com.carrington.WIA.Math.PressureUnit;
 
@@ -536,7 +535,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener, 
 		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_SELECT_BEATS));
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(Utils.INFO, btnHelp.getHelpMessage(), ref.get());
 			}
 		});
 

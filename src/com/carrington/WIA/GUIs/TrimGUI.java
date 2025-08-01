@@ -20,7 +20,6 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -444,7 +443,7 @@ public class TrimGUI extends JDialog {
 	private boolean _validateTrim(double trim, boolean right) {
 
 		if (trim <= this.validRangeX[0] || trim >= this.validRangeX[1]) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Must be withinin data range.", this);
+			Utils.showMessage(Utils.ERROR, "Invalid trim. Must be withinin data range.", this);
 
 			return false;
 		}
@@ -456,7 +455,7 @@ public class TrimGUI extends JDialog {
 
 				return true;
 			} else {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Right trim must be further to RIGHT than left trim.", this);
+				Utils.showMessage(Utils.ERROR, "Invalid trim. Right trim must be further to RIGHT than left trim.", this);
 				return false;
 			}
 		} else {
@@ -465,7 +464,7 @@ public class TrimGUI extends JDialog {
 			if (trim < maxValidLeft) {
 				return true;
 			} else {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Left trim must be further to LEFT than right trim.", this);
+				Utils.showMessage(Utils.ERROR, "Invalid trim. Left trim must be further to LEFT than right trim.", this);
 
 				return false;
 			}

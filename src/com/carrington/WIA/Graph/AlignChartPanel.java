@@ -32,7 +32,6 @@ import javax.swing.AbstractAction;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
@@ -696,14 +695,14 @@ public class AlignChartPanel extends JPanel {
 			List<TentativeBeat> currBeats = cr.isTopChart ? currBeatsTop : currBeatsBott;
 			if (cr.isTopChart) {
 				if (selTopStart == null || selTopEnd == null) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Both bounds of the beat must be set first.", this);
+					Utils.showMessage(Utils.ERROR, "Both bounds of the beat must be set first.", this);
 					return;
 				}
 				xRange = new Range(selTopStart, selTopEnd);
 				yRange = yRangeTop;
 			} else {
 				if (selBottStart == null || selBottEnd == null) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Both bounds of the beat must be set first.", this);
+					Utils.showMessage(Utils.ERROR, "Both bounds of the beat must be set first.", this);
 					return;
 				}
 				xRange = new Range(selBottStart, selBottEnd);
@@ -745,7 +744,7 @@ public class AlignChartPanel extends JPanel {
 		if (autoR) {
 			QRS qrs = getClosestQRS(cr);
 			if (qrs == null) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not identify R Waves in the currently displayed domain", this);
+				Utils.showMessage(Utils.ERROR, "Could not identify R Waves in the currently displayed domain", this);
 				return;
 			}
 			xValue = qrs.getArrayValue();
@@ -756,7 +755,7 @@ public class AlignChartPanel extends JPanel {
 
 			if (cr.isTopChart) {
 				if (selTopEnd != null && xValue >= selTopEnd) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat start point must be before the end point.", this);
+					Utils.showMessage(Utils.ERROR, "Beat start point must be before the end point.", this);
 					return;
 				}
 				if (selTopStartMarker != null) {
@@ -765,7 +764,7 @@ public class AlignChartPanel extends JPanel {
 				}
 			} else {
 				if (selBottEnd != null && xValue >= selBottEnd) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat start point must be before the end point.", this);
+					Utils.showMessage(Utils.ERROR, "Beat start point must be before the end point.", this);
 					return;
 				}
 				if (selBottStartMarker != null) {
@@ -791,7 +790,7 @@ public class AlignChartPanel extends JPanel {
 
 			if (cr.isTopChart) {
 				if (selTopStart != null && xValue <= selTopStart) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat end point must be after the start point.", this);
+					Utils.showMessage(Utils.ERROR, "Beat end point must be after the start point.", this);
 					return;
 				}
 				if (selTopEndMarker != null) {
@@ -800,7 +799,7 @@ public class AlignChartPanel extends JPanel {
 				}
 			} else {
 				if (selBottStart != null && xValue <= selBottStart) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat end point must be after the start point.", this);
+					Utils.showMessage(Utils.ERROR, "Beat end point must be after the start point.", this);
 					return;
 				}
 				if (selBottEndMarker != null) {
@@ -891,7 +890,7 @@ public class AlignChartPanel extends JPanel {
 
 		QRS[] closest = getClosestQRSAboveBelow(cr);
 		if (closest == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not identify R Waves in the currently displayed domain", this);
+			Utils.showMessage(Utils.ERROR, "Could not identify R Waves in the currently displayed domain", this);
 			return;
 		}
 
@@ -945,7 +944,7 @@ public class AlignChartPanel extends JPanel {
 
 		// Validate
 		if (currBeatsBott.isEmpty() || currBeatsTop.isEmpty()) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "At least one beat needs to be selected for both data sets", this);
+			Utils.showMessage(Utils.ERROR, "At least one beat needs to be selected for both data sets", this);
 			return null;
 		}
 
@@ -960,7 +959,7 @@ public class AlignChartPanel extends JPanel {
 		// see if one exists with similar name
 		for (BeatSelection bs : beatSelections.keySet()) {
 			if (name.equalsIgnoreCase(bs.getName().trim())) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There is already a selection with this name!", null);
+				Utils.showMessage(Utils.ERROR, "There is already a selection with this name!", null);
 				return null;
 			}
 		}

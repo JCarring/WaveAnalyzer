@@ -3,8 +3,6 @@ package com.carrington.WIA.IO;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import javax.swing.JOptionPane;
-
 import com.carrington.WIA.Utils;
 
 /**
@@ -40,7 +38,7 @@ public abstract class WIAResourceReader {
 			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
 
 		} catch (IOException e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resource error: " + fileName + " - contact developer", null);
+			Utils.showMessage(Utils.ERROR, "Resource error: " + fileName + " - contact developer", null);
 			e.printStackTrace();
 			return "Error";
 		}

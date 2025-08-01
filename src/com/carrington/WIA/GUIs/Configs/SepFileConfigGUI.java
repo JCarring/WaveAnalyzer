@@ -24,7 +24,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -145,7 +144,7 @@ public class SepFileConfigGUI extends JDialog {
 			public void actionPerformed(ActionEvent e) {
 				String errors = validateDisplayValues();
 				if (errors != null) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, errors, ref.get());
+					Utils.showMessage(Utils.ERROR, errors, ref.get());
 					return;
 				}
 				recordDisplayValues();
@@ -154,7 +153,7 @@ public class SepFileConfigGUI extends JDialog {
 					try {
 						writeProperties();
 					} catch (IOException e1) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html>There was an error saving the " + configFile + " file:<br><br>"
+						Utils.showMessage(Utils.ERROR, "<html>There was an error saving the " + configFile + " file:<br><br>"
 								+ e1.getMessage() + "</html>", ref.get());
 						e1.printStackTrace();
 					}

@@ -216,7 +216,7 @@ public class WIAStats {
 				WIAData.serialize(data, data.getSerializeFileSource());
 
 			} catch (SerializationException e) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Unable to save to file. (Msg: " + e.getMessage() + ")", null);
+				Utils.showMessage(Utils.ERROR, "Unable to save to file. (Msg: " + e.getMessage() + ")", null);
 			}
 		}
 
@@ -2204,7 +2204,7 @@ public class WIAStats {
 		while (true) {
 			String[] options = { "OK", "Skip" };
 			int result = JOptionPane.showOptionDialog(parent, panel, "Enter Vessel Diameter",
-					JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+					JOptionPane.DEFAULT_OPTION, Utils.INFO, null, options, options[0]);
 
 			if (result != 0) {
 				DoubleResponse response = new DoubleResponse();

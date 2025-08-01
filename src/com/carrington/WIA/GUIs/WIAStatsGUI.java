@@ -16,7 +16,6 @@ import java.util.Set;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -268,7 +267,7 @@ public class WIAStatsGUI extends JFrame
 		wiastat = new WIAStats("test");
 		String errors = wiastat.loadFiles(file, true);
 		if (errors != null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, errors, this);
+			Utils.showMessage(Utils.ERROR, errors, this);
 			return;
 		}
 		setPanelState(STATE_LOADED);
@@ -292,7 +291,7 @@ public class WIAStatsGUI extends JFrame
 			return;
 		} else if (!Utils.hasOkayExtension(fileToSave, ".xlsx")) {
 			// filed HAD an extension and it was not .csv
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
+			Utils.showMessage(Utils.ERROR, "File must be saved as .csv", ref.get());
 			return;
 		}
 		fileToSave = Utils.appendExtensionIfDoesNotHaveExt(fileToSave, ".xlsx");
@@ -300,7 +299,7 @@ public class WIAStatsGUI extends JFrame
 		try {
 			wiastat.save(fileToSave);
 		} catch (IOException e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html>Could not save file.<br><br>Error msg: " + e.getMessage() + "</html>", ref.get());
+			Utils.showMessage(Utils.ERROR, "<html>Could not save file.<br><br>Error msg: " + e.getMessage() + "</html>", ref.get());
 		}
 	}
 
@@ -317,7 +316,7 @@ public class WIAStatsGUI extends JFrame
 			return;
 		} else if (!Utils.hasOkayExtension(fileToSav, ".csv")) {
 			// filed HAD an extension and it was not .csv
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
+			Utils.showMessage(Utils.ERROR, "File must be saved as .csv", ref.get());
 			return;
 		}
 		fileToSav = Utils.appendExtensionIfDoesNotHaveExt(fileToSav, ".csv");
@@ -497,7 +496,7 @@ public class WIAStatsGUI extends JFrame
 							tableStandardWaveGroups.updateGroups(wiastat);
 							tableStandardWave.clearSelection();
 						} else {
-							Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Group \"" + groupName + "\" already exists", ref.get());
+							Utils.showMessage(Utils.ERROR, "Group \"" + groupName + "\" already exists", ref.get());
 						}
 					}
 				}
@@ -637,7 +636,7 @@ public class WIAStatsGUI extends JFrame
 					} catch (StatisticalException e1) {
 						btnRunStats.setIcon(Utils.IconFail);
 						e1.printStackTrace();
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Unable to perform stats: " + e1.getMessage(), null);
+						Utils.showMessage(Utils.ERROR, "Unable to perform stats: " + e1.getMessage(), null);
 						return;
 					}
 

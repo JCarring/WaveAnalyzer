@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
-import javax.swing.JOptionPane;
 
 import com.carrington.WIA.Utils;
 
@@ -48,7 +47,7 @@ public class JCHelpButton extends JButton {
 		
 		addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, msg, comp);
+				Utils.showMessage(Utils.INFO, msg, comp);
 			}
 		});
 	}

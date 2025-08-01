@@ -36,7 +36,6 @@ import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -174,6 +173,14 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	public WavePickerGUI(String selectionName, WIAData wiaData, WIASaveSettingsChoices saveChoices, WIACaller wiaCaller,
 			Component parent, PreviewResult pr) {
 
+		if (selectionName == null) {
+			throw new IllegalArgumentException("Selection name cannot be null");
+		} else if (wiaData == null) {
+			throw new IllegalArgumentException("Wave intensity data cannot be null");
+		} else if (saveChoices == null) {
+			throw new IllegalArgumentException("Saving choices cannot be null");
+		}
+		
 		this.saveSettingsGUI = new WIASaveSettingsGUI(saveChoices);
 		this.wiaData = wiaData;
 		this.wiaCaller = wiaCaller;
@@ -369,7 +376,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		btnOverallHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnOverallHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(Utils.INFO, btnOverallHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -544,7 +551,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		btnWaveHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnWaveHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(Utils.INFO, btnWaveHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -555,7 +562,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		btnPF = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_ALIGN_PF));
 		btnPF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent action) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnPF.getHelpMessage(), ref.get());
+				Utils.showMessage(Utils.INFO, btnPF.getHelpMessage(), ref.get());
 			}
 		});
 
@@ -671,7 +678,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		btnDiameterHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnDiameterHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(Utils.INFO, btnDiameterHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -729,7 +736,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 								wiaData.getWIBackward(), wiaData.getSepFlowForwardDeriv(),
 								wiaData.getSepFlowBackwardDeriv(), new double[] { 2, 1 });
 					} catch (Exception e1) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE,
+						Utils.showMessage(Utils.ERROR,
 								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
@@ -746,7 +753,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						pnlGraphWIASep.saveChartAsSVG(fileToSaveDisplay);
 
 					} catch (Exception e1) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE,
+						Utils.showMessage(Utils.ERROR,
 								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
@@ -939,7 +946,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (!wiaData.isUserSelectionAdequate()) {
-					Utils.showMessage(JOptionPane.WARNING_MESSAGE,
+					Utils.showMessage(Utils.WARN,
 							"It is recommended you select at least two waves, and point of systole and diastole.",
 							ref.get());
 				}
@@ -1057,7 +1064,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		}
 		sb.append("</html>");
 
-		Utils.showMessageTallFirst(JOptionPane.INFORMATION_MESSAGE, sb.toString(), ref.get());
+		Utils.showMessageTallFirst(Utils.INFO, sb.toString(), ref.get());
 
 	}
 
@@ -1135,7 +1142,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			hd = tempData.getData().copyWithYAlignment(headerlower, headerhigher, indexLower, indexHigher,
 					allowAlignWrap, allowAlignWrapExcessivelyDiscordant);
 		} catch (Exception e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, e.getMessage(), this);
+			Utils.showMessage(Utils.ERROR, e.getMessage(), this);
 			return null;
 		}
 		return hd;
@@ -1151,7 +1158,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		Double timeAlignPressure = pnlGraphPF.getPressureAlignTime();
 		double[] xData = wiaData.getData().getXData();
 		if (timeAlignFlow == null || timeAlignPressure == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Please set a time to align in both flow and pressure graphs",
+			Utils.showMessage(Utils.ERROR, "Please set a time to align in both flow and pressure graphs",
 					pnlGraphPF);
 			return;
 		}
@@ -1279,7 +1286,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				double value = Double.parseDouble(input);
 
 				if (value < 0) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Vessel diameter cannot be negative!", ref.get());
+					Utils.showMessage(Utils.ERROR, "Vessel diameter cannot be negative!", ref.get());
 					return false;
 				} else if (value > 20) {
 					boolean confirmed = Utils.confirmAction("Confirm diameter",
@@ -1290,7 +1297,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				}
 				wiaData.setVesselDiameter(value);
 			} catch (NumberFormatException ex) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid number format for vessel diameter!", ref.get());
+				Utils.showMessage(Utils.ERROR, "Invalid number format for vessel diameter!", ref.get());
 				return false;
 			}
 		}

@@ -200,6 +200,24 @@ public abstract class Utils {
 	/** A custom darker purple color used for UI elements. */
 	public static final Color colorPurpleDarker = colorPurple.darker();
 
+	/**
+	 * Variable used in {@link #showMessage(int, String, Component)} to denote
+	 * informational message
+	 */
+	public static final int INFO = JOptionPane.INFORMATION_MESSAGE;
+
+	/**
+	 * Variable used in {@link #showMessage(int, String, Component)} to denote
+	 * warning message
+	 */
+	public static final int WARN = JOptionPane.WARNING_MESSAGE;
+
+	/**
+	 * Variable used in {@link #showMessage(int, String, Component)} to denote error
+	 * message
+	 */
+	public static final int ERROR = JOptionPane.ERROR_MESSAGE;
+
 	///////////////////////////////////////////////////////
 	//
 	// METHODS
@@ -299,31 +317,28 @@ public abstract class Utils {
 		return null;
 	}
 
-
-
 	/**
 	 * Shows a properly sized and positioned popup message to the user with the
 	 * specified type and message
 	 * 
 	 * @param type   The type of message, one of
-	 *               {@link JOptionPane#INFORMATION_MESSAGE},
-	 *               {@link JOptionPane#WARNING_MESSAGE}, or
-	 *               {@link JOptionPane#ERROR_MESSAGE}
+	 *               {@link Utils#INFO},
+	 *               {@link Utils#WARN}, or {@link Utils#ERROR}
 	 * @param msg    The message to display; can utilized HTML
 	 * @param parent component used to positioning this popup
-	 * @throws IllegalArgumentException	if type is not valid
+	 * @throws IllegalArgumentException if type is not valid
 	 */
 	public static void showMessage(int type, String msg, Component parent) throws IllegalArgumentException {
 
 		String title;
 		switch (type) {
-		case JOptionPane.INFORMATION_MESSAGE:
+		case Utils.INFO:
 			title = "Info";
 			break;
-		case JOptionPane.ERROR_MESSAGE:
+		case Utils.ERROR:
 			title = "Error";
 			break;
-		case JOptionPane.WARNING_MESSAGE:
+		case Utils.WARN:
 			title = "Warning";
 			break;
 		default:
@@ -345,18 +360,18 @@ public abstract class Utils {
 		int absoluteMaxHeight = (int) (screenH * 0.9);
 
 		// Use JEditorPane for HTML rendering
-		
+
 		Color bg = UIManager.getColor("OptionPane.background");
-		if (bg == null) bg = UIManager.getColor("Panel.background"); // fallback
-		
+		if (bg == null)
+			bg = UIManager.getColor("Panel.background"); // fallback
+
 		JEditorPane editorPane = new JEditorPane("text/html", msg);
 		editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		editorPane.setFont(font); // may not affect HTML unless styled in the HTML itself
 		editorPane.setEditable(false);
 		editorPane.setOpaque(true);
-		editorPane.setBackground(bg);          // match OptionPane
+		editorPane.setBackground(bg); // match OptionPane
 		editorPane.setForeground(UIManager.getColor("OptionPane.foreground"));
-
 
 		// Initial width guess based on plain text version
 		// Start with no wrapping to get minimum width required for a single line
@@ -408,100 +423,106 @@ public abstract class Utils {
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.setBackground(bg); // match option pane
-		
+
 		// add buffer to width/height to preempt scrollbars
 		scrollPane.setPreferredSize(new Dimension(width + buffer, height + buffer));
 
 		JOptionPane.showMessageDialog(parent, scrollPane, title, type);
 	}
-	
+
 	/**
 	 * Shows a properly sized and positioned popup message to the user with the
 	 * specified type and message. It expands vertically first.
 	 * 
 	 * @param type   The type of message, one of
-	 *               {@link JOptionPane#INFORMATION_MESSAGE},
-	 *               {@link JOptionPane#WARNING_MESSAGE}, or
-	 *               {@link JOptionPane#ERROR_MESSAGE}
+	 *               {@link Utils#INFO},
+	 *               {@link Utils#WARN}, or {@link Utils#ERROR}
 	 * @param msg    The message to display; can utilized HTML
 	 * @param parent component used to positioning this popup
-	 * @throws IllegalArgumentException	if type is not valid
+	 * @throws IllegalArgumentException if type is not valid
 	 */
 	public static void showMessageTallFirst(int type, String msg, Component parent) throws IllegalArgumentException {
-	    String title;
-	    switch (type) {
-	        case JOptionPane.INFORMATION_MESSAGE: title = "Info"; break;
-	        case JOptionPane.ERROR_MESSAGE:       title = "Error"; break;
-	        case JOptionPane.WARNING_MESSAGE:     title = "Warning"; break;
-	        default: throw new IllegalArgumentException("Invalid type of message");
-	    }
+		String title;
+		switch (type) {
+		case Utils.INFO:
+			title = "Info";
+			break;
+		case ERROR:
+			title = "Error";
+			break;
+		case Utils.WARN:
+			title = "Warning";
+			break;
+		default:
+			throw new IllegalArgumentException("Invalid type of message");
+		}
 
-	    Font font = fontNormalPlain; // reuse your font
-	    int padding = 10;
-	    int buffer  = 5;  // small buffer to avoid off-by-1 scrollbars
+		Font font = fontNormalPlain; // reuse your font
+		int padding = 10;
+		int buffer = 5; // small buffer to avoid off-by-1 scrollbars
 
-	    // Usable screen area (excludes dock/taskbar/menu bar)
-	    Rectangle usableBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-	    int screenW = usableBounds.width;
-	    int screenH = usableBounds.height;
+		// Usable screen area (excludes dock/taskbar/menu bar)
+		Rectangle usableBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+		int screenW = usableBounds.width;
+		int screenH = usableBounds.height;
 
-	    // Reasonable cap (you can tweak these)
-	    int absoluteMaxWidth  = (int) (screenW * 0.90);
-	    int absoluteMaxHeight = (int) (screenH * 0.90);
+		// Reasonable cap (you can tweak these)
+		int absoluteMaxWidth = (int) (screenW * 0.90);
+		int absoluteMaxHeight = (int) (screenH * 0.90);
 
-	    // Prepare HTML viewer
-	    Color bg = UIManager.getColor("OptionPane.background");
-	    if (bg == null) bg = UIManager.getColor("Panel.background");
+		// Prepare HTML viewer
+		Color bg = UIManager.getColor("OptionPane.background");
+		if (bg == null)
+			bg = UIManager.getColor("Panel.background");
 
-	    JEditorPane editorPane = new JEditorPane("text/html", msg);
-	    editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
-	    editorPane.setFont(font);                   // may not affect HTML unless styled inside HTML
-	    editorPane.setEditable(false);
-	    editorPane.setOpaque(true);
-	    editorPane.setBackground(bg);
-	    editorPane.setForeground(UIManager.getColor("OptionPane.foreground"));
+		JEditorPane editorPane = new JEditorPane("text/html", msg);
+		editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+		editorPane.setFont(font); // may not affect HTML unless styled inside HTML
+		editorPane.setEditable(false);
+		editorPane.setOpaque(true);
+		editorPane.setBackground(bg);
+		editorPane.setForeground(UIManager.getColor("OptionPane.foreground"));
 
-	    // ---- Step 1: compute intrinsic (no-wrap) preferred width of the HTML ----
-	    // Ask the HTML view how wide it *wants* to be if not constrained.
-	    // We do this via the root View spans.
-	    editorPane.addNotify(); // ensure UI installed so getUI() returns a valid one
-	    javax.swing.plaf.TextUI ui = editorPane.getUI();
-	    float intrinsicWidth;
-	    try {
-	        javax.swing.text.View root = ui.getRootView(editorPane);
-	        // Size to "infinite" width so the view computes its natural span.
-	        root.setSize(Float.MAX_VALUE, 0f);
-	        intrinsicWidth = root.getPreferredSpan(javax.swing.text.View.X_AXIS);
-	        if (Float.isNaN(intrinsicWidth) || intrinsicWidth <= 0f) {
-	            // Fallback: compute from preferred size when unconstrained
-	            editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-	            intrinsicWidth = editorPane.getPreferredSize().width;
-	        }
-	    } catch (Exception ex) {
-	        // Robust fallback path
-	        editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-	        intrinsicWidth = editorPane.getPreferredSize().width;
-	    }
+		// ---- Step 1: compute intrinsic (no-wrap) preferred width of the HTML ----
+		// Ask the HTML view how wide it *wants* to be if not constrained.
+		// We do this via the root View spans.
+		editorPane.addNotify(); // ensure UI installed so getUI() returns a valid one
+		javax.swing.plaf.TextUI ui = editorPane.getUI();
+		float intrinsicWidth;
+		try {
+			javax.swing.text.View root = ui.getRootView(editorPane);
+			// Size to "infinite" width so the view computes its natural span.
+			root.setSize(Float.MAX_VALUE, 0f);
+			intrinsicWidth = root.getPreferredSpan(javax.swing.text.View.X_AXIS);
+			if (Float.isNaN(intrinsicWidth) || intrinsicWidth <= 0f) {
+				// Fallback: compute from preferred size when unconstrained
+				editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+				intrinsicWidth = editorPane.getPreferredSize().width;
+			}
+		} catch (Exception ex) {
+			// Robust fallback path
+			editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+			intrinsicWidth = editorPane.getPreferredSize().width;
+		}
 
-	    int targetWidth = Math.min((int) Math.ceil(intrinsicWidth) + padding, absoluteMaxWidth);
+		int targetWidth = Math.min((int) Math.ceil(intrinsicWidth) + padding, absoluteMaxWidth);
 
-	    // ---- Step 2: lay out the editor at that width and measure height ----
-	    editorPane.setSize(new Dimension(targetWidth, Integer.MAX_VALUE));
-	    Dimension pref = editorPane.getPreferredSize();
-	    int targetHeight = Math.min(pref.height + padding, absoluteMaxHeight);
+		// ---- Step 2: lay out the editor at that width and measure height ----
+		editorPane.setSize(new Dimension(targetWidth, Integer.MAX_VALUE));
+		Dimension pref = editorPane.getPreferredSize();
+		int targetHeight = Math.min(pref.height + padding, absoluteMaxHeight);
 
-	    // ---- Step 3: put in a scroll pane: vertical as needed, horizontal never ----
-	    JScrollPane scrollPane = new JScrollPane(editorPane);
-	    scrollPane.setBorder(null);
-	    scrollPane.getViewport().setBackground(bg);
-	    scrollPane.setBackground(bg);
-	    scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-	    scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-	    scrollPane.setPreferredSize(new Dimension(targetWidth + buffer, targetHeight + buffer));
+		// ---- Step 3: put in a scroll pane: vertical as needed, horizontal never ----
+		JScrollPane scrollPane = new JScrollPane(editorPane);
+		scrollPane.setBorder(null);
+		scrollPane.getViewport().setBackground(bg);
+		scrollPane.setBackground(bg);
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setPreferredSize(new Dimension(targetWidth + buffer, targetHeight + buffer));
 
-	    JOptionPane.showMessageDialog(parent, scrollPane, title, type);
+		JOptionPane.showMessageDialog(parent, scrollPane, title, type);
 	}
-
 
 	/**
 	 * Shows an error message and then quits the program after the user selects OK
@@ -509,7 +530,7 @@ public abstract class Utils {
 	 * @param parent component to position this message within
 	 */
 	public static void showErrorAndQuit(String msg, Component parent) {
-		JOptionPane.showMessageDialog(parent, msg, "Error", JOptionPane.ERROR_MESSAGE);
+		JOptionPane.showMessageDialog(parent, msg, "Error", Utils.ERROR);
 		System.exit(0);
 
 	}
@@ -522,7 +543,7 @@ public abstract class Utils {
 	 * @return integer selected, or null if it was not an integer or was blank
 	 */
 	public static Integer promptIntegerNumber(String msg, Component parent) {
-		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", JOptionPane.INFORMATION_MESSAGE);
+		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", Utils.INFO);
 		if (text == null || text.isBlank())
 			return null;
 		try {
@@ -537,7 +558,7 @@ public abstract class Utils {
 	 * Prompts for text. Returns null if canceled or there was no input.
 	 */
 	public static String promptTextInput(String msg, Component parent) {
-		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", JOptionPane.INFORMATION_MESSAGE);
+		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", Utils.INFO);
 		if (text == null || text.isBlank())
 			return null;
 		else
@@ -682,7 +703,7 @@ public abstract class Utils {
 	public static boolean confirmAction(String title, String msg, Component parent) {
 
 		int result = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.OK_CANCEL_OPTION,
-				JOptionPane.WARNING_MESSAGE);
+				Utils.WARN);
 
 		if (result == JOptionPane.OK_OPTION) {
 			return true;

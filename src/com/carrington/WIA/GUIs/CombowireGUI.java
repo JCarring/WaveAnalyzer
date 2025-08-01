@@ -31,7 +31,6 @@ import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
@@ -374,7 +373,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				try {
 					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer"));
 				} catch (Exception ex) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not browse internet", ref.get());
+					Utils.showMessage(Utils.ERROR, "Could not browse internet", ref.get());
 				}
 
 			}
@@ -387,7 +386,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 					java.awt.Desktop.getDesktop()
 							.browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
 				} catch (Exception ex) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not browse internet", ref.get());
+					Utils.showMessage(Utils.ERROR, "Could not browse internet", ref.get());
 				}
 
 			}
@@ -667,7 +666,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				// Saves the ensembled Beat HemoData in a separate folder for each selection
 				// (treatment)
 				if (selectionResult == null || selectionResult.getBeats().isEmpty()) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No selections to save!", ref.get());
+					Utils.showMessage(Utils.ERROR, "No selections to save!", ref.get());
 				}
 
 				if (ref.get().btnSaveSelectionEnsembledBeat.getIcon() == Utils.IconSuccess) {
@@ -683,7 +682,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				for (Beat beat : selectionResult.getBeats()) {
 					String error = saveEnsembledBeatData(beat);
 					if (error != null) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE, error, ref.get());
+						Utils.showMessage(Utils.ERROR, error, ref.get());
 						btnSaveSelectionEnsembledBeat.setIcon(Utils.IconFail);
 						// Don't keep trying to save, same error is likely going to occur
 						return;
@@ -702,7 +701,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				// Saves the ensembled Beat HemoData in a separate folder for each selection
 				// (treatment)
 				if (selectionResult == null || selectionResult.getBeats().isEmpty()) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No selections to save!", ref.get());
+					Utils.showMessage(Utils.ERROR, "No selections to save!", ref.get());
 				}
 
 				if (ref.get().btnSaveIndividualBeatImages.getIcon() == Utils.IconSuccess) {
@@ -718,7 +717,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				for (Beat beat : selectionResult.getBeats()) {
 					String error = saveBeatImages(beat, selectionResult.getBeatImages(beat));
 					if (error != null) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE, error, ref.get());
+						Utils.showMessage(Utils.ERROR, error, ref.get());
 						btnSaveIndividualBeatImages.setIcon(Utils.IconFail);
 						// Don't keep trying to save, same error is likely going to occur
 						return;
@@ -861,7 +860,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 					return;
 				String errors = Saver.saveData(fileToSave, data);
 				if (errors != null) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error occurred while saving: " + errors, ref.get());
+					Utils.showMessage(Utils.ERROR, "Error occurred while saving: " + errors, ref.get());
 					btnSaveMetrics.setIcon(Utils.IconFail);
 				} else {
 					btnSaveMetrics.setIcon(Utils.IconSuccess);
@@ -1087,7 +1086,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 					"Some files have data in the first few rows we want to ignore.\n\nNumber of rows to ignore:", this);
 
 			if (numRowsIgnoreObj == null) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid number of rows to ignore.", this);
+				Utils.showMessage(Utils.ERROR, "Invalid number of rows to ignore.", this);
 				return;
 			} else {
 				numRowsIgnore = Math.max(-1, numRowsIgnoreObj);
@@ -1098,21 +1097,21 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		// Attempt to get headers;
 		HeaderResult hr = dataReader.readHeaders(null);
 		if (!hr.isSuccess()) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, hr.getErrors(), this);
+			Utils.showMessage(Utils.ERROR, hr.getErrors(), this);
 			return;
 		}
 
 		if (hr.getHeaders().isEmpty()) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No headers found in file", this);
+			Utils.showMessage(Utils.ERROR, "No headers found in file", this);
 			return;
 		} else if (hr.getHeaders().size() < 2) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Must have at least two headers - one domain and at least one range.", this);
+			Utils.showMessage(Utils.ERROR, "Must have at least two headers - one domain and at least one range.", this);
 			return;
 		}
 
 		ReadResult dataResult = dataReader.readData(hr.getHeaders());
 		if (dataResult.getErrors() != null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, dataResult.getErrors(), this);
+			Utils.showMessage(Utils.ERROR, dataResult.getErrors(), this);
 			return;
 		}
 
@@ -1206,14 +1205,14 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			try {
 				flowOffset = Integer.parseInt(textFlowOffset);
 			} catch (NumberFormatException e) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Offset must be an integer.", this);
+				Utils.showMessage(Utils.ERROR, "Offset must be an integer.", this);
 				return;
 			}
 		}
 
 		String errors = data.isValid();
 		if (errors != null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, errors, null);
+			Utils.showMessage(Utils.ERROR, errors, null);
 			return;
 		}
 
@@ -1226,7 +1225,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		Header headerRWave = (Header) cbRWave.getSelectedItem();
 
 		if (!Utils.isDistinct(headerFlow, headerPressure, headerECG, headerRWave)) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Pressure, Flow, ECG, and RWave columns must all be unique.", this);
+			Utils.showMessage(Utils.ERROR, "Pressure, Flow, ECG, and RWave columns must all be unique.", this);
 			this.btnRunBeatSel.setEnabled(true);
 			return;
 		}
@@ -1250,7 +1249,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 					data = data.resampleAt(sampleRate);
 				} catch (ResampleException e) {
 					e.printStackTrace();
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Internal error. Could not resample.", this);
+					Utils.showMessage(Utils.ERROR, "Internal error. Could not resample.", this);
 					return;
 				}
 			}
@@ -1271,11 +1270,11 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		} catch (OutOfMemoryError e) {
 			// the input HemoData was too large
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Memory error. Data set too large. Try trimming.", null);
+			Utils.showMessage(Utils.ERROR, "Memory error. Data set too large. Try trimming.", null);
 			reset(false);
 			return;
 		} catch (IllegalArgumentException e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error. " + e.getMessage(), null);
+			Utils.showMessage(Utils.ERROR, "Error. " + e.getMessage(), null);
 			reset(false);
 		}
 
@@ -1387,7 +1386,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 					comma = ", ";
 				}
 			}
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, sb.toString(), this);
+			Utils.showMessage(Utils.ERROR, sb.toString(), this);
 			previewResultData = null;
 
 			return false;
@@ -1482,7 +1481,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 				}
 
 			} catch (Exception ex) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
+				Utils.showMessage(Utils.ERROR, 
 						"Unable to save the current WIA data state. This may be due to lack of permissions to save in the current "
 								+ "directory. You will not be able to re-edit wave selections at a later point. System error msg: "
 								+ ex.getMessage(),
@@ -1544,14 +1543,14 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 				double[] range = Utils.getBounds(data.getXData());
 				if (resampleFreq > (range[1] - range[0])) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency too large", this);
+					Utils.showMessage(Utils.ERROR, "Resample frequency too large", this);
 					return null;
 				} else if (resampleFreq <= 0) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency must be positive", this);
+					Utils.showMessage(Utils.ERROR, "Resample frequency must be positive", this);
 					return null;
 				}
 			} catch (NumberFormatException e) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency must be a (decimal) number", this);
+				Utils.showMessage(Utils.ERROR, "Resample frequency must be a (decimal) number", this);
 				return null;
 			}
 
@@ -1579,7 +1578,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		String text = txtSelectionName.getText();
 		if (text.isBlank()) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "The Selection Name cannot be blank!", this);
+			Utils.showMessage(Utils.ERROR, "The Selection Name cannot be blank!", this);
 			txtSelectionName.setText(data.getSelectionName());
 			return false;
 		}
@@ -1757,7 +1756,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 			}
 
 		} catch (Exception ex) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not create folder to save data.", null);
+			Utils.showMessage(Utils.ERROR, "Could not create folder to save data.", null);
 			return null;
 		}
 		return folder;
@@ -1778,7 +1777,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	 */
 	public File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
 		if (currFile == null || fileNameForm == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No file to save to.", null);
+			Utils.showMessage(Utils.ERROR, "No file to save to.", null);
 			return null;
 		}
 

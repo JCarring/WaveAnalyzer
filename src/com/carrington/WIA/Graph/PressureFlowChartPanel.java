@@ -23,7 +23,6 @@ import java.text.AttributedString;
 import javax.swing.AbstractAction;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
@@ -307,7 +306,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double[] validTime = wiaData.getTime();
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
+			Utils.showMessage(Utils.ERROR, "Selection outside of valid range.", this);
 			return;
 		}
 
@@ -553,7 +552,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double[] validTime = wiaData.getTime();
 
 		if (xy[0] < validTime[0]) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
+			Utils.showMessage(Utils.ERROR, "Selection outside of valid range.", this);
 			return;
 		} else if (xy[0] > validTime[validTime.length - 1]) {
 			// point clicked was to right of graph, so just keep the end of the cycle where
@@ -566,7 +565,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double xValueNearest = validTime[xValueIndex];
 		if ((xValueNearest - validTime[0]) < 200) { // in milliseconds
 			// heart rate should not be > 300 bpm. 
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "The cycle end is too early. Cycle too short.", this);
+			Utils.showMessage(Utils.ERROR, "The cycle end is too early. Cycle too short.", this);
 			return;
 		}
 		
@@ -607,7 +606,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double[] validTime = wiaData.getTime();
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
+			Utils.showMessage(Utils.ERROR, "Selection outside of valid range.", this);
 			return;
 		}
 
@@ -629,12 +628,12 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		if (systole) {
 			if (this.timeXDiastole != null && xValueNearest > this.timeXDiastole) {
-				Utils.showMessage(JOptionPane.WARNING_MESSAGE, "Usually systole comes before diastole in these traces.",
+				Utils.showMessage(Utils.WARN, "Usually systole comes before diastole in these traces.",
 						this);
 			}
 		} else {
 			if (this.timeXSystole != null && xValueNearest < this.timeXSystole) {
-				Utils.showMessage(JOptionPane.WARNING_MESSAGE, "Usually diastole comes after systole in these traces.",
+				Utils.showMessage(Utils.WARN, "Usually diastole comes after systole in these traces.",
 						this);
 			}
 		}

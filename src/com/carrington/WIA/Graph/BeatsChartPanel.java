@@ -30,7 +30,6 @@ import java.util.Set;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
@@ -649,7 +648,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 			// Validate that things are set
 			if (selStart == null || selEnd == null) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Both bounds of the beat must be set first.", this);
+				Utils.showMessage(Utils.ERROR, "Both bounds of the beat must be set first.", this);
 				return;
 			}
 			Range xRange = new Range(selStart, selEnd);
@@ -690,7 +689,7 @@ public class BeatsChartPanel extends ChartPanel {
 		if (autoR) {
 			QRS qrs = getClosestQRS(cr);
 			if (qrs == null) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not identify R Waves in the currently displayed domain", this);
+				Utils.showMessage(Utils.ERROR, "Could not identify R Waves in the currently displayed domain", this);
 				return;
 			}
 			xValue = qrs.getArrayValue();
@@ -699,7 +698,7 @@ public class BeatsChartPanel extends ChartPanel {
 		if (keyNum == 0 || keyNum == 1) {
 			// Set the first bound
 			if (selEnd != null && xValue >= selEnd) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat start point must be before the end point.", this);
+				Utils.showMessage(Utils.ERROR, "Beat start point must be before the end point.", this);
 				return;
 			}
 			if (selStartMarker != null) {
@@ -718,7 +717,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 			// Set the second
 			if (selStart != null && xValue <= selStart) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Beat end point must be after the start point.", this);
+				Utils.showMessage(Utils.ERROR, "Beat end point must be after the start point.", this);
 				return;
 			}
 			if (selEndMarker != null) {
@@ -800,7 +799,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 		QRS[] closest = getClosestQRSAboveBelow(cr);
 		if (closest == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not identify R Waves in the currently displayed domain", this);
+			Utils.showMessage(Utils.ERROR, "Could not identify R Waves in the currently displayed domain", this);
 			return;
 		}
 
@@ -848,7 +847,7 @@ public class BeatsChartPanel extends ChartPanel {
 
 		// Validate
 		if (currBeats.isEmpty()) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "At least one beat needs to be selected", this);
+			Utils.showMessage(Utils.ERROR, "At least one beat needs to be selected", this);
 			return null;
 		}
 
@@ -863,7 +862,7 @@ public class BeatsChartPanel extends ChartPanel {
 		// see if one exists with similar name
 		for (BeatSelection bs : beatSelections.keySet()) {
 			if (name.equalsIgnoreCase(bs.getName().trim())) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There is already a selection with this name!", null);
+				Utils.showMessage(Utils.ERROR, "There is already a selection with this name!", null);
 				return null;
 			}
 		}

@@ -24,7 +24,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
@@ -330,7 +329,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		btnPF = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_ALIGN_PF));
 		btnPF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent action) {
-				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnPF.getHelpMessage(), compForPosition);
+				Utils.showMessage(Utils.INFO, btnPF.getHelpMessage(), compForPosition);
 			}
 		});
 	
@@ -793,7 +792,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 					txtSavPolynomialOrder.getText().trim());
 			filterSettings = settings;
 		} catch (Exception e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, e.getMessage(), this);
+			Utils.showMessage(Utils.ERROR, e.getMessage(), this);
 			return false;
 		}
 
@@ -869,7 +868,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 			hd = tempData.getData().copyWithYAlignment(headerlower, headerhigher, indexLower, indexHigher,
 					allowAlignWrap, allowAlignWrapExcessivelyDiscordant);
 		} catch (Exception e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, e.getMessage(), this);
+			Utils.showMessage(Utils.ERROR, e.getMessage(), this);
 			return null;
 		}
 		return hd;
@@ -887,7 +886,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		Double timeAlignPressure = pnlGraphPF.getPressureAlignTime();
 		double[] xData = wiaDataPreview.getData().getXData();
 		if (timeAlignFlow == null || timeAlignPressure == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Please set a time to align in both flow and pressure graphs", pnlGraphPF);
+			Utils.showMessage(Utils.ERROR, "Please set a time to align in both flow and pressure graphs", pnlGraphPF);
 			return;
 		}
 

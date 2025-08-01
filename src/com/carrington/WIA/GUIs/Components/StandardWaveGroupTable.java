@@ -138,7 +138,7 @@ public class StandardWaveGroupTable extends JTable {
 					}
 
 					if (currRow == -1) {
-						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "This group already exists!", ref.get());
+						Utils.showMessage(Utils.ERROR, "This group already exists!", ref.get());
 						model.setValueAt(stats.getWaveGrouping().get(row).getName(), row, column);
 					} else {
 						stats.getWaveGrouping().get(row).setName(newName);

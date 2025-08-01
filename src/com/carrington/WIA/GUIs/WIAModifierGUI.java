@@ -20,7 +20,6 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -315,7 +314,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 					return;
 				String errors = Saver.saveData(fileToSave, data);
 				if (errors != null) {
-					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error occurred while saving: " + errors, ref.get());
+					Utils.showMessage(Utils.ERROR, "Error occurred while saving: " + errors, ref.get());
 					btnSaveMetrics.setIcon(Utils.IconFail);
 				} else {
 					btnSaveMetrics.setIcon(Utils.IconSuccess);
@@ -383,7 +382,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 			data = WIAData.deserialize(file);
 			data.retryCalculations();
 		} catch (Exception e) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
+			Utils.showMessage(Utils.ERROR, 
 					"Could not open file " + file.getName() + " due to an error. System error msg: " + e.getMessage(),
 					this);
 			return;
@@ -438,7 +437,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 				}
 
 			} catch (Exception ex) {
-				Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
+				Utils.showMessage(Utils.ERROR, 
 						"Unable to save the current WIA data state. This may be due to lack of permissions to save in the current "
 								+ "directory. You will not be able to re-edit wave selections at a later point. System error msg: "
 								+ ex.getMessage(),
@@ -539,7 +538,7 @@ public class WIAModifierGUI extends JFrame implements WIACaller {
 	 */
 	public File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
 		if (currFile == null || fileNameForm == null) {
-			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No file to save to.", null);
+			Utils.showMessage(Utils.ERROR, "No file to save to.", null);
 			return null;
 		}
 
