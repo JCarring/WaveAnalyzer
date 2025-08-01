@@ -8,6 +8,9 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,13 +25,17 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -37,6 +44,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
@@ -180,7 +188,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		} else if (saveChoices == null) {
 			throw new IllegalArgumentException("Saving choices cannot be null");
 		}
-		
+
 		this.saveSettingsGUI = new WIASaveSettingsGUI(saveChoices);
 		this.wiaData = wiaData;
 		this.wiaCaller = wiaCaller;
@@ -224,6 +232,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		initWIA();
 		initPnlDisplaySetting(pr != null ? pr.isAllowWrap() : true, pr != null ? pr.isAllowWrapIgnoreEnds() : false);
 		initPnlButtons();
+		initKeyMaps();
 
 		GroupLayout gl_contentPane = new GroupLayout(contentPane);
 		gl_contentPane.setHorizontalGroup(gl_contentPane.createParallelGroup(Alignment.LEADING)
@@ -418,7 +427,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		// Bottom graphs
 		pnlGraphWIANet = NetWaveChartPanel.generate(wiaData, Utils.getTextFont(false));
 		pnlGraphWIANet.setBorder(new LineBorder(new Color(0, 0, 0)));
-		pnlGraphPF = PressureFlowChartPanel.generate(wiaData, Utils.getTextFont(false));
+		pnlGraphPF = PressureFlowChartPanel.generate(wiaData, false, Utils.getTextFont(false));
 		pnlGraphPF.setBorder(new LineBorder(new Color(0, 0, 0)));
 		pnlGraphPF.setCyclePickListener(this);
 
@@ -736,8 +745,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 								wiaData.getWIBackward(), wiaData.getSepFlowForwardDeriv(),
 								wiaData.getSepFlowBackwardDeriv(), new double[] { 2, 1 });
 					} catch (Exception e1) {
-						Utils.showMessage(Utils.ERROR,
-								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
+						Utils.showMessage(Utils.ERROR, "Could not save to file. System error msg: " + e1.getMessage(),
+								ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
 						return;
@@ -753,8 +762,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						pnlGraphWIASep.saveChartAsSVG(fileToSaveDisplay);
 
 					} catch (Exception e1) {
-						Utils.showMessage(Utils.ERROR,
-								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
+						Utils.showMessage(Utils.ERROR, "Could not save to file. System error msg: " + e1.getMessage(),
+								ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
 						return;
@@ -984,6 +993,41 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	}
 
 	/**
+	 * Creates action mapping for specific keyboard keys
+	 */
+	private void initKeyMaps() {
+
+		JRootPane pane = getRootPane();
+		InputMap inputMap = pane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+		ActionMap actionMap = pane.getActionMap();
+
+		// Keys to bind
+		int[] keys = { KeyEvent.VK_S, KeyEvent.VK_D, KeyEvent.VK_P, KeyEvent.VK_F, KeyEvent.VK_R, KeyEvent.VK_E,
+				KeyEvent.VK_SPACE, KeyEvent.VK_Y, KeyEvent.VK_1, KeyEvent.VK_2, KeyEvent.VK_3, KeyEvent.VK_4,
+				KeyEvent.VK_5, KeyEvent.VK_6 };
+
+		for (int key : keys) {
+			String actionName = "pressed" + key;
+			KeyStroke keyStroke = KeyStroke.getKeyStroke(key, 0, false);
+
+			inputMap.put(keyStroke, actionName);
+			actionMap.put(actionName, new AbstractAction() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					Point mousePoint = MouseInfo.getPointerInfo().getLocation();
+					KeyActionReceiver receiver = getChartPanelAtPoint(mousePoint);
+					if (receiver != null) {
+						receiver.keyPressed(key); // This method should exist in your KeyActionReceiver interface/class
+					}
+				}
+			});
+		}
+
+	}
+
+	/**
 	 * Sets up specified text fields to be non-editable and non-focusable.
 	 * 
 	 * @param fields The text fields to configure.
@@ -1005,7 +1049,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				updateDisplayForAddedWave(wave);
 			}
 		}
-		
+
 		// the panels will handle their own modifications for startup
 	}
 
@@ -1015,7 +1059,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private void showMetricsPopup() {
 
 		wiaData.retryCalculations();
-		
+
 		DecimalFormat nf = new DecimalFormat("0.##");
 
 		StringBuilder sb = new StringBuilder();
@@ -1158,8 +1202,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		Double timeAlignPressure = pnlGraphPF.getPressureAlignTime();
 		double[] xData = wiaData.getData().getXData();
 		if (timeAlignFlow == null || timeAlignPressure == null) {
-			Utils.showMessage(Utils.ERROR, "Please set a time to align in both flow and pressure graphs",
-					pnlGraphPF);
+			Utils.showMessage(Utils.ERROR, "Please set a time to align in both flow and pressure graphs", pnlGraphPF);
 			return;
 		}
 
@@ -1276,6 +1319,35 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	}
 
 	/**
+	 * Finds the specific ChartPanel instance (which is a {@link KeyActionReceiver})
+	 * at a given point within the dialog.
+	 * <p>
+	 * This method works by first finding the deepest visible component at the
+	 * specified coordinates and then walking up the component hierarchy to check if
+	 * it is, or is contained within, one of the three primary chart panels.
+	 *
+	 * @param p The point in the coordinate system of the WavePickerGUI dialog.
+	 * @return The specific KeyActionReceiver instance at the point, or {@code null}
+	 *         if the point is not over any of them.
+	 */
+	private KeyActionReceiver getChartPanelAtPoint(Point p) {
+		
+		Rectangle chartBoundsPF = new Rectangle(pnlGraphPF.getLocationOnScreen(), pnlGraphPF.getSize());
+		Rectangle chartBoundsNet = new Rectangle(pnlGraphWIANet.getLocationOnScreen(), pnlGraphWIANet.getSize());
+		Rectangle chartBoundsSep = new Rectangle(pnlGraphWIASep.getLocationOnScreen(), pnlGraphWIASep.getSize());
+
+		if (chartBoundsPF.contains(p)) {
+			return pnlGraphPF;
+		} else if (chartBoundsNet.contains(p)) {
+			return pnlGraphWIANet;
+		} else if (chartBoundsSep.contains(p)) {
+			return pnlGraphWIASep;
+		} else {
+			return null;
+		}
+	}
+
+	/**
 	 * 
 	 * @return true if validation successful, false otherwise
 	 */
@@ -1315,6 +1387,18 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	public void updateDisplayForAddedWave(Wave wave) {
 
 		tableWaves.addWave(wave);
+	}
+
+	/**
+	 * Callback method from {@link WavePickListener} to update the display when a
+	 * wave is remove.
+	 * 
+	 * @param wave The wave that was removed.
+	 */
+	@Override
+	public void updateDisplayForRemovedWave(Wave wave) {
+
+		tableWaves.removeWave(wave);
 	}
 
 	/**

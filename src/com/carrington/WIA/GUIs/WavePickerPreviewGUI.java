@@ -4,11 +4,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -16,19 +20,25 @@ import java.awt.event.WindowEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
+import javax.swing.InputMap;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
+import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
@@ -195,6 +205,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		initWIA();
 		initPnlDisplaySetting(allowAlignWrap, allowWrapDiscordance, maintainSettings);
 		initPnlButtons();
+		initKeyMaps();
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -273,7 +284,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 		splitTop.setLeftComponent(pnlGraphWIASep);
 
-		pnlGraphPF = PressureFlowChartPanel.generate(wiaDataPreview, Utils.getTextFont(false));
+		pnlGraphPF = PressureFlowChartPanel.generate(wiaDataPreview, true, Utils.getTextFont(false));
 		pnlGraphPF.setCyclePickListener(this);
 		pnlGraphPF.setBorder(new LineBorder(new Color(0, 0, 0)));
 
@@ -624,7 +635,7 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	 * Initializes the bottom button panel with "Done", "Next Preview", and "Last
 	 * Preview" buttons.
 	 */
-	public void initPnlButtons() {
+	private void initPnlButtons() {
 
 		pnlWIAButtons = new JPanel();
 		pnlWIAButtons.setBackground(pnlLightGray);
@@ -691,6 +702,40 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 		flowLayout.setHgap(10);
 		flowLayout.setAlignment(FlowLayout.TRAILING);
 		pnlWIAButtons.setBorder(new LineBorder(new Color(0, 0, 0)));
+	}
+	
+	/**
+	 * Creates action mapping for specific keyboard keys
+	 */
+	private void initKeyMaps() {
+
+		JRootPane pane = getRootPane();
+		InputMap inputMap = pane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+		ActionMap actionMap = pane.getActionMap();
+
+		// Keys to bind
+		int[] keys = { KeyEvent.VK_P, KeyEvent.VK_F, KeyEvent.VK_R,
+				KeyEvent.VK_SPACE};
+
+		for (int key : keys) {
+			String actionName = "pressed" + key;
+			KeyStroke keyStroke = KeyStroke.getKeyStroke(key, 0, false);
+
+			inputMap.put(keyStroke, actionName);
+			actionMap.put(actionName, new AbstractAction() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					Point mousePoint = MouseInfo.getPointerInfo().getLocation();
+					KeyActionReceiver receiver = getChartPanelAtPoint(mousePoint);
+					if (receiver != null) {
+						receiver.keyPressed(key); // This method should exist in your KeyActionReceiver interface/class
+					}
+				}
+			});
+		}
+
 	}
 
 	/**
@@ -998,6 +1043,35 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 	public void setReadyAlign(boolean ready) {
 		this.btnAlign.setEnabled(ready);
 	}
+	
+	/**
+	 * Finds the specific ChartPanel instance (which is a {@link KeyActionReceiver})
+	 * at a given point within the dialog.
+	 * <p>
+	 * This method works by first finding the deepest visible component at the
+	 * specified coordinates and then walking up the component hierarchy to check if
+	 * it is, or is contained within, one of the three primary chart panels.
+	 *
+	 * @param p The point in the coordinate system of the WavePickerGUI dialog.
+	 * @return The specific KeyActionReceiver instance at the point, or {@code null}
+	 *         if the point is not over any of them.
+	 */
+	private KeyActionReceiver getChartPanelAtPoint(Point p) {
+		
+		Rectangle chartBoundsPF = new Rectangle(pnlGraphPF.getLocationOnScreen(), pnlGraphPF.getSize());
+		Rectangle chartBoundsNet = new Rectangle(pnlGraphWIANet.getLocationOnScreen(), pnlGraphWIANet.getSize());
+		Rectangle chartBoundsSep = new Rectangle(pnlGraphWIASep.getLocationOnScreen(), pnlGraphWIASep.getSize());
+
+		if (chartBoundsPF.contains(p)) {
+			return pnlGraphPF;
+		} else if (chartBoundsNet.contains(p)) {
+			return pnlGraphWIANet;
+		} else if (chartBoundsSep.contains(p)) {
+			return pnlGraphWIASep;
+		} else {
+			return null;
+		}
+	}
 
 	/**
 	 * A container for the results of a wave-picking preview, including filter
@@ -1110,6 +1184,12 @@ public class WavePickerPreviewGUI extends JDialog implements PFPickListener, Wav
 
 		}
 
+	}
+	
+	
+	@Override
+	public void updateDisplayForRemovedWave(Wave wave) {
+		// Do nothing - this is onlly a preview
 	}
 
 	private static String _formatToOneDecimal(double number) {

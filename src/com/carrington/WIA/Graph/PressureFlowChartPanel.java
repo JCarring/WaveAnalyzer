@@ -10,7 +10,6 @@ import java.awt.FontMetrics;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -20,10 +19,6 @@ import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Field;
 import java.text.AttributedString;
 
-import javax.swing.AbstractAction;
-import javax.swing.InputMap;
-import javax.swing.JComponent;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import org.jfree.chart.ChartPanel;
@@ -42,6 +37,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.DataStructures.WIAData;
+import com.carrington.WIA.GUIs.KeyActionReceiver;
 import com.carrington.WIA.IO.Header;
 
 /**
@@ -50,7 +46,7 @@ import com.carrington.WIA.IO.Header;
  * such as selecting systole/diastole points and aligning the pressure and flow
  * waveforms.
  */
-public class PressureFlowChartPanel extends ChartPanel {
+public class PressureFlowChartPanel extends ChartPanel implements KeyActionReceiver {
 
 	private static final long serialVersionUID = 5158158439696012597L;
 
@@ -93,6 +89,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 	private PFPickListener cyclePickListener;
 
 	private final Font fontCustom;
+	private final boolean isPreview;
 
 	/**
 	 * Factory method to generate a {@link PressureFlowChartPanel} instance.
@@ -101,9 +98,9 @@ public class PressureFlowChartPanel extends ChartPanel {
 	 * @param font The font to be used for chart labels and titles.
 	 * @return A new {@link PressureFlowChartPanel} instance.
 	 */
-	public static PressureFlowChartPanel generate(WIAData data, Font font) {
+	public static PressureFlowChartPanel generate(WIAData data, boolean isPreview, Font font) {
 
-		return new PressureFlowChartPanel(PressureFlowChart.generate(data, font), data, font);
+		return new PressureFlowChartPanel(PressureFlowChart.generate(data, font), data, isPreview, font);
 
 	}
 
@@ -114,10 +111,11 @@ public class PressureFlowChartPanel extends ChartPanel {
 	 * @param wiaData The data associated with the chart.
 	 * @param font    The font used for styling.
 	 */
-	private PressureFlowChartPanel(PressureFlowChart chart, WIAData wiaData, Font font) {
+	private PressureFlowChartPanel(PressureFlowChart chart, WIAData wiaData, boolean isPreview, Font font) {
 		super(chart);
 		this.wiaData = wiaData;
 		this.fontCustom = font;
+		this.isPreview = isPreview;
 
 		if (this.wiaData.getData().getHeaderByFlag(HemoData.TYPE_PRESSURE).isEmpty()) {
 			throw new IllegalArgumentException("No pressure data - developer error");
@@ -149,59 +147,6 @@ public class PressureFlowChartPanel extends ChartPanel {
 			e.printStackTrace();
 		}
 		this.setPreferredSize(new Dimension(380, 420)); // may not need
-
-		InputMap map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0, false), "SelectSystole");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0, false), "SelectDiastole");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, 0, false), "SelectOne");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0, false), "SelectTwo");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0, false), "Reset");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0, false), "SelectEnd");
-
-		getActionMap().put("SelectSystole", new AbstractAction() {
-			private static final long serialVersionUID = 6919077207718273427L;
-
-			public void actionPerformed(ActionEvent e) {
-				attemptSelectCycle(0);
-			}
-		});
-		getActionMap().put("SelectDiastole", new AbstractAction() {
-			private static final long serialVersionUID = 6919077207718273427L;
-
-			public void actionPerformed(ActionEvent e) {
-				attemptSelectCycle(1);
-			}
-		});
-		getActionMap().put("SelectEnd", new AbstractAction() {
-
-			private static final long serialVersionUID = 8994753079285178187L;
-
-			public void actionPerformed(ActionEvent e) {
-				attemptSelectingCycleEnd();
-			}
-		});
-
-		getActionMap().put("SelectOne", new AbstractAction() {
-			private static final long serialVersionUID = 6919077207718273427L;
-
-			public void actionPerformed(ActionEvent e) {
-				attemptSelectAlignValues(0);
-			}
-		});
-		getActionMap().put("SelectTwo", new AbstractAction() {
-			private static final long serialVersionUID = 6919077207718273427L;
-
-			public void actionPerformed(ActionEvent e) {
-				attemptSelectAlignValues(1);
-			}
-		});
-		getActionMap().put("Reset", new AbstractAction() {
-			private static final long serialVersionUID = 6919077207718273427L;
-
-			public void actionPerformed(ActionEvent e) {
-				resetAllSelections();
-			}
-		});
 
 		addMouseListener(new MouseListener() {
 
@@ -930,6 +875,44 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		// Repaint the panel to reflect the new data
 		repaint();
+	}
+	
+	@Override
+	public void keyPressed(int key) {
+		
+		if (isPreview) {
+			switch (key) {
+			case KeyEvent.VK_P:
+				attemptSelectAlignValues(0);
+				break;
+			case KeyEvent.VK_F:
+				attemptSelectAlignValues(1);
+				break;
+			}
+		} else {
+			switch (key) {
+			case KeyEvent.VK_S:
+				attemptSelectCycle(0);
+				break;
+			case KeyEvent.VK_D:
+				attemptSelectCycle(1);
+				break;
+			case KeyEvent.VK_E:
+				attemptSelectingCycleEnd();
+				break;
+			case KeyEvent.VK_P:
+				attemptSelectAlignValues(0);
+				break;
+			case KeyEvent.VK_F:
+				attemptSelectAlignValues(1);
+				break;
+			case KeyEvent.VK_R:
+				resetAllSelections();
+				break;
+			}
+		}
+		
+				
 	}
 
 	/**

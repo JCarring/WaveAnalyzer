@@ -10,7 +10,6 @@ import java.awt.FontMetrics;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -20,13 +19,12 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.text.AttributedString;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.swing.AbstractAction;
-import javax.swing.JComponent;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import org.jfree.chart.ChartPanel;
@@ -52,6 +50,7 @@ import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.Wave;
 import com.carrington.WIA.Cardio.Wave.WaveClassification;
 import com.carrington.WIA.DataStructures.WIAData;
+import com.carrington.WIA.GUIs.KeyActionReceiver;
 
 /**
  * An interactive {@link ChartPanel} for displaying and selecting separated
@@ -59,7 +58,7 @@ import com.carrington.WIA.DataStructures.WIAData;
  * and classify them. It can operate in a full interaction mode or a
  * preview-only mode.
  */
-public class SepWavePanel extends ChartPanel {
+public class SepWavePanel extends ChartPanel implements KeyActionReceiver {
 
 	private static final long serialVersionUID = 3212824059614453595L;
 
@@ -132,117 +131,14 @@ public class SepWavePanel extends ChartPanel {
 		this.setPreferredSize(new Dimension(380, 420)); // may not need
 
 		if (!isPreviewOnly) {
+			
 			trace = true;
 			setHorizontalAxisTrace(true);
-
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_C, 0, false),
-					"resetWaveSel");
-
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_A, 0, false),
-					"selectWave");
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_Q, 0, false),
-					"selectWave");
-
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_1, 0, false),
-					"selectWave" + WaveClassification.FCW);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_2, 0, false),
-					"selectWave" + WaveClassification.FDW);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_3, 0, false),
-					"selectWave" + WaveClassification.LFCW);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_4, 0, false),
-					"selectWave" + WaveClassification.EBCW);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_5, 0, false),
-					"selectWave" + WaveClassification.LBCW);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_6, 0, false),
-					"selectWave" + WaveClassification.BDW);
-
-			getActionMap().put("resetWaveSel", new AbstractAction() {
-				private static final long serialVersionUID = 6919077207718273427L;
-
-				public void actionPerformed(ActionEvent e) {
-					resetCurrWaveSelection();
-				}
-			});
-			getActionMap().put("selectWave", new AbstractAction() {
-				private static final long serialVersionUID = 6919077207718273427L;
-
-				public void actionPerformed(ActionEvent e) {
-
-					attemptSelection(null);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.FCW, new AbstractAction() {
-
-				private static final long serialVersionUID = 300853894445066458L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.FCW);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.FDW, new AbstractAction() {
-
-				private static final long serialVersionUID = -7656959467284613321L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.FDW);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.LFCW, new AbstractAction() {
-
-				private static final long serialVersionUID = 4057340779087888417L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.LFCW);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.EBCW, new AbstractAction() {
-
-				private static final long serialVersionUID = -591002539560800328L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.EBCW);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.LBCW, new AbstractAction() {
-
-				private static final long serialVersionUID = -4265561884150414070L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.LBCW);
-				}
-			});
-			getActionMap().put("selectWave" + WaveClassification.BDW, new AbstractAction() {
-
-				private static final long serialVersionUID = -5471644907418706613L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptSelection(WaveClassification.BDW);
-				}
-			});
+			
 		} else {
 			trace = false;
 			setHorizontalAxisTrace(false);
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0, false),
-					"selectDummyWave");
-
-			getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0, false),
-					"resetDummyWave");
-
-			getActionMap().put("selectDummyWave", new AbstractAction() {
-				private static final long serialVersionUID = 6919077207718273427L;
-
-				public void actionPerformed(ActionEvent e) {
-					attemptDummySelection();
-				}
-			});
-
-			getActionMap().put("resetDummyWave", new AbstractAction() {
-				private static final long serialVersionUID = 6919077207718273427L;
-
-				public void actionPerformed(ActionEvent e) {
-					resetCurrWaveSelection();
-				}
-			});
+			
 		}
 
 		addMouseListener(new MouseListener() {
@@ -435,6 +331,53 @@ public class SepWavePanel extends ChartPanel {
 		}
 
 	}
+	
+	/**
+	 * Deletes wave where the mouse is at, if one exists
+	 */
+	private void deleteWaveSelection() {
+		if (isPreviewOnly) return;
+		
+		double[] xy = getXYValueFromScreenPos();
+
+		if (xy == null)
+			return; // point was not within the chart
+
+		double[] validTime = this.wiaData.getData().getXData();
+
+		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
+			// there wouldn't be a wave here
+			return;
+		}
+
+		boolean isProx = (xy[1] >= 0);
+		
+		List<Wave> wavesToRemove = new ArrayList<Wave>();
+		
+		for (Wave waveQuery : wiaData.getWaves()) {
+			
+			if (isProx != waveQuery.isProximal()) {
+				continue;
+			}
+			double[] waveTime = waveQuery.getBoundsTime();
+			
+			if (xy[0] >= waveTime[0] && xy[0] <= waveTime[1]) {
+				wavesToRemove.add(waveQuery);
+			}
+		}
+		
+		if (!wavesToRemove.isEmpty()) {
+			for (Wave waveToRemove : wavesToRemove) {
+				removeWave(waveToRemove);
+				if (waveListener != null) {
+					waveListener.updateDisplayForRemovedWave(waveToRemove);
+				}
+			}
+			
+		}
+
+		
+	}
 
 	/**
 	 * Attempts to select a wave point. Will display error message if needed.
@@ -507,7 +450,7 @@ public class SepWavePanel extends ChartPanel {
 			if (wiaData.containsMatchingWave(wave)) {
 				Utils.showMessage(Utils.ERROR, "There is already a wave with the name " + abbrev + ".", this);
 				return;
-			} // testing need to comment out
+			}
 			XYPlot plot = getChart().getXYPlot();
 			plot.removeAnnotation(currentBounds[0].boundMarker);
 			plot.removeAnnotation(currentBounds[1].boundMarker);
@@ -550,7 +493,6 @@ public class SepWavePanel extends ChartPanel {
 			return; // point was not within the chart
 
 		double[] validTime = this.wiaData.getData().getXData();
-		// double[] validTime = time; // for testing
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
 			Utils.showMessage(Utils.ERROR, "Selected point was outside of the acceptable range.", this);
@@ -760,6 +702,55 @@ public class SepWavePanel extends ChartPanel {
 		return null;
 	}
 
+	@Override
+	public void keyPressed(int key) {
+		
+		if (isPreviewOnly) {
+			switch (key) {
+			case KeyEvent.VK_SPACE:
+				attemptDummySelection();
+				break;
+			case KeyEvent.VK_R:
+				resetCurrWaveSelection();
+				break;
+			}
+			
+		} else {
+			switch (key) {
+			case KeyEvent.VK_R:
+				resetCurrWaveSelection();
+				break;
+			case KeyEvent.VK_SPACE:
+				attemptSelection(null);
+				break;
+			case KeyEvent.VK_D:
+				deleteWaveSelection();
+				break;
+			case KeyEvent.VK_1:
+				attemptSelection(WaveClassification.FCW);
+				break;
+			case KeyEvent.VK_2:
+				attemptSelection(WaveClassification.FDW);
+				break;
+			case KeyEvent.VK_3:
+				attemptSelection(WaveClassification.LFCW);
+				break;
+			case KeyEvent.VK_4:
+				attemptSelection(WaveClassification.EBCW);
+				break;
+			case KeyEvent.VK_5:
+				attemptSelection(WaveClassification.LBCW);
+				break;
+			case KeyEvent.VK_6:
+				attemptSelection(WaveClassification.BDW);
+				break;
+
+			}
+		}
+		
+				
+	}
+	
 	/**
 	 * A private helper class to store information about a selected wave boundary.
 	 */
@@ -794,6 +785,14 @@ public class SepWavePanel extends ChartPanel {
 		 * @param wave the {@link Wave} added
 		 */
 		public void updateDisplayForAddedWave(Wave wave);
+		
+		/**
+		 * Wave chart takes care of removing the wave, this just needs to handle any
+		 * display of wave data outside of the chart.
+		 * 
+		 * @param wave the {@link Wave} removed
+		 */
+		public void updateDisplayForRemovedWave(Wave wave);
 
 	}
 

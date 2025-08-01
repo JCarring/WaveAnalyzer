@@ -22,13 +22,14 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.WIAData;
+import com.carrington.WIA.GUIs.KeyActionReceiver;
 
 /**
  * A specialized {@link ChartPanel} designed to display net wave intensity data from a
  * {@link WIAData} object. It encapsulates a {@link NetWaveChart} and provides
  * methods for its creation and manipulation.
  */
-public class NetWaveChartPanel extends ChartPanel {
+public class NetWaveChartPanel extends ChartPanel implements KeyActionReceiver {
 
 	private static final long serialVersionUID = 5158158439696012597L;
 
@@ -126,6 +127,11 @@ public class NetWaveChartPanel extends ChartPanel {
 
 		// Repaint the panel to reflect the new data.
 		repaint();
+	}
+	
+	@Override
+	public void keyPressed(int key) {
+		// Does not handle any key events
 	}
 
 	/**
@@ -334,5 +340,7 @@ public class NetWaveChartPanel extends ChartPanel {
 		}
 
 	}
+
+	
 
 }
