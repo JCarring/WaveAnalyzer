@@ -1,20 +1,39 @@
 package com.carrington.WIA.GUIs;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.border.EmptyBorder;
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.JDialog;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.BevelBorder;
+import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import org.jfree.chart.plot.Marker;
@@ -22,32 +41,11 @@ import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.ui.RectangleInsets;
 
-import com.carrington.WIA.Graph.CustomLinesChartPanel;
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.DataStructures.HemoData;
 import com.carrington.WIA.GUIs.Components.JCButton;
 import com.carrington.WIA.Graph.CustomLinesChart;
-
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.JSeparator;
-import javax.swing.JTextArea;
-
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.event.ActionEvent;
+import com.carrington.WIA.Graph.CustomLinesChartPanel;
 
 /**
  * A dialog for trimming a {@link HemoData} object by selecting start and end
@@ -446,7 +444,7 @@ public class TrimGUI extends JDialog {
 	private boolean _validateTrim(double trim, boolean right) {
 
 		if (trim <= this.validRangeX[0] || trim >= this.validRangeX[1]) {
-			Utils.showError("Invalid trim. Must be withinin data range.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Must be withinin data range.", this);
 
 			return false;
 		}
@@ -458,7 +456,7 @@ public class TrimGUI extends JDialog {
 
 				return true;
 			} else {
-				Utils.showError("Invalid trim. Right trim must be further to RIGHT than left trim.", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Right trim must be further to RIGHT than left trim.", this);
 				return false;
 			}
 		} else {
@@ -467,7 +465,7 @@ public class TrimGUI extends JDialog {
 			if (trim < maxValidLeft) {
 				return true;
 			} else {
-				Utils.showError("Invalid trim. Left trim must be further to LEFT than right trim.", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid trim. Left trim must be further to LEFT than right trim.", this);
 
 				return false;
 			}

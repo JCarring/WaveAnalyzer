@@ -31,6 +31,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -535,7 +536,7 @@ public class BeatSelectorGUI extends JDialog implements SelectionTableListener, 
 		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_SELECT_BEATS));
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showInfo(btnHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnHelp.getHelpMessage(), ref.get());
 			}
 		});
 

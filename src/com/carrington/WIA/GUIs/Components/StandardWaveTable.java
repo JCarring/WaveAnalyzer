@@ -147,7 +147,7 @@ public class StandardWaveTable extends JTable {
 					}
 
 					if (currRow == -1) {
-						Utils.showError("This wave already exists!", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "This wave already exists!", ref.get());
 						model.setValueAt(stats.getWaves().get(row).getName(), row, column);
 					} else {
 						stats.getWaves().get(row).setName(newName);

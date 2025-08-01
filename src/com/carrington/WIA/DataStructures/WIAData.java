@@ -23,7 +23,7 @@ import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.Wave;
-import com.carrington.WIA.Cardio.WaveClassification;
+import com.carrington.WIA.Cardio.Wave.WaveClassification;
 import com.carrington.WIA.IO.Header;
 
 /**
@@ -85,6 +85,7 @@ public class WIAData implements Serializable {
 	private Double vesselDiameter = null;
 	/** Represents the original data before any shifting **/
 	private HemoData originalData = null;
+	private Double cycleEndManual = null; // TODO: could consider a smarter version where this is automatic
 
 	//////////////////////////////////////////////////////////////////
 	//////////////////////////////////////////////////////////////////
@@ -101,8 +102,12 @@ public class WIAData implements Serializable {
 	private transient Double cfr = null;
 	private transient Double percIncACh = null;
 	private transient Double hMR = null;
+	private transient Double rMR = null; // resting microvascular resistance
 
-	/** constant denoting location of diameter of coronary artery used for calculation of flow */
+	/**
+	 * constant denoting location of diameter of coronary artery used for
+	 * calculation of flow
+	 */
 	public static transient final String DIAMETER_MID = "Mid";
 	/** Constant used for calculation. Units are kg * m^-3 */
 	private static final double density = 1050.0d;
@@ -579,9 +584,6 @@ public class WIAData implements Serializable {
 	 */
 	public boolean isUserSelectionAdequate() {
 		return this.waves.size() >= 2;
-		// TODO consider also checking the systole and diastole. The waves size is a
-		// HARD cutoff but the systole
-		// and diastole times are not
 	}
 
 	/**
@@ -636,6 +638,127 @@ public class WIAData implements Serializable {
 	 */
 	public Double getDiastoleTime() {
 		return this.diastoleTime;
+	}
+
+	/**
+	 * Sets the cycle end by the index of the corresponding value in the time array.
+	 * If outside of the array of time, will reset the value
+	 * 
+	 * @param index the index of end of cycle (inclusive)
+	 */
+	public void setManualCycleEndIndex(int index) {
+		if (index < 0 || index >= getTime().length) {
+			cycleEndManual = null;
+			return;
+		}
+		cycleEndManual = getTime()[index];
+	}
+	
+	/**
+	 * Gets the cycle end by the index of the corresponding value in the time array.
+	 * 
+	 * @return the time (ms) of cycle end, or null if not picked
+	 */
+	public Double getManualCycleEnd() {
+		return cycleEndManual;
+	}
+
+	/**
+	 * Calculates the diastole duration. If systole or diastole are not set, will
+	 * return null. This also assumes the data are 1 cardiac cyce, or if not the
+	 * user has set a custom cycle end with {@link #setManualCycleEndIndex(int)}
+	 * 
+	 * @return diastole duration in milliseconds
+	 */
+	public Double getDiastoleDuration() {
+
+		if (!isValidDouble(systoleTime, diastoleTime)) {
+			// systole or diastole was not set by the user
+			return null;
+		}
+		double[] time = getTime();
+		double end = isValidDouble(cycleEndManual) ? cycleEndManual : time[time.length - 1];
+
+		if (systoleTime > end && diastoleTime > end) {
+			return null;
+		}
+
+		double diastoleDuration;
+		if (diastoleTime > systoleTime) {
+			diastoleDuration = (end - diastoleTime) + (systoleTime - time[0]);
+		} else {
+			diastoleDuration = systoleTime - diastoleTime;
+
+		}
+
+		return diastoleDuration;
+	}
+
+	/**
+	 * Returns the time from onsets of diastole to peak flow. If systole or diastole
+	 * are not set, will return null. This also assumes the data are 1 cardiac cyce,
+	 * or if not the user has set a custom cycle end with
+	 * {@link #setManualCycleEndIndex(int)}
+	 *
+	 * @return the duration
+	 */
+	public Double getDiastoleToFlowPeakDuration() {
+
+		if (!isValidDouble(systoleTime, diastoleTime)) {
+			// systole or diastole was not set by the user
+			return null;
+		}
+
+		double[] flow = getRawFlow();
+		double[] time = getTime();
+		int indexSystole = Utils.getClosestIndex(systoleTime, time);
+		int indexDiastole = Utils.getClosestIndex(diastoleTime, time);
+		int indexEnd = isValidDouble(cycleEndManual) ? Utils.getClosestIndex(cycleEndManual, time) : flow.length - 1;
+
+		if (indexSystole > indexEnd && indexDiastole > indexEnd) {
+			return null;
+		}
+
+		double duration;
+
+		if (diastoleTime > systoleTime) {
+			int potentialMaxIndex1 = Utils.getIndexOfMax(flow, indexDiastole, indexEnd);
+			int potentialMaxIndex2 = Utils.getIndexOfMax(flow, 0, indexSystole);
+			if (flow[potentialMaxIndex1] > flow[potentialMaxIndex2]) {
+				duration = time[potentialMaxIndex1] - diastoleTime;
+			} else {
+				duration = (time[indexEnd] - diastoleTime) + (time[potentialMaxIndex2] - time[0]);
+			}
+
+		} else {
+			int maxIndex = Utils.getIndexOfMax(flow, indexDiastole, indexSystole);
+			duration = time[maxIndex] - diastoleTime;
+
+		}
+
+		return duration;
+	}
+
+	/**
+	 * Calculates the cycle length in milliseconds. Several checks are performed
+	 * first:
+	 * 
+	 * <ol>
+	 * <li>If cycle duration is < 250 ms despite above checks, returns null
+	 * </ol>
+	 * 
+	 * @return cycle length or null if cannot calculate
+	 */
+	public Double getCycleDuration() {
+
+		double[] time = getTime();
+		double timeEnd = isValidDouble(cycleEndManual) ? cycleEndManual : time[time.length - 1];
+		double cycleLength = timeEnd - time[0];
+
+		if (cycleLength < 250)
+			return null;
+
+		return cycleLength;
 	}
 
 	/**
@@ -941,7 +1064,7 @@ public class WIAData implements Serializable {
 
 		}
 	}
-	
+
 	/**
 	 * Calculates the peaks and cumulative intensities for a wave.
 	 */
@@ -986,6 +1109,7 @@ public class WIAData implements Serializable {
 
 		// by default, flowAvg in the class is stored in M/S, must be CM/S for
 		// resistance
+
 		this.resistCycle = this.pressureAvg
 				/ (this.flowAvg == 0 ? 0.00001 : Utils.multiply(this.flowAvg, 100).doubleValue());
 
@@ -1183,6 +1307,7 @@ public class WIAData implements Serializable {
 		diastoleFlow = Double.NaN;
 		diastolePressure = Double.NaN;
 		diastoleTime = Double.NaN;
+		cycleEndManual = null;
 		waves.clear();
 
 		// Clear transient calculated parameters.
@@ -1234,6 +1359,7 @@ public class WIAData implements Serializable {
 
 		retryCalculations();
 
+		// kept in miliseconds at default for ease of displaying
 		rawData.convertXUnits(HemoData.UNIT_MILLISECONDS);
 
 	}
@@ -1389,6 +1515,23 @@ public class WIAData implements Serializable {
 	}
 
 	/**
+	 * Sets the rMR (resting microvascular resistance)
+	 * 
+	 * @param rMR the resistance to set
+	 */
+	public void setRMR(double rMR) {
+		this.rMR = rMR;
+	}
+
+	/**
+	 * @return resting microvascular resistance if set by {@link #setRMR(double)},
+	 *         otherwise null.
+	 */
+	public Double getRMR() {
+		return this.rMR;
+	}
+
+	/**
 	 * @return true if {@link #setCFR(double)} and {@link #setPercIncACh(double)}
 	 *         have been called, and if CFR < 2.5 and percent increase in flow with
 	 *         acetylcholine is < 50%. Otherwise null.
@@ -1407,8 +1550,10 @@ public class WIAData implements Serializable {
 	 * Functional CMD is indicated if CMD is present (see {@link #isCMD()}) and the
 	 * hyperemic microvascular resistance (HMR) is less than 2.5.
 	 * </p>
-	 * @return {@link Boolean#TRUE} if functional CMD is indicated, {@link Boolean#FALSE} if not, or
-	 * null if CMD status or HMR is undetermined.
+	 * 
+	 * @return {@link Boolean#TRUE} if functional CMD is indicated,
+	 *         {@link Boolean#FALSE} if not, or null if CMD status or HMR is
+	 *         undetermined.
 	 */
 	public Boolean isCMDFunctional() {
 
@@ -1426,8 +1571,10 @@ public class WIAData implements Serializable {
 	 * Structural CMD is indicated if CMD is present (see {@link #isCMD()}) and the
 	 * hyperemic microvascular resistance (HMR) is greater than or equal to 2.5.
 	 * </p>
-	 * @return {@link Boolean#TRUE} if structural CMD is indicated, {@link Boolean#FALSE} if not, or
-	 * null if CMD status or HMR is undetermined.
+	 * 
+	 * @return {@link Boolean#TRUE} if structural CMD is indicated,
+	 *         {@link Boolean#FALSE} if not, or null if CMD status or HMR is
+	 *         undetermined.
 	 */
 	public Boolean isCMDStructural() {
 
@@ -1440,47 +1587,55 @@ public class WIAData implements Serializable {
 	}
 
 	/**
-	 * Determines if endothelium-dependent Coronary Microvascular Dysfunction (CMD) is present.
+	 * Determines if endothelium-dependent Coronary Microvascular Dysfunction (CMD)
+	 * is present.
 	 * <p>
-	 * Endothelium-dependent CMD is indicated by a percent increase in flow with acetylcholine (ACh)
-	 * of less than 50%.
+	 * Endothelium-dependent CMD is indicated by a percent increase in flow with
+	 * acetylcholine (ACh) of less than 50%.
 	 * </p>
-	 * @param mutuallyExclusive if true, this method will only return true if endothelium-independent
-	 * CMD is NOT also present (i.e., CFR >= 2.5).
-	 * @return {@link Boolean#TRUE} if endothelium-dependent CMD is indicated, {@link Boolean#FALSE} if not,
-	 * or null if the percent increase with ACh has not been set.
+	 * 
+	 * @param mutuallyExclusive if true, this method will only return true if
+	 *                          endothelium-independent CMD is NOT also present
+	 *                          (i.e., CFR >= 2.5).
+	 * @return {@link Boolean#TRUE} if endothelium-dependent CMD is indicated,
+	 *         {@link Boolean#FALSE} if not, or null if the percent increase with
+	 *         ACh has not been set.
 	 */
 	public Boolean isCMDEndothelialDependent(boolean mutuallyExclusive) {
 
 		if (this.percIncACh != null) {
-			
+
 			if (mutuallyExclusive) {
 				// if no CFR value, assume not endo indep disease. Otherwise check it
-				return this.percIncACh < 50 && (this.cfr != null ? cfr >= 2.5 : true); 
+				return this.percIncACh < 50 && (this.cfr != null ? cfr >= 2.5 : true);
 			} else {
 				return this.percIncACh < 50;
 			}
-			
+
 		} else {
 			return null;
 		}
 	}
 
 	/**
-	 * Determines if endothelium-independent Coronary Microvascular Dysfunction (CMD) is present.
+	 * Determines if endothelium-independent Coronary Microvascular Dysfunction
+	 * (CMD) is present.
 	 * <p>
-	 * Endothelium-independent CMD is indicated by a Coronary Flow Reserve (CFR) of less than 2.5.
+	 * Endothelium-independent CMD is indicated by a Coronary Flow Reserve (CFR) of
+	 * less than 2.5.
 	 * </p>
-	 * @param mutuallyExclusive if true, this method will only return true if endothelium-dependent
-	 * CMD is NOT also present (i.e., % increase in flow with ACh >= 50).
-	 * @return {@link Boolean#TRUE} if endothelium-independent CMD is indicated, {@link Boolean#FALSE} if not,
-	 * or null if CFR has not been set.
+	 * 
+	 * @param mutuallyExclusive if true, this method will only return true if
+	 *                          endothelium-dependent CMD is NOT also present (i.e.,
+	 *                          % increase in flow with ACh >= 50).
+	 * @return {@link Boolean#TRUE} if endothelium-independent CMD is indicated,
+	 *         {@link Boolean#FALSE} if not, or null if CFR has not been set.
 	 */
 	public Boolean isCMDEndothelialIndependent(boolean mutuallyExclusive) {
 
 		if (this.cfr != null) {
 			if (mutuallyExclusive) {
-				return this.cfr < 2.5  && (this.percIncACh != null ? percIncACh >= 50 : true);
+				return this.cfr < 2.5 && (this.percIncACh != null ? percIncACh >= 50 : true);
 
 			} else {
 				return this.cfr < 2.5;
@@ -1489,16 +1644,18 @@ public class WIAData implements Serializable {
 			return null;
 		}
 	}
-	
+
 	/**
 	 * Determines if both endothelium-independent and endothelium-dependent Coronary
 	 * Microvascular Dysfunction (CMD) are present simultaneously.
 	 * <p>
-	 * This is indicated by a Coronary Flow Reserve (CFR) less than 2.5 AND a percent
-	 * increase in flow with acetylcholine (ACh) less than 50%.
+	 * This is indicated by a Coronary Flow Reserve (CFR) less than 2.5 AND a
+	 * percent increase in flow with acetylcholine (ACh) less than 50%.
 	 * </p>
-	 * @return {@link Boolean#TRUE} if both conditions are met, {@link Boolean#FALSE} if not, or
-	 * null if either CFR or the percent increase with ACh has not been set.
+	 * 
+	 * @return {@link Boolean#TRUE} if both conditions are met,
+	 *         {@link Boolean#FALSE} if not, or null if either CFR or the percent
+	 *         increase with ACh has not been set.
 	 */
 	public Boolean isCMDEndotheliumIndepAndDep() {
 		if (this.cfr != null && this.percIncACh != null) {
@@ -1510,6 +1667,20 @@ public class WIAData implements Serializable {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * Checks validity of Double
+	 * 
+	 * @param query the numbers to check
+	 * @return true if all are NOT null and NOT {@link Double#NaN}
+	 */
+	public static boolean isValidDouble(Double... query) {
+		for (Double d : query) {
+			if (d == null || d.isNaN())
+				return false;
+		}
+		return true;
 	}
 
 	/**
@@ -1533,9 +1704,10 @@ public class WIAData implements Serializable {
 
 			return data;
 		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
 			throw new SerializationException(
 					"Unable to read WIA data stored state from file. This may be due to lack of access / permission of this program "
-							+ "to read files from your file system. Check administrator privileges. System error msg: "
+							+ "to read files from your file system. Check administrator privileges. System error msg: <br><br>"
 							+ e.getMessage());
 		}
 

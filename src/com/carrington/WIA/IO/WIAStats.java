@@ -216,7 +216,7 @@ public class WIAStats {
 				WIAData.serialize(data, data.getSerializeFileSource());
 
 			} catch (SerializationException e) {
-				Utils.showError("Unable to save to file. (Msg: " + e.getMessage() + ")", null);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Unable to save to file. (Msg: " + e.getMessage() + ")", null);
 			}
 		}
 

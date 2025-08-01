@@ -23,6 +23,7 @@ import java.text.AttributedString;
 import javax.swing.AbstractAction;
 import javax.swing.InputMap;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
@@ -54,23 +55,20 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 	private static final long serialVersionUID = 5158158439696012597L;
 
-	
 	/** The standard color for the pressure line, light blue. */
 	public static final Color standardPressureLineColor = new Color(123, 178, 224, 255);
 	/** A darker color for the pressure line, used for highlighting, blue. */
 	public static final Color darkerPressureLineColor = new Color(0, 82, 153, 255);
 
-	
 	/** The standard color for the flow line, light orange-red. */
 	public static final Color standardFlowLineColor = new Color(239, 111, 90, 255);
 	/** A darker color for the flow line, used for highlighting, red. */
 	public static final Color darkerFlowLineColor = new Color(239, 32, 0, 255);
-	
-	
+
 	/** Mode indicating no selection is active. */
 	public static final int MODE_NONE = 0;
-	/** Mode for selecting systole and diastole points. */
-	public static final int MODE_SYS_DIAS = 1;
+	/** Mode for selecting cycle parameters (systole, diastole, wrap around). */
+	public static final int MODE_CYCLE = 1;
 	/** Mode for aligning waveforms by selecting their peaks. */
 	public static final int MODE_ALIGN_PEAK = 2;
 	/** Mode for aligning waveforms by manually selecting points. */
@@ -80,6 +78,9 @@ public class PressureFlowChartPanel extends ChartPanel {
 	private ValueMarker timeXSystoleMarker = null;
 	private Double timeXDiastole = null;
 	private ValueMarker timeXDiastoleMarker = null;
+	
+	private Double timeXCycleEnd = null;
+	private ValueMarker timeXCycleEndMarker = null;
 
 	private Double timeXPressureAlign = null;
 	private ValueMarker timeXPressureAlignMarker = null;
@@ -104,15 +105,15 @@ public class PressureFlowChartPanel extends ChartPanel {
 	public static PressureFlowChartPanel generate(WIAData data, Font font) {
 
 		return new PressureFlowChartPanel(PressureFlowChart.generate(data, font), data, font);
-	
+
 	}
 
 	/**
 	 * Constructor to initialize the chart panel.
 	 * 
-	 * @param chart The {@link PressureFlowChart} to be displayed.
+	 * @param chart   The {@link PressureFlowChart} to be displayed.
 	 * @param wiaData The data associated with the chart.
-	 * @param font The font used for styling.
+	 * @param font    The font used for styling.
 	 */
 	private PressureFlowChartPanel(PressureFlowChart chart, WIAData wiaData, Font font) {
 		super(chart);
@@ -151,24 +152,48 @@ public class PressureFlowChartPanel extends ChartPanel {
 		this.setPreferredSize(new Dimension(380, 420)); // may not need
 
 		InputMap map = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0, false), "SelectOne");
-		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0, false), "SelectTwo");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_S, 0, false), "SelectSystole");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_D, 0, false), "SelectDiastole");
 		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_P, 0, false), "SelectOne");
 		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_F, 0, false), "SelectTwo");
 		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_R, 0, false), "Reset");
+		map.put(KeyStroke.getKeyStroke(KeyEvent.VK_E, 0, false), "SelectEnd");
+
+		getActionMap().put("SelectSystole", new AbstractAction() {
+			private static final long serialVersionUID = 6919077207718273427L;
+
+			public void actionPerformed(ActionEvent e) {
+				attemptSelectCycle(0);
+			}
+		});
+		getActionMap().put("SelectDiastole", new AbstractAction() {
+			private static final long serialVersionUID = 6919077207718273427L;
+
+			public void actionPerformed(ActionEvent e) {
+				attemptSelectCycle(1);
+			}
+		});
+		getActionMap().put("SelectEnd", new AbstractAction() {
+
+			private static final long serialVersionUID = 8994753079285178187L;
+
+			public void actionPerformed(ActionEvent e) {
+				attemptSelectingCycleEnd();
+			}
+		});
 
 		getActionMap().put("SelectOne", new AbstractAction() {
 			private static final long serialVersionUID = 6919077207718273427L;
 
 			public void actionPerformed(ActionEvent e) {
-				attemptSelect(1);
+				attemptSelectAlignValues(0);
 			}
 		});
 		getActionMap().put("SelectTwo", new AbstractAction() {
 			private static final long serialVersionUID = 6919077207718273427L;
 
 			public void actionPerformed(ActionEvent e) {
-				attemptSelect(2);
+				attemptSelectAlignValues(1);
 			}
 		});
 		getActionMap().put("Reset", new AbstractAction() {
@@ -214,63 +239,67 @@ public class PressureFlowChartPanel extends ChartPanel {
 	}
 
 	/**
-	 * Renders markers on the chart for systole and diastole times if they already exist in the WIAData.
+	 * Renders markers on the chart for systole and diastole times if they already
+	 * exist in the WIAData.
 	 */
 	public void displayExistingChoices() {
 		XYPlot plot = getChart().getXYPlot();
-		if (!Double.isNaN(wiaData.getSystoleTime())) {
+
+		if (WIAData.isValidDouble(wiaData.getSystoleTime())) {
 
 			ValueMarker vm = new ValueMarker(wiaData.getSystoleTime());
 			vm.setLabel("Systole");
 			int[] fontParams = Utils.getFontParams(Utils.getSmallTextFont(), "Systole");
 
-			vm.setLabelOffset(new RectangleInsets((2 * fontParams[0]), -1 * ((3.0 / 4.0) * fontParams[1]), 0, 0));
+			vm.setLabelOffset(new RectangleInsets((fontParams[0]), -1 * ((3.0 / 4.0) * fontParams[1]), 0, 0));
 			vm.setLabelFont(Utils.getSmallTextFont());
-			vm.setPaint(new Color(161, 0, 132, 255));
-			vm.setStroke(new BasicStroke(2f));
+			vm.setPaint(new Color(161, 0, 180, 110));
+			vm.setStroke(new BasicStroke(1f));
 			plot.addDomainMarker(vm);
+
 			this.timeXSystole = wiaData.getSystoleTime();
 			this.timeXSystoleMarker = vm;
 		}
 
-		if (!Double.isNaN(wiaData.getDiastoleTime())) {
+		if (WIAData.isValidDouble(wiaData.getDiastoleTime())) {
 
 			ValueMarker vm = new ValueMarker(wiaData.getDiastoleTime());
 			vm.setLabel("Diastole");
 			int[] fontParams = Utils.getFontParams(Utils.getSmallTextFont(), "Diastole");
 
-			vm.setLabelOffset(new RectangleInsets((2 * fontParams[0]), ((3.0 / 4.0) * fontParams[1]), 0, 0));
+			vm.setLabelOffset(new RectangleInsets((fontParams[0]), ((3.0 / 4.0) * fontParams[1]), 0, 0));
 			vm.setLabelFont(Utils.getSmallTextFont());
-			vm.setPaint(new Color(161, 0, 132, 255));
-			vm.setStroke(new BasicStroke(2f));
+			vm.setPaint(new Color(161, 0, 180, 110));
+			vm.setStroke(new BasicStroke(1f));
 			plot.addDomainMarker(vm);
 			this.timeXDiastole = wiaData.getDiastoleTime();
 			this.timeXDiastoleMarker = vm;
+		}
+		
+		if (WIAData.isValidDouble(wiaData.getManualCycleEnd())) {
+
+			ValueMarker vm = new ValueMarker(wiaData.getDiastoleTime());
+			vm.setPaint(new Color(0, 0, 0, 255));
+			vm.setStroke(new BasicStroke(2f));
+			plot.addDomainMarker(vm);
+			this.timeXCycleEnd = wiaData.getManualCycleEnd();
+			this.timeXCycleEndMarker = vm;
+			
 		}
 	}
 
 	/**
 	 * Handles a user's selection attempt based on the current interaction mode.
 	 * 
-	 * @param selectionType 1 for pressure/systolic selection, 2 for flow/diastolic selection.
+	 * @param selectionType 0 for systolic, 1 for diastole
 	 */
-	private void attemptSelect(int selectionType) {
+	private void attemptSelectAlignValues(int selectionType) {
 
-		if (mode == MODE_NONE)
+		if (mode != MODE_ALIGN_PEAK && mode != MODE_ALIGN_MANUAL)
 			return;
 
-		if (selectionType == 3) {
-			resetAllSelections();
-			return;
-		}
-
-		double[] xy;
-		if (mode == MODE_ALIGN_PEAK || mode == MODE_ALIGN_MANUAL) {
-			xy = getXYValueFromScreenPos(selectionType == 1 ? true
-					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false)));
-		} else {
-			xy = getXYValueFromScreenPos(true);
-		}
+		double[] xy = getXYValueFromScreenPos(
+				selectionType == 1 ? true : (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false)));
 
 		if (xy == null)
 			return;
@@ -278,76 +307,14 @@ public class PressureFlowChartPanel extends ChartPanel {
 		double[] validTime = wiaData.getTime();
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
-			Utils.showError("Selection outside of valid range.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
 			return;
 		}
 
 		int xValueIndex = Utils.getClosestIndex(xy[0], validTime);
 		double xValueNearest = validTime[xValueIndex];
 
-		if (mode == MODE_SYS_DIAS) {
-
-			boolean systole = selectionType == 1 ? true
-					: (selectionType == 2 ? false : (timeXSystole == null ? true : false));
-
-			if (systole) {
-				if (this.timeXDiastole != null && xValueNearest > this.timeXDiastole) {
-					Utils.showWarning("Usually systole comes before diastole in these traces.", this);
-				}
-			} else {
-				if (this.timeXSystole != null && xValueNearest < this.timeXSystole) {
-					Utils.showWarning("Usually diastole comes after systole in these traces.", this);
-				}
-			}
-
-			ValueMarker vm = new ValueMarker(xValueNearest);
-			Canvas c = new Canvas();
-			FontMetrics fm = c.getFontMetrics(Utils.getSmallTextFont());
-			vm.setLabel(systole ? "Systole" : "Diastole");
-			int height = fm.getAscent();
-			if (systole) {
-				int width = fm.stringWidth("Systole");
-				vm.setLabelOffset(new RectangleInsets((2 * height), -1 * ((3.0 / 4.0) * width), 0, 0));
-			} else {
-				int width = fm.stringWidth("Diastole");
-				vm.setLabelOffset(new RectangleInsets((2 * height), ((3.0 / 4.0) * width), 0, 0));
-
-			}
-			vm.setLabelFont(Utils.getSmallTextFont());
-			vm.setPaint(new Color(161, 0, 132, 255));
-			vm.setStroke(new BasicStroke(2f));
-
-			XYPlot plot = getChart().getXYPlot();
-
-			if (systole) {
-				if (timeXSystoleMarker != null) {
-					plot.removeDomainMarker(timeXSystoleMarker);
-				}
-				plot.addDomainMarker(vm);
-				this.timeXSystole = xValueNearest;
-				this.timeXSystoleMarker = vm;
-				this.wiaData.setSystoleByTimeIndex(xValueIndex);
-			} else {
-				if (timeXDiastoleMarker != null) {
-					plot.removeDomainMarker(timeXDiastoleMarker);
-				}
-				plot.addDomainMarker(vm);
-
-				this.timeXDiastole = xValueNearest;
-				this.timeXDiastoleMarker = vm;
-				this.wiaData.setDiastoleByTimeIndex(xValueIndex);
-			}
-
-			if (this.cyclePickListener != null) {
-				if (systole) {
-					this.cyclePickListener.setSystole(xValueNearest);
-
-				} else {
-					this.cyclePickListener.setDiastole(xValueNearest);
-				}
-			}
-
-		} else if (mode == MODE_ALIGN_PEAK) {
+		if (mode == MODE_ALIGN_PEAK) {
 
 			boolean pressure = selectionType == 1 ? true
 					: (selectionType == 2 ? false : (timeXPressureAlign == null ? true : false));
@@ -572,6 +539,148 @@ public class PressureFlowChartPanel extends ChartPanel {
 	}
 
 	/**
+	 * Handles a user's selection attempt based on the current interaction mode.
+	 */
+	private void attemptSelectingCycleEnd() {
+		if (mode != MODE_CYCLE)
+			return;
+
+		double[] xy = getXYValueFromScreenPos(true);
+
+		if (xy == null) // wasn't over the graph
+			return;
+
+		double[] validTime = wiaData.getTime();
+
+		if (xy[0] < validTime[0]) {
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
+			return;
+		} else if (xy[0] > validTime[validTime.length - 1]) {
+			// point clicked was to right of graph, so just keep the end of the cycle where
+			// it is (or remove previously send ending)
+			resetCycleEnd();
+			return;
+		}
+		
+		int xValueIndex = Utils.getClosestIndex(xy[0], validTime);
+		double xValueNearest = validTime[xValueIndex];
+		if ((xValueNearest - validTime[0]) < 200) { // in milliseconds
+			// heart rate should not be > 300 bpm. 
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "The cycle end is too early. Cycle too short.", this);
+			return;
+		}
+		
+		
+		
+		ValueMarker vm = new ValueMarker(xValueNearest);
+		vm.setPaint(new Color(0, 0, 0, 255));
+		vm.setStroke(new BasicStroke(2f));
+
+		XYPlot plot = getChart().getXYPlot();
+		if (timeXCycleEndMarker != null) {
+			plot.removeDomainMarker(timeXCycleEndMarker);
+		}
+		plot.addDomainMarker(vm);
+
+		timeXCycleEnd = xValueNearest;
+		timeXCycleEndMarker = vm;
+		wiaData.setManualCycleEndIndex(xValueIndex);
+		
+
+	}
+
+	/**
+	 * Handles a user's selection attempt based on the current interaction mode.
+	 * 
+	 * @param selectionType 0 = systole, 1 = diastole
+	 */
+	private void attemptSelectCycle(int selectionType) {
+
+		if (mode != MODE_CYCLE)
+			return;
+
+		double[] xy = getXYValueFromScreenPos(true);
+
+		if (xy == null) // wasn't over the graph
+			return;
+
+		double[] validTime = wiaData.getTime();
+
+		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selection outside of valid range.", this);
+			return;
+		}
+
+		int xValueIndex = Utils.getClosestIndex(xy[0], validTime);
+		double xValueNearest = validTime[xValueIndex];
+
+		boolean systole;
+
+		switch (selectionType) {
+		case 0:
+			systole = true;
+			break;
+		case 1:
+			systole = false;
+			break;
+		default:
+			throw new IllegalArgumentException("Invalid selection type in cycle select: " + selectionType);
+		}
+
+		if (systole) {
+			if (this.timeXDiastole != null && xValueNearest > this.timeXDiastole) {
+				Utils.showMessage(JOptionPane.WARNING_MESSAGE, "Usually systole comes before diastole in these traces.",
+						this);
+			}
+		} else {
+			if (this.timeXSystole != null && xValueNearest < this.timeXSystole) {
+				Utils.showMessage(JOptionPane.WARNING_MESSAGE, "Usually diastole comes after systole in these traces.",
+						this);
+			}
+		}
+
+		ValueMarker vm = new ValueMarker(xValueNearest);
+		Canvas c = new Canvas();
+		FontMetrics fm = c.getFontMetrics(Utils.getSmallTextFont());
+		vm.setLabel(systole ? "Systole" : "Diastole");
+		int height = fm.getAscent();
+		if (systole) {
+			int width = fm.stringWidth("Systole");
+			vm.setLabelOffset(new RectangleInsets(height, -1 * ((3.0 / 4.0) * width), 0, 0));
+		} else {
+			int width = fm.stringWidth("Diastole");
+			vm.setLabelOffset(new RectangleInsets(height, ((3.0 / 4.0) * width), 0, 0));
+
+		}
+		vm.setLabelFont(Utils.getSmallTextFont());
+		vm.setPaint(new Color(161, 0, 180, 110));
+		vm.setStroke(new BasicStroke(1f));
+
+		XYPlot plot = getChart().getXYPlot();
+
+		if (systole) {
+			if (timeXSystoleMarker != null) {
+				plot.removeDomainMarker(timeXSystoleMarker);
+			}
+			plot.addDomainMarker(vm);
+
+			this.timeXSystole = xValueNearest;
+			this.timeXSystoleMarker = vm;
+			this.wiaData.setSystoleByTimeIndex(xValueIndex);
+		} else {
+			if (timeXDiastoleMarker != null) {
+				plot.removeDomainMarker(timeXDiastoleMarker);
+			}
+			plot.addDomainMarker(vm);
+
+			this.timeXDiastole = xValueNearest;
+			this.timeXDiastoleMarker = vm;
+			this.wiaData.setDiastoleByTimeIndex(xValueIndex);
+		}
+
+	}
+
+	/**
 	 * @return the time marked by the user as being systole. Will be NULL if the
 	 *         user did not select a value.
 	 */
@@ -627,15 +736,34 @@ public class PressureFlowChartPanel extends ChartPanel {
 			getChart().getXYPlot().removeDomainMarker(timeXFlowAlignMarker);
 			timeXFlowAlignMarker = null;
 		}
+		if (timeXCycleEnd != null) {
+			timeXCycleEnd = null;
+			getChart().getXYPlot().removeDomainMarker(timeXCycleEndMarker);
+			timeXCycleEndMarker = null;
+		}
 
-		this.wiaData.setSystoleByTimeIndex(-1);
-		this.wiaData.setDiastoleByTimeIndex(-1);
+		wiaData.setSystoleByTimeIndex(-1);
+		wiaData.setDiastoleByTimeIndex(-1);
+		wiaData.setManualCycleEndIndex(-1);
 
 		if (cyclePickListener != null) {
-			cyclePickListener.resetSystole();
-			cyclePickListener.resetDiastole();
 			cyclePickListener.setReadyAlign(false);
 		}
+
+	}
+	
+	/**
+	 * Resets systole only, reflexes call to the {@link PFPickListener}
+	 */
+	public void resetCycleEnd() {
+
+		if (timeXCycleEnd != null) {
+			timeXCycleEnd = null;
+			getChart().getXYPlot().removeDomainMarker(timeXCycleEndMarker);
+			timeXCycleEndMarker = null;
+		}
+
+		wiaData.setManualCycleEndIndex(-1);
 
 	}
 
@@ -650,11 +778,8 @@ public class PressureFlowChartPanel extends ChartPanel {
 			timeXSystoleMarker = null;
 		}
 
-		this.wiaData.setSystoleByTimeIndex(-1);
+		wiaData.setSystoleByTimeIndex(-1);
 
-		if (cyclePickListener != null) {
-			cyclePickListener.resetSystole();
-		}
 	}
 
 	/**
@@ -670,9 +795,6 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		this.wiaData.setDiastoleByTimeIndex(-1);
 
-		if (cyclePickListener != null) {
-			cyclePickListener.resetDiastole();
-		}
 	}
 
 	/**
@@ -812,36 +934,15 @@ public class PressureFlowChartPanel extends ChartPanel {
 	}
 
 	/**
-	 * An interface for listeners that need to respond to selection events
-	 * on the PressureFlowChartPanel, such as picking systole and diastole times.
+	 * An interface for listeners that need to respond to selection events on the
+	 * PressureFlowChartPanel, such as picking systole and diastole times.
 	 */
 	public interface PFPickListener {
 
 		/**
-		 * Called when a systole time is selected.
-		 * @param timeSystole The selected time for systole.
-		 */
-		public void setSystole(double timeSystole);
-
-		/**
-		 * Called when a diastole time is selected.
-		 * @param timeDiastole The selected time for diastole.
-		 */
-		public void setDiastole(double timeDiastole);
-
-		/**
-		 * Called when the systole selection is reset.
-		 */
-		public void resetSystole();
-
-
-		/**
-		 * Called when the diastole selection is reset.
-		 */
-		public void resetDiastole();
-
-		/**
-		 * Called to indicate whether alignment points have been selected and alignment is ready.
+		 * Called to indicate whether alignment points have been selected and alignment
+		 * is ready.
+		 * 
 		 * @param ready True if both alignment points are set, false otherwise.
 		 */
 		public void setReadyAlign(boolean ready);
@@ -869,6 +970,7 @@ public class PressureFlowChartPanel extends ChartPanel {
 
 		/**
 		 * Private constructor for the chart.
+		 * 
 		 * @param plot The fully configured {@link XYPlot}.
 		 * @param font The font for styling.
 		 */
@@ -887,8 +989,8 @@ public class PressureFlowChartPanel extends ChartPanel {
 		 * Creates and configures the {@link XYPlot} for the chart with a specific font.
 		 * 
 		 * @param printable If true, configures the plot for printing.
-		 * @param textFont The font to use for all text elements.
-		 * @param data The {@link WIAData} to plot.
+		 * @param textFont  The font to use for all text elements.
+		 * @param data      The {@link WIAData} to plot.
 		 * @return A configured {@link XYPlot}.
 		 */
 		private static XYPlot _createPlot(boolean printable, Font textFont, WIAData data) {

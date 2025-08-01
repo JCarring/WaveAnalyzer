@@ -22,6 +22,7 @@ import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.LayoutStyle.ComponentPlacement;
@@ -69,11 +70,11 @@ public class MainFrame implements BackListener {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 				| UnsupportedLookAndFeelException e) {
-			Utils.showError("<html>Unable to set the look and feel for progam. Fatal error.<br><br></html>" + e.getMessage(), null);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html>Unable to set the look and feel for progam. Fatal error.<br><br></html>" + e.getMessage(), null);
 			e.printStackTrace();
 			return;
 		}
-		
+				
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -222,7 +223,7 @@ public class MainFrame implements BackListener {
 		JCHelpButton btnHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_MAIN));
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showInfo(btnHelp.getHelpMessage(), frame);
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnHelp.getHelpMessage(), frame);
 			}
 		});
 
@@ -253,7 +254,7 @@ public class MainFrame implements BackListener {
 				try {
 					Desktop.getDesktop().browse(new URI("https://github.com/JCarring/WaveAnalyzer"));
 				} catch (IOException | URISyntaxException ex) {
-					Utils.showError("Could not open", frame);
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not open", frame);
 				}
 			}
 		});
@@ -282,7 +283,7 @@ public class MainFrame implements BackListener {
 			this.guiSeparateWire = new SeparateWireGUI(this.frame, this);
 			this.guiSeparateWire.navigateInto();
 		} catch (IOException e) {
-			Utils.showError("<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
 		}
 		
 	}
@@ -295,7 +296,7 @@ public class MainFrame implements BackListener {
 			this.guiComboWire = new CombowireGUI(this.frame, this);
 			this.guiComboWire.navigateInto();
 		} catch (IOException e) {
-			Utils.showError("<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html>Error opening:<br><br>" + e.getMessage() + "</html>", frame);
 		}
 	}
 

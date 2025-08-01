@@ -16,6 +16,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
@@ -302,7 +303,7 @@ public class WIASaveSettingsGUI extends JDialog {
 		Integer saveHeight = parsePixelString(this.txtHeightSave.getText());
 
 		if (saveWidth == null || saveHeight == null) {
-			Utils.showError("Error with pixel selection. Must be a positive integer, between 4 and 2000", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error with pixel selection. Must be a positive integer, between 4 and 2000", this);
 			return false;
 		}
 		settings.setChanged(true);

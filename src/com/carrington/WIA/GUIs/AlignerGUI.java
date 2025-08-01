@@ -33,6 +33,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -220,7 +221,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		JCHelpButton btnSyncHelp = new JCHelpButton("Sync movements");
 		btnSyncHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showInfo(btnSyncHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnSyncHelp.getHelpMessage(), ref.get());
 			}
 		});
 
@@ -434,7 +435,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 					try {
 						time1d = Double.parseDouble(time1);
 					} catch (NumberFormatException ex) {
-						Utils.showError("One of the times was not a valid number", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "One of the times was not a valid number", ref.get());
 						return;
 					}
 				} else {
@@ -447,7 +448,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 					try {
 						time2d = Double.parseDouble(time2);
 					} catch (NumberFormatException ex) {
-						Utils.showError("One of the times was not a valid number", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "One of the times was not a valid number", ref.get());
 						return;
 					}
 				} else {
@@ -456,7 +457,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 
 				boolean result = pnlDisplay.setTimeAlignment(time1d, time2d);
 				if (!result) {
-					Utils.showError("One of the times is outside of valid range.", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "One of the times is outside of valid range.", ref.get());
 
 				} else {
 					ref.get().requestFocusInWindow();
@@ -705,7 +706,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 		JCHelpButton btnHelp = new JCHelpButton("Select beats on top and bottom graph.");
 		btnHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
-				Utils.showInfo(btnHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnHelp.getHelpMessage(), ref.get());
 			}
 		});
 		

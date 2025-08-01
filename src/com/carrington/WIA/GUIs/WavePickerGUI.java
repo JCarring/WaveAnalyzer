@@ -2,7 +2,13 @@ package com.carrington.WIA.GUIs;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -16,6 +22,7 @@ import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
 
+import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -25,9 +32,11 @@ import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
@@ -36,12 +45,14 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
 import org.apache.commons.io.FilenameUtils;
+import org.jfree.chart.ChartPanel;
 
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.Wave;
@@ -62,8 +73,8 @@ import com.carrington.WIA.Graph.PressureFlowChartPanel;
 import com.carrington.WIA.Graph.PressureFlowChartPanel.PFPickListener;
 import com.carrington.WIA.Graph.SepWavePanel;
 import com.carrington.WIA.Graph.SepWavePanel.WavePickListener;
-import com.carrington.WIA.IO.WIAResourceReader;
 import com.carrington.WIA.IO.Header;
+import com.carrington.WIA.IO.WIAResourceReader;
 
 /**
  * WavePickerGUI provides a user interface for selecting and processing wave
@@ -98,8 +109,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private JCHelpButton btnPF;
 	private JButton btnAlign;
 	private JButton btnResetAlign;
-	private JTextField txtSystole;
-	private JTextField txtDiastole;
 	private JTextField txtFlowAvg;
 	private JTextField txtPressAvg;
 	private JCHelpButton btnDiameterHelp;
@@ -109,6 +118,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private JSplitPane splitBottom;
 	private NetWaveChartPanel pnlGraphWIANet;
 	private PressureFlowChartPanel pnlGraphPF;
+	private ExpandOverlay pnlBottomRightOverlay;
+	private ExpandOverlay pnlBottomLeftOverlay;
 	private JCheckBox chSerialize;
 	private JCheckBox chImgIncludeFileName;
 	private JCToggleButton btnPFModeOff;
@@ -116,7 +127,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	private JCToggleButton btnPFModeAlignManual;
 	private JCheckBox chAllowWrap;
 	private JCheckBox chAllowWrapIgnoreEnds;
-
 
 	private WeakReference<WavePickerGUI> ref = new WeakReference<WavePickerGUI>(this);
 
@@ -228,7 +238,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)));
 		getRootPane().setDefaultButton(btnAccept);
 
-		setupDisplayTextFields(this.txtCVal, this.txtFlowAvg, this.txtPressAvg, this.txtSystole, this.txtDiastole);
+		setupDisplayTextFields(this.txtCVal, this.txtFlowAvg, this.txtPressAvg);
 
 		contentPane.setLayout(gl_contentPane);
 		Utils.unfocusAll(pnlWIAButtons);
@@ -275,6 +285,16 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				}
 			}
 		});
+		JMenuItem menuItemShowMetrics = new JMenuItem("Show Metrics Info");
+		menuItemShowMetrics.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				showMetricsPopup();
+			}
+		});
+		menuItemShowMetrics.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, ActionEvent.META_MASK));
+
+		fileMenu.add(menuItemShowMetrics);
+		fileMenu.addSeparator();
 		JMenuItem menuItemAccept = new JMenuItem("Accept");
 		menuItemAccept.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -321,8 +341,12 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		savingMenu.addSeparator();
 		savingMenu.add(menuItemSaveImages);
 
-		Utils.setFont(Utils.getSubTitleFont(), fileMenu, displayMenu, menuItemDisplayAccel, menuItemQuit,
-				menuItemAccept, menuItemReset, menuItemSaveSettings, savingMenu, menuItemSaveImages);
+		Utils.setMenuBarFont(Utils.getSubTitleSubFont(), getJMenuBar());
+
+		// Utils.setFont(Utils.getSubTitleFont(), fileMenu, displayMenu,
+		// menuItemDisplayAccel, menuItemQuit,
+		// menuItemAccept, menuItemReset, menuItemSaveSettings, savingMenu,
+		// menuItemSaveImages);
 
 	}
 
@@ -341,12 +365,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		JLabel pnlInstruction = new JLabel("Select waves for \"" + selectionName + "\"");
 
-
 		btnOverallHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_PICKER));
-		
+
 		btnOverallHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(btnOverallHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnOverallHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -385,28 +408,98 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		pnlBottomGraphs = new JPanel();
 		splitTop.setRightComponent(pnlBottomGraphs);
 
-		splitBottom = new JSplitPane();
-		splitBottom.setResizeWeight(0.5);
+		// Bottom graphs
+		pnlGraphWIANet = NetWaveChartPanel.generate(wiaData, Utils.getTextFont(false));
+		pnlGraphWIANet.setBorder(new LineBorder(new Color(0, 0, 0)));
+		pnlGraphPF = PressureFlowChartPanel.generate(wiaData, Utils.getTextFont(false));
+		pnlGraphPF.setBorder(new LineBorder(new Color(0, 0, 0)));
+		pnlGraphPF.setCyclePickListener(this);
 
+		final int COLLAPSE_AT_PX = 20;
+		final int NORMAL_DIVIDER = 8;
+
+		// Wrap the pressure/flow side with the edge overlay (button pointing right)
+		pnlBottomRightOverlay = new ExpandOverlay(pnlGraphPF, 0, "▶", "Show net wave intensity", () -> {
+			if (splitBottom.getLeftComponent() == null) {
+				splitBottom.setLeftComponent(pnlBottomLeftOverlay);
+			}
+			splitBottom.setDividerSize(NORMAL_DIVIDER);
+			splitBottom.revalidate();
+			splitBottom.repaint();
+			splitBottom.setDividerLocation(0.5f);
+			pnlBottomRightOverlay.setButtonVisible(false);
+		});
+		pnlBottomRightOverlay.setButtonVisible(false);
+
+		// Wrap the net wave intensity side with the edge overlay (button pointing left)
+		pnlBottomLeftOverlay = new ExpandOverlay(pnlGraphWIANet, 1, "◀", "Show pressure and flow", () -> {
+			if (splitBottom.getRightComponent() == null) {
+				splitBottom.setRightComponent(pnlBottomRightOverlay);
+			}
+			splitBottom.setDividerSize(NORMAL_DIVIDER);
+			splitBottom.revalidate();
+			splitBottom.repaint();
+			splitBottom.setDividerLocation(0.5f);
+			pnlBottomLeftOverlay.setButtonVisible(false);
+		});
+		pnlBottomLeftOverlay.setButtonVisible(false);
+
+		splitBottom = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, pnlBottomLeftOverlay, pnlBottomRightOverlay);
 		splitBottom.setContinuousLayout(true);
+		splitBottom.setResizeWeight(0.5);
+		splitBottom.setDividerSize(NORMAL_DIVIDER);
+
 		GroupLayout gl_pnlBottomGraphs = new GroupLayout(pnlBottomGraphs);
 		gl_pnlBottomGraphs.setHorizontalGroup(gl_pnlBottomGraphs.createParallelGroup(Alignment.LEADING)
 				.addComponent(splitBottom, GroupLayout.DEFAULT_SIZE, 961, Short.MAX_VALUE));
 		gl_pnlBottomGraphs.setVerticalGroup(gl_pnlBottomGraphs.createParallelGroup(Alignment.LEADING)
 				.addComponent(splitBottom, GroupLayout.DEFAULT_SIZE, 700, Short.MAX_VALUE));
 
-		pnlGraphWIANet = NetWaveChartPanel.generate(wiaData, Utils.getTextFont(false));
-		pnlGraphWIANet.setBorder(new LineBorder(new Color(0, 0, 0)));
-		splitBottom.setLeftComponent(pnlGraphWIANet);
-
-		pnlGraphPF = PressureFlowChartPanel.generate(wiaData, Utils.getTextFont(false));
-		pnlGraphPF.setCyclePickListener(this);
-		pnlGraphPF.setBorder(new LineBorder(new Color(0, 0, 0)));
-
-		splitBottom.setRightComponent(pnlGraphPF);
-
 		pnlBottomGraphs.setLayout(gl_pnlBottomGraphs);
-		splitBottom.setDividerLocation(0.5);
+
+		// Collapse/expand by dragging near edges
+		splitBottom.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, e -> {
+			int loc = splitBottom.getDividerLocation();
+			int max = splitBottom.getMaximumDividerLocation();
+
+			boolean leftCollapsed = splitBottom.getLeftComponent() == null;
+			boolean rightCollapsed = splitBottom.getRightComponent() == null;
+
+			// Collapse left if dragged near left edge
+			if (loc <= COLLAPSE_AT_PX && !leftCollapsed) {
+				splitBottom.setLeftComponent(null);
+				splitBottom.setDividerLocation(0);
+				splitBottom.setDividerSize(0); // fully hide divider
+				splitBottom.revalidate();
+				splitBottom.repaint();
+				pnlBottomRightOverlay.setButtonVisible(true); // show in-panel pop-out control
+			} else if (loc > COLLAPSE_AT_PX && leftCollapsed) {
+				splitBottom.setLeftComponent(pnlBottomLeftOverlay);
+				splitBottom.setDividerSize(NORMAL_DIVIDER);
+				splitBottom.revalidate();
+				splitBottom.repaint();
+				splitBottom.setDividerLocation(0.5f);
+				pnlBottomRightOverlay.setButtonVisible(false);
+			}
+
+			if ((max - loc) <= COLLAPSE_AT_PX && !rightCollapsed) {
+				splitBottom.setRightComponent(null);
+				splitBottom.setDividerLocation(max);
+				splitBottom.setDividerSize(0); // fully hide divider
+				splitBottom.revalidate();
+				splitBottom.repaint();
+				pnlBottomLeftOverlay.setButtonVisible(true); // show in-panel pop-out control
+			} else if ((max - loc) > COLLAPSE_AT_PX && rightCollapsed) {
+				splitBottom.setRightComponent(pnlBottomRightOverlay);
+				splitBottom.setDividerSize(NORMAL_DIVIDER);
+				splitBottom.revalidate();
+				splitBottom.repaint();
+				splitBottom.setDividerLocation(0.5f);
+				pnlBottomLeftOverlay.setButtonVisible(false);
+			}
+
+		});
+
 		pnlWIA.setLayout(gl_pnlWIA);
 	}
 
@@ -430,6 +523,16 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		JLabel lblCVal = new JLabel("C-value:");
 		JLabel lblAvgFlow = new JLabel("Avg Flow:");
 		JLabel lblAvgPress = new JLabel("Avg Pressure:");
+		JLabel lblOtherValues = new JLabel("<html><u>Other...</u></html>");
+		lblOtherValues.setForeground(new java.awt.Color(0, 102, 204)); // optional: link-ish color
+		lblOtherValues.setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+
+		lblOtherValues.addMouseListener(new java.awt.event.MouseAdapter() {
+			@Override
+			public void mouseClicked(java.awt.event.MouseEvent e) {
+				showMetricsPopup();
+			}
+		});
 
 		txtCVal = new JTextField();
 		txtFlowAvg = new JTextField();
@@ -437,12 +540,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		JLabel lblExistingWaves = new JLabel("Waves");
 
-
 		btnWaveHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVES));
-		
+
 		btnWaveHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(btnWaveHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnWaveHelp.getHelpMessage(), ref.get());
 			}
 
 		});
@@ -453,7 +555,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		btnPF = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_WAVE_ALIGN_PF));
 		btnPF.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent action) {
-				Utils.showInfo(btnPF.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnPF.getHelpMessage(), ref.get());
 			}
 		});
 
@@ -501,7 +603,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						pnlGraphPF.setSelectMode(PressureFlowChartPanel.MODE_NONE);
 						break;
 					case strModCycle:
-						pnlGraphPF.setSelectMode(PressureFlowChartPanel.MODE_SYS_DIAS);
+						pnlGraphPF.setSelectMode(PressureFlowChartPanel.MODE_CYCLE);
 						break;
 					case strModAlignPeak:
 						pnlGraphPF.setSelectMode(PressureFlowChartPanel.MODE_ALIGN_PEAK);
@@ -548,16 +650,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		sep2.setBackground(new Color(192, 192, 192));
 		sep2.setForeground(new Color(192, 192, 192));
 
-		JLabel lblSystole = new JLabel("Systole:");
-
-		JLabel lblDiastole = new JLabel("Diastole:");
-
-		txtSystole = new JTextField();
-		txtSystole.setColumns(10);
-
-		txtDiastole = new JTextField();
-		txtDiastole.setColumns(10);
-
 		JCButton btnResetSystole = new JCButton("Reset", JCButton.BUTTON_SMALL);
 		JCButton btnResetDiastole = new JCButton("Reset", JCButton.BUTTON_SMALL);
 
@@ -574,16 +666,16 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 		});
 
-		JLabel lblDiameter = new JLabel("Vessel Size");
+		JLabel lblDiameter = new JLabel("Other");
 		btnDiameterHelp = new JCHelpButton(WIAResourceReader.getContents(WIAResourceReader.HELP_VESSEL_DIAMETER));
-		
+
 		btnDiameterHelp.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Utils.showInfo(btnDiameterHelp.getHelpMessage(), ref.get());
+				Utils.showMessage(JOptionPane.INFORMATION_MESSAGE, btnDiameterHelp.getHelpMessage(), ref.get());
 			}
 
 		});
-		JLabel lblDiamTxtField = new JLabel("Diameter (mm)");
+		JLabel lblDiamTxtField = new JLabel("Vessel Diameter (mm)");
 		txtVesselDiameter = new JTextField();
 		txtVesselDiameter.setEditable(true);
 		txtVesselDiameter.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -613,6 +705,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			public void actionPerformed(ActionEvent e) {
 				String selName = wiaData.getSelectionName();
 
+				if (wiaCaller == null)
+					return;
+
 				if (saveSettingsGUI.getChoices().getSaveSVGTIFF()) {
 
 					File fileSVG = wiaCaller.getWIAImageFileSVG();
@@ -634,7 +729,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 								wiaData.getWIBackward(), wiaData.getSepFlowForwardDeriv(),
 								wiaData.getSepFlowBackwardDeriv(), new double[] { 2, 1 });
 					} catch (Exception e1) {
-						Utils.showError("Could not save to file. System error msg: " + e1.getMessage(), ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE,
+								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
 						return;
@@ -650,7 +746,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						pnlGraphWIASep.saveChartAsSVG(fileToSaveDisplay);
 
 					} catch (Exception e1) {
-						Utils.showError("Could not save to file. System error msg: " + e1.getMessage(), ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE,
+								"Could not save to file. System error msg: " + e1.getMessage(), ref.get());
 						btnSave.setIcon(Utils.IconFail);
 						e1.printStackTrace();
 						return;
@@ -660,13 +757,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 
 			}
 		});
-
-		JLabel lblOther = new JLabel("Other");
-
-		chSerialize = new JCheckBox("Serialize state on accept");
-		chSerialize.setSelected(true);
-		chSerialize.setOpaque(false);
-		chSerialize.setEnabled(true);
 
 		chAllowWrap.setSelected(allowAlignWrap);
 		chAllowWrapIgnoreEnds.setSelected(allowAlignWrapExcessiveDiscordance);
@@ -692,6 +782,11 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 										Short.MAX_VALUE)
 								.addComponent(txtPressAvg, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
 										Short.MAX_VALUE))
+						.addContainerGap())
+				.addGroup(gl_pnlWIADisplay.createSequentialGroup()
+						.addContainerGap(GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+						.addComponent(lblOtherValues, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
+								GroupLayout.PREFERRED_SIZE)
 						.addContainerGap())
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup()
 						.addComponent(lblExistingWaves, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
@@ -726,26 +821,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 								.addComponent(sep2, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 										Short.MAX_VALUE)
 								.addContainerGap())
-				.addGroup(
-						gl_pnlWIADisplay.createSequentialGroup().addContainerGap()
-								.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.TRAILING, false)
-										.addComponent(lblSystole, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-										.addComponent(lblDiastole, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.LEADING)
-										.addComponent(txtSystole, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-												Short.MAX_VALUE)
-										.addComponent(txtDiastole, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE,
-												Short.MAX_VALUE))
-								.addPreferredGap(ComponentPlacement.RELATED)
-								.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER)
-										.addComponent(btnResetSystole, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
-										.addComponent(btnResetDiastole, GroupLayout.PREFERRED_SIZE,
-												GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE))
-								.addContainerGap())
+
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(btnAlign))
 				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addComponent(lblDiameter)
 						.addPreferredGap(ComponentPlacement.RELATED).addComponent(btnDiameterHelp)
@@ -762,13 +838,10 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addComponent(chImgIncludeFileName, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 								GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addComponent(lblOther))
-				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addContainerGap().addComponent(chSerialize)
 						.addPreferredGap(ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))));
 
-		gl_pnlWIADisplay.setVerticalGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.LEADING).addGroup(
-				gl_pnlWIADisplay.createSequentialGroup().addGap(3).addComponent(lblMetrics)
+		gl_pnlWIADisplay.setVerticalGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.LEADING)
+				.addGroup(gl_pnlWIADisplay.createSequentialGroup().addGap(3).addComponent(lblMetrics)
 						.addPreferredGap(ComponentPlacement.UNRELATED)
 						.addGroup(gl_pnlWIADisplay
 								.createParallelGroup(Alignment.LEADING).addComponent(lblCVal).addComponent(txtCVal))
@@ -778,7 +851,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						.addGap(2)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.LEADING).addComponent(lblAvgPress)
 								.addComponent(txtPressAvg))
-						.addPreferredGap(ComponentPlacement.RELATED)
+						.addGap(2).addComponent(lblOtherValues).addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(lblExistingWaves)
 								.addComponent(btnWaveHelp))
 						.addPreferredGap(ComponentPlacement.RELATED)
@@ -803,16 +876,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						.addPreferredGap(ComponentPlacement.UNRELATED)
 						.addComponent(sep2, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
 								GroupLayout.PREFERRED_SIZE)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.BASELINE).addComponent(lblSystole)
-								.addComponent(txtSystole, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnResetSystole))
-						.addGap(2)
-						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.BASELINE).addComponent(lblDiastole)
-								.addComponent(txtDiastole, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE,
-										GroupLayout.PREFERRED_SIZE)
-								.addComponent(btnResetDiastole))
 						.addPreferredGap(ComponentPlacement.UNRELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER).addComponent(lblDiameter)
 								.addComponent(btnDiameterHelp))
@@ -824,10 +887,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 						.addPreferredGap(ComponentPlacement.RELATED)
 						.addGroup(gl_pnlWIADisplay.createParallelGroup(Alignment.CENTER)
 								.addComponent(chImgIncludeFileName).addComponent(btnSave))
-						.addPreferredGap(ComponentPlacement.RELATED).addComponent(lblOther)
-						.addPreferredGap(ComponentPlacement.RELATED)
-						.addComponent(chSerialize, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE,
-								GroupLayout.PREFERRED_SIZE)
 						.addContainerGap()
 						.addPreferredGap(ComponentPlacement.UNRELATED, Short.MAX_VALUE, Short.MAX_VALUE)));
 
@@ -836,13 +895,13 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		scrWaves.setViewportView(tableWaves);
 		tableWaves.setFillsViewportHeight(true);
 
-		Utils.setFont(Utils.getSubTitleFont(), lblMetrics, lblPF, lblDiameter, lblExistingWaves, lblOther, lblSaving);
+		Utils.setFont(Utils.getSubTitleFont(), lblMetrics, lblPF, lblDiameter, lblExistingWaves, lblSaving);
 		Utils.setFont(Utils.getTextFont(false), btnSave);
 		Utils.setFont(Utils.getSubTitleSubFont(), lblSelectionMode);
 
 		Utils.setFont(Utils.getSmallTextFont(), lblCVal, lblAvgFlow, lblAvgPress, txtCVal, txtFlowAvg, txtPressAvg,
-				lblSystole, lblDiastole, txtSystole, txtDiastole, lblDiamTxtField, txtVesselDiameter, chSerialize,
-				chImgIncludeFileName, chAllowWrap, chAllowWrapIgnoreEnds);
+				lblDiamTxtField, txtVesselDiameter, chImgIncludeFileName, chAllowWrap, chAllowWrapIgnoreEnds,
+				lblOtherValues);
 
 		pnlWIADisplay.setLayout(gl_pnlWIADisplay);
 
@@ -880,7 +939,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (!wiaData.isUserSelectionAdequate()) {
-					Utils.showWarning(
+					Utils.showMessage(JOptionPane.WARNING_MESSAGE,
 							"It is recommended you select at least two waves, and point of systole and diastole.",
 							ref.get());
 				}
@@ -897,8 +956,17 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		});
 		btnAccept.setBackground(new Color(157, 249, 152));
 
-		Utils.setFont(Utils.getSubTitleFont(), btnReset, btnAccept);
+		chSerialize = new JCheckBox("Serialize state on accept");
+		chSerialize.setHorizontalTextPosition(SwingConstants.LEFT);
+		chSerialize.setIconTextGap(8);
+		chSerialize.setSelected(true);
+		chSerialize.setOpaque(false);
+		chSerialize.setEnabled(true);
 
+		Utils.setFont(Utils.getSubTitleFont(), btnReset, btnAccept);
+		Utils.setFont(Utils.getTextFont(true), chSerialize);
+
+		pnlWIAButtons.add(chSerialize);
 		pnlWIAButtons.add(btnReset);
 		pnlWIAButtons.add(btnAccept);
 
@@ -930,13 +998,76 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				updateDisplayForAddedWave(wave);
 			}
 		}
-		if (!Double.isNaN(wiaData.getSystoleTime())) {
-			setSystole(wiaData.getSystoleTime());
-		}
-		if (!Double.isNaN(wiaData.getDiastoleTime())) {
-			setDiastole(wiaData.getDiastoleTime());
-		}
+		
 		// the panels will handle their own modifications for startup
+	}
+
+	/**
+	 * Creates a popup which can be displayed, showing the available metrics
+	 */
+	private void showMetricsPopup() {
+
+		wiaData.retryCalculations();
+		
+		DecimalFormat nf = new DecimalFormat("0.##");
+
+		StringBuilder sb = new StringBuilder();
+		sb.append("<html>");
+
+		sb.append("<b>C-value: </b>").append(nf.format(wiaData.getWaveSpeed())).append(" m/s<br>");
+		sb.append("<b>Average flow: </b>").append(nf.format(wiaData.getAvgFlow(false))).append(" m/s<br>");
+		sb.append("<b>Average pressure: </b>").append(nf.format(wiaData.getAvgPressure(true))).append(" mmHg<br>");
+		sb.append("<b>Resistance: </b>").append(nf.format(wiaData.getResistanceOverall())).append(" mmHg/cm/s<br>");
+		if (_isValidMetric(wiaData.getSystoleTime())) {
+			sb.append("<b>Systole time: </b>").append(nf.format(wiaData.getSystoleTime())).append(" ms<br>");
+		}
+		if (_isValidMetric(wiaData.getResistanceSystole())) {
+			sb.append("<b>Systole resistance: </b>").append(nf.format(wiaData.getResistanceSystole()))
+					.append(" mmHg/cm/s<br>");
+		}
+		if (_isValidMetric(wiaData.getDiastoleTime())) {
+			sb.append("<b>Diastole time: </b>").append(nf.format(wiaData.getDiastoleTime())).append(" ms<br>");
+		}
+		if (_isValidMetric(wiaData.getResistanceDiastole())) {
+			sb.append("<b>Diastole resistance: </b>").append(nf.format(wiaData.getResistanceDiastole()))
+					.append(" ms<br>");
+		}
+
+		Double cycleDuration = wiaData.getCycleDuration();
+		if (_isValidMetric(cycleDuration)) {
+			sb.append("<b>Cycle duration: </b>").append(nf.format(cycleDuration)).append(" ms<br>");
+
+		}
+
+		Double diastoleDuration = wiaData.getDiastoleDuration();
+		if (_isValidMetric(diastoleDuration)) {
+			sb.append("<b>Diastole duration: </b>").append(nf.format(diastoleDuration)).append(" ms<br>");
+
+		}
+
+		Double diastoleToFlowDuration = wiaData.getDiastoleToFlowPeakDuration();
+		if (_isValidMetric(diastoleToFlowDuration)) {
+			sb.append("<b>Diastole to peak flow duration: </b>").append(nf.format(diastoleToFlowDuration))
+					.append(" ms<br>");
+
+		}
+
+		if (wiaData.getVesselDiameter() != null) {
+			sb.append("<b>Vessel diameter: </b>").append(nf.format(wiaData.getVesselDiameter())).append(" mm<br>");
+		}
+		sb.append("</html>");
+
+		Utils.showMessageTallFirst(JOptionPane.INFORMATION_MESSAGE, sb.toString(), ref.get());
+
+	}
+
+	/**
+	 * @param d query number
+	 * @return if input {@link Double} is valid, meaning NOT null and NOT
+	 *         {@link Double#NaN}
+	 */
+	private boolean _isValidMetric(Double d) {
+		return d != null && !Double.isNaN(d);
 	}
 
 	/**
@@ -1004,7 +1135,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			hd = tempData.getData().copyWithYAlignment(headerlower, headerhigher, indexLower, indexHigher,
 					allowAlignWrap, allowAlignWrapExcessivelyDiscordant);
 		} catch (Exception e) {
-			Utils.showError(e.getMessage(), this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, e.getMessage(), this);
 			return null;
 		}
 		return hd;
@@ -1020,7 +1151,8 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 		Double timeAlignPressure = pnlGraphPF.getPressureAlignTime();
 		double[] xData = wiaData.getData().getXData();
 		if (timeAlignFlow == null || timeAlignPressure == null) {
-			Utils.showError("Please set a time to align in both flow and pressure graphs", pnlGraphPF);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Please set a time to align in both flow and pressure graphs",
+					pnlGraphPF);
 			return;
 		}
 
@@ -1035,8 +1167,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 			Utils.setEnabled(false, false, btnAlign, btnResetAlign, btnPFModeAlignManual, btnPFModeAlignPeak);
 			Utils.setEnabled(true, false, btnResetAlign);
 			btnPFModeOff.doClick();
-			resetSystole();
-			resetDiastole();
 			tableWaves.removeAllWaves();
 		}
 
@@ -1095,8 +1225,6 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	 */
 	private void reset() {
 		this.pnlGraphPF.resetAllSelections();
-		this.txtSystole.setText("");
-		this.txtDiastole.setText("");
 		this.txtVesselDiameter.setText("");
 		this.pnlGraphWIASep.removeAllWaves();
 		this.tableWaves.removeAllWaves();
@@ -1151,7 +1279,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				double value = Double.parseDouble(input);
 
 				if (value < 0) {
-					Utils.showError("Vessel diameter cannot be negative!", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Vessel diameter cannot be negative!", ref.get());
 					return false;
 				} else if (value > 20) {
 					boolean confirmed = Utils.confirmAction("Confirm diameter",
@@ -1162,7 +1290,7 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 				}
 				wiaData.setVesselDiameter(value);
 			} catch (NumberFormatException ex) {
-				Utils.showError("Invalid number format for vessel diameter!", ref.get());
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid number format for vessel diameter!", ref.get());
 				return false;
 			}
 		}
@@ -1171,7 +1299,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	}
 
 	/**
-	 * Callback method from {@link WavePickListener} to update the display when a new wave is added.
+	 * Callback method from {@link WavePickListener} to update the display when a
+	 * new wave is added.
+	 * 
 	 * @param wave The wave that was added.
 	 */
 	@Override
@@ -1181,7 +1311,9 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	}
 
 	/**
-	 * Callback method from {@link WaveTableListener} to remove a wave from the display.
+	 * Callback method from {@link WaveTableListener} to remove a wave from the
+	 * display.
+	 * 
 	 * @param wave The wave to be removed.
 	 */
 	@Override
@@ -1191,52 +1323,116 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	}
 
 	/**
-	 * Callback method from {@link PFPickListener} to set the systole time in the display.
-	 * @param timeSystole The time of systole.
-	 */
-	@Override
-	public void setSystole(double timeSystole) {
-		DecimalFormat df = new DecimalFormat("#.00");
-
-		this.txtSystole.setText(df.format(timeSystole));
-
-	}
-
-	/**
-	 * Callback method from {@link PFPickListener} to set the diastole time in the display.
-	 * @param timeDiastole The time of diastole.
-	 */
-	@Override
-	public void setDiastole(double timeDiastole) {
-		DecimalFormat df = new DecimalFormat("#.00");
-
-		this.txtDiastole.setText(df.format(timeDiastole));
-	}
-
-	/**
-	 * Callback method from {@link PFPickListener} to reset the systole time in the display.
-	 */
-	@Override
-	public void resetSystole() {
-		this.txtSystole.setText("");
-	}
-
-
-	/**
-	 * Callback method from {@link PFPickListener} to reset the diastole time in the display.
-	 */
-	@Override
-	public void resetDiastole() {
-		this.txtDiastole.setText("");
-	}
-
-	/**
-	 * Callback method from {@link PFPickListener} to enable or disable the alignment button.
+	 * Callback method from {@link PFPickListener} to enable or disable the
+	 * alignment button.
+	 * 
 	 * @param ready True if the alignment can be run, false otherwise.
 	 */
 	@Override
 	public void setReadyAlign(boolean ready) {
 		Utils.setEnabled(ready, false, this.btnAlign);
+	}
+
+	/**
+	 * Overlay that keeps a floating button exactly on the component’s outer edge.
+	 */
+	private static class ExpandOverlay extends JLayeredPane {
+		private static final long serialVersionUID = -4428152774989371406L;
+		private final ChartPanel panel;
+		private final int edge;
+		private final JPanel pill; // translucent background for the button
+		private final JButton edgeButton;
+
+		private final int buttonWidth = 22;
+		private final int buttonHeight = 48;
+
+		/**
+		 * Creates a new overlay, containing a {@link ChartPanel}, which then has an
+		 * arrow on top of it that can be used to expand another panel in
+		 * {@link JSplitPane}
+		 * 
+		 * @param panel   the chart panel of interest
+		 * @param edge    the edge in which the arrow should be placed (0 = left, 1 =
+		 *                right)
+		 * @param label
+		 * @param tooltip
+		 * @param onClick
+		 */
+		private ExpandOverlay(ChartPanel panel, int edge, String label, String tooltip, Runnable onClick) {
+			this.panel = panel;
+			this.edge = edge;
+
+			setLayout(null); // absolute positioning
+			setOpaque(false);
+
+			// --- Edge button on a small "pill" panel ---
+			edgeButton = new JButton(label);
+			edgeButton.setToolTipText(tooltip);
+			edgeButton.setFocusable(false);
+			edgeButton.setMargin(new Insets(0, 0, 0, 0));
+			edgeButton.setBorder(BorderFactory.createEmptyBorder());
+			edgeButton.setContentAreaFilled(false);
+			edgeButton.addActionListener(e -> onClick.run());
+
+			pill = new JPanel(new GridBagLayout()) {
+				private static final long serialVersionUID = 1643928135231180860L;
+
+				@Override
+				protected void paintComponent(Graphics g) {
+					super.paintComponent(g);
+					Graphics2D g2 = (Graphics2D) g.create();
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					g2.setColor(new Color(0, 0, 0, 60));
+					g2.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, 12, 12);
+					g2.dispose();
+				}
+			};
+			pill.setOpaque(false);
+			pill.add(edgeButton);
+			pill.setVisible(false); // hidden until collapsed
+
+			add(panel, JLayeredPane.DEFAULT_LAYER);
+			add(pill, JLayeredPane.PALETTE_LAYER);
+
+			pill.setSize(buttonWidth, buttonHeight);
+			pill.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+
+			// If the content’s preferred size changes, propagate it upward.
+			panel.addPropertyChangeListener("preferredSize", evt -> {
+				revalidate(); // ask parent layout to run again
+			});
+		}
+
+		/** Show/hide the edge button overlay */
+		private void setButtonVisible(boolean visible) {
+			pill.setVisible(visible);
+			revalidate();
+			repaint();
+		}
+
+		@Override
+		public Dimension getPreferredSize() {
+			return panel.getPreferredSize();
+		}
+
+		@Override
+		public Dimension getMinimumSize() {
+			return panel.getMinimumSize();
+		}
+
+		@Override
+		public Dimension getMaximumSize() {
+			return panel.getMaximumSize();
+		}
+
+		@Override
+		public void doLayout() {
+			panel.setBounds(0, 0, getWidth(), getHeight());
+
+			int x = (edge == 0) ? 0 : getWidth() - buttonWidth;
+			int y = Math.max(0, (getHeight() - buttonHeight) / 2);
+			pill.setBounds(x, y, buttonWidth, buttonHeight);
+		}
 	}
 
 }

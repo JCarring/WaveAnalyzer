@@ -46,6 +46,7 @@ import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.MenuElement;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileSystemView;
 
@@ -90,9 +91,9 @@ public abstract class Utils {
 	public static final ImageIcon IconQuestionLarger;
 	/** Question icon, larger, to be displayed when hovering */
 	public static final ImageIcon IconQuestionLargerHover;
-	
+
 	// Standard icon for save button
-	
+
 	/** Save icon */
 	public static final ImageIcon IconSave;
 	/** Save icon, to be displayed when hovering */
@@ -136,16 +137,20 @@ public abstract class Utils {
 		ImageIcon iconSaveH = null;
 
 		try {
-			BufferedImage successIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/success.png"));
+			BufferedImage successIconRaw = ImageIO
+					.read(Utils.class.getResourceAsStream("/resources/images/success.png"));
 			BufferedImage failIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/fail.png"));
-			BufferedImage previewIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/preview.png"));
+			BufferedImage previewIconRaw = ImageIO
+					.read(Utils.class.getResourceAsStream("/resources/images/preview.png"));
 			BufferedImage previewHoverIconRaw = ImageIO
 					.read(Utils.class.getResourceAsStream("/resources/images/preview_hover.png"));
 
 			BufferedImage qIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/question.png"));
-			BufferedImage qIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/question_light.png"));
+			BufferedImage qIconRawH = ImageIO
+					.read(Utils.class.getResourceAsStream("/resources/images/question_light.png"));
 			BufferedImage saveIconRaw = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/save.png"));
-			BufferedImage saveIconRawH = ImageIO.read(Utils.class.getResourceAsStream("/resources/images/save_hover.png"));
+			BufferedImage saveIconRawH = ImageIO
+					.read(Utils.class.getResourceAsStream("/resources/images/save_hover.png"));
 
 			iconS = new ImageIcon(successIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));
 			iconF = new ImageIcon(failIconRaw.getScaledInstance(15, 15, Image.SCALE_SMOOTH));
@@ -159,7 +164,7 @@ public abstract class Utils {
 					qIconRawH.getScaledInstance(fontSubtitle.getSize(), fontSubtitle.getSize(), Image.SCALE_SMOOTH));
 			iconQL = new ImageIcon(
 					qIconRaw.getScaledInstance(fontSubtitle.getSize(), fontSubtitle.getSize(), Image.SCALE_SMOOTH));
-			
+
 			iconSave = new ImageIcon(saveIconRaw);
 			iconSaveH = new ImageIcon(saveIconRawH);
 
@@ -294,28 +299,37 @@ public abstract class Utils {
 		return null;
 	}
 
-	/**
-	 * Shows error message, positioned according to specified parent
-	 */
-	public static void showError(String msg, Component parent) {
 
-		JOptionPane.showMessageDialog(parent, msg, "Error", JOptionPane.ERROR_MESSAGE);
-
-	}
 
 	/**
-	 * Shows warning message, positioned according to specified parent
+	 * Shows a properly sized and positioned popup message to the user with the
+	 * specified type and message
+	 * 
+	 * @param type   The type of message, one of
+	 *               {@link JOptionPane#INFORMATION_MESSAGE},
+	 *               {@link JOptionPane#WARNING_MESSAGE}, or
+	 *               {@link JOptionPane#ERROR_MESSAGE}
+	 * @param msg    The message to display; can utilized HTML
+	 * @param parent component used to positioning this popup
+	 * @throws IllegalArgumentException	if type is not valid
 	 */
-	public static void showWarning(String msg, Component parent) {
+	public static void showMessage(int type, String msg, Component parent) throws IllegalArgumentException {
 
-		JOptionPane.showMessageDialog(parent, msg, "Warning", JOptionPane.WARNING_MESSAGE);
+		String title;
+		switch (type) {
+		case JOptionPane.INFORMATION_MESSAGE:
+			title = "Info";
+			break;
+		case JOptionPane.ERROR_MESSAGE:
+			title = "Error";
+			break;
+		case JOptionPane.WARNING_MESSAGE:
+			title = "Warning";
+			break;
+		default:
+			throw new IllegalArgumentException("Invalid type of message");
+		}
 
-	}
-
-	/**
-	 * Shows info message, positioned according to specified parent
-	 */
-	public static void showInfo(String msg, Component parent) {
 		Font font = fontNormalPlain;
 		int padding = 10;
 
@@ -331,43 +345,59 @@ public abstract class Utils {
 		int absoluteMaxHeight = (int) (screenH * 0.9);
 
 		// Use JEditorPane for HTML rendering
+		
+		Color bg = UIManager.getColor("OptionPane.background");
+		if (bg == null) bg = UIManager.getColor("Panel.background"); // fallback
+		
 		JEditorPane editorPane = new JEditorPane("text/html", msg);
+		editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
 		editorPane.setFont(font); // may not affect HTML unless styled in the HTML itself
 		editorPane.setEditable(false);
-		editorPane.setOpaque(false);
-		editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+		editorPane.setOpaque(true);
+		editorPane.setBackground(bg);          // match OptionPane
+		editorPane.setForeground(UIManager.getColor("OptionPane.foreground"));
+
 
 		// Initial width guess based on plain text version
-		JLabel tempLabel = new JLabel(stripHtmlTags(msg));
-		tempLabel.setFont(font);
-		int initialWidth = tempLabel.getFontMetrics(font).stringWidth(tempLabel.getText()) + padding;
+		// Start with no wrapping to get minimum width required for a single line
+		// Force layout to calculate preferred size for one-line fit
+		editorPane.setSize(Integer.MAX_VALUE, Integer.MAX_VALUE);
+		Dimension singleLineSize = editorPane.getPreferredSize();
+		int minWidth = Math.min(singleLineSize.width + padding, absoluteMaxWidth);
 
-		int width = Math.min(initialWidth, baseMaxWidth);
-		int height;
+		// Try to see if wrapping occurs at minWidth
+		editorPane.setSize(minWidth, Integer.MAX_VALUE);
+		Dimension minSize = editorPane.getPreferredSize();
+		boolean wraps = minSize.height > singleLineSize.height;
 
-		double scaleFactor = 1.0;
-		final double step = 0.1;
+		int width = minWidth;
+		int height = minSize.height + padding;
 
-		while (true) {
-			int currentMaxWidth = Math.min((int) (baseMaxWidth * scaleFactor), absoluteMaxWidth);
-			int currentMaxHeight = Math.min((int) (baseMaxHeight * scaleFactor), absoluteMaxHeight);
+		if (wraps) {
+			double scaleFactor = 1.0;
+			final double step = 0.1;
 
-			editorPane.setSize(currentMaxWidth, Integer.MAX_VALUE);
-			Dimension prefSize = editorPane.getPreferredSize();
-			height = prefSize.height + padding;
+			while (true) {
+				int currentMaxWidth = Math.min((int) (baseMaxWidth * scaleFactor), absoluteMaxWidth);
+				int currentMaxHeight = Math.min((int) (baseMaxHeight * scaleFactor), absoluteMaxHeight);
 
-			if (height <= currentMaxHeight) {
-				width = currentMaxWidth;
-				break;
+				editorPane.setSize(currentMaxWidth, Integer.MAX_VALUE);
+				Dimension prefSize = editorPane.getPreferredSize();
+				height = prefSize.height + padding;
+
+				if (height <= currentMaxHeight) {
+					width = currentMaxWidth;
+					break;
+				}
+
+				if (currentMaxWidth >= absoluteMaxWidth && currentMaxHeight >= absoluteMaxHeight) {
+					width = currentMaxWidth;
+					height = currentMaxHeight;
+					break;
+				}
+
+				scaleFactor += step;
 			}
-
-			if (currentMaxWidth >= absoluteMaxWidth && currentMaxHeight >= absoluteMaxHeight) {
-				width = currentMaxWidth;
-				height = currentMaxHeight;
-				break;
-			}
-
-			scaleFactor += step;
 		}
 
 		// add small buffer to avoid scrollbar from off-by-1 sizing
@@ -377,16 +407,101 @@ public abstract class Utils {
 		scrollPane.setBorder(null);
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-
+		scrollPane.setBackground(bg); // match option pane
+		
 		// add buffer to width/height to preempt scrollbars
 		scrollPane.setPreferredSize(new Dimension(width + buffer, height + buffer));
 
-		JOptionPane.showMessageDialog(parent, scrollPane, "Info", JOptionPane.INFORMATION_MESSAGE);
+		JOptionPane.showMessageDialog(parent, scrollPane, title, type);
+	}
+	
+	/**
+	 * Shows a properly sized and positioned popup message to the user with the
+	 * specified type and message. It expands vertically first.
+	 * 
+	 * @param type   The type of message, one of
+	 *               {@link JOptionPane#INFORMATION_MESSAGE},
+	 *               {@link JOptionPane#WARNING_MESSAGE}, or
+	 *               {@link JOptionPane#ERROR_MESSAGE}
+	 * @param msg    The message to display; can utilized HTML
+	 * @param parent component used to positioning this popup
+	 * @throws IllegalArgumentException	if type is not valid
+	 */
+	public static void showMessageTallFirst(int type, String msg, Component parent) throws IllegalArgumentException {
+	    String title;
+	    switch (type) {
+	        case JOptionPane.INFORMATION_MESSAGE: title = "Info"; break;
+	        case JOptionPane.ERROR_MESSAGE:       title = "Error"; break;
+	        case JOptionPane.WARNING_MESSAGE:     title = "Warning"; break;
+	        default: throw new IllegalArgumentException("Invalid type of message");
+	    }
+
+	    Font font = fontNormalPlain; // reuse your font
+	    int padding = 10;
+	    int buffer  = 5;  // small buffer to avoid off-by-1 scrollbars
+
+	    // Usable screen area (excludes dock/taskbar/menu bar)
+	    Rectangle usableBounds = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+	    int screenW = usableBounds.width;
+	    int screenH = usableBounds.height;
+
+	    // Reasonable cap (you can tweak these)
+	    int absoluteMaxWidth  = (int) (screenW * 0.90);
+	    int absoluteMaxHeight = (int) (screenH * 0.90);
+
+	    // Prepare HTML viewer
+	    Color bg = UIManager.getColor("OptionPane.background");
+	    if (bg == null) bg = UIManager.getColor("Panel.background");
+
+	    JEditorPane editorPane = new JEditorPane("text/html", msg);
+	    editorPane.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, Boolean.TRUE);
+	    editorPane.setFont(font);                   // may not affect HTML unless styled inside HTML
+	    editorPane.setEditable(false);
+	    editorPane.setOpaque(true);
+	    editorPane.setBackground(bg);
+	    editorPane.setForeground(UIManager.getColor("OptionPane.foreground"));
+
+	    // ---- Step 1: compute intrinsic (no-wrap) preferred width of the HTML ----
+	    // Ask the HTML view how wide it *wants* to be if not constrained.
+	    // We do this via the root View spans.
+	    editorPane.addNotify(); // ensure UI installed so getUI() returns a valid one
+	    javax.swing.plaf.TextUI ui = editorPane.getUI();
+	    float intrinsicWidth;
+	    try {
+	        javax.swing.text.View root = ui.getRootView(editorPane);
+	        // Size to "infinite" width so the view computes its natural span.
+	        root.setSize(Float.MAX_VALUE, 0f);
+	        intrinsicWidth = root.getPreferredSpan(javax.swing.text.View.X_AXIS);
+	        if (Float.isNaN(intrinsicWidth) || intrinsicWidth <= 0f) {
+	            // Fallback: compute from preferred size when unconstrained
+	            editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+	            intrinsicWidth = editorPane.getPreferredSize().width;
+	        }
+	    } catch (Exception ex) {
+	        // Robust fallback path
+	        editorPane.setSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+	        intrinsicWidth = editorPane.getPreferredSize().width;
+	    }
+
+	    int targetWidth = Math.min((int) Math.ceil(intrinsicWidth) + padding, absoluteMaxWidth);
+
+	    // ---- Step 2: lay out the editor at that width and measure height ----
+	    editorPane.setSize(new Dimension(targetWidth, Integer.MAX_VALUE));
+	    Dimension pref = editorPane.getPreferredSize();
+	    int targetHeight = Math.min(pref.height + padding, absoluteMaxHeight);
+
+	    // ---- Step 3: put in a scroll pane: vertical as needed, horizontal never ----
+	    JScrollPane scrollPane = new JScrollPane(editorPane);
+	    scrollPane.setBorder(null);
+	    scrollPane.getViewport().setBackground(bg);
+	    scrollPane.setBackground(bg);
+	    scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+	    scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+	    scrollPane.setPreferredSize(new Dimension(targetWidth + buffer, targetHeight + buffer));
+
+	    JOptionPane.showMessageDialog(parent, scrollPane, title, type);
 	}
 
-	private static String stripHtmlTags(String html) {
-		return html.replaceAll("<[^>]+>", "").replace("&nbsp;", " ").trim();
-	}
 
 	/**
 	 * Shows an error message and then quits the program after the user selects OK
@@ -826,7 +941,8 @@ public abstract class Utils {
 	}
 
 	/**
-	 * Calculates the total range (max - min) across one or more double arrays.
+	 * Calculates the total absolute range (max - min) across one or more double
+	 * arrays.
 	 *
 	 * @param arrays A variable number of double arrays to process.
 	 * @return The absolute difference between the overall maximum and minimum
@@ -834,7 +950,7 @@ public abstract class Utils {
 	 */
 	public static double getRange(double[]... arrays) {
 		double[] bounds = getBounds(arrays);
-		return (Math.abs(bounds[0]) + Math.abs(bounds[1]));
+		return bounds[1] - bounds[0];
 	}
 
 	/**
@@ -846,7 +962,7 @@ public abstract class Utils {
 	 */
 	public static double getMinimumRange(double[]... arrays) {
 		double[] bounds = getMinimumBounds(arrays);
-		return (Math.abs(bounds[0]) + Math.abs(bounds[1]));
+		return bounds[1] - bounds[0];
 	}
 
 	/**

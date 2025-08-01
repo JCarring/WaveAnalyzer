@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
+import javax.swing.JOptionPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
@@ -50,7 +51,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import com.carrington.WIA.Utils;
 import com.carrington.WIA.Cardio.Wave;
-import com.carrington.WIA.Cardio.WaveClassification;
+import com.carrington.WIA.Cardio.Wave.WaveClassification;
 import com.carrington.WIA.DataStructures.WIAData;
 
 /**
@@ -364,7 +365,7 @@ public class SepWavePanel extends ChartPanel {
 		// double[] validTime = time; // for testing
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
-			Utils.showError("Selected point was outside of the acceptable range.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selected point was outside of the acceptable range.", this);
 			return;
 		}
 
@@ -387,7 +388,7 @@ public class SepWavePanel extends ChartPanel {
 			currentBounds[1] = bound;
 
 			if (this.currentBounds[0].isProx != currentBounds[1].isProx) {
-				Utils.showError(
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
 						"You clicked part of a proximal and part of a distal wave. Wave can only be proximal or distal.",
 						this);
 				resetCurrWaveSelection();
@@ -401,7 +402,7 @@ public class SepWavePanel extends ChartPanel {
 			int indexEnd = Math.max(index1, index2);
 
 			if (index1 == index2) {
-				Utils.showError("Start and end points of the wave are the same", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Start and end points of the wave are the same", this);
 				resetCurrWaveSelection();
 				return;
 			}
@@ -448,7 +449,7 @@ public class SepWavePanel extends ChartPanel {
 			// two bounds were already picked. Now we need to add the wave.
 
 			if (this.currentBounds[0].isProx != this.currentBounds[1].isProx) {
-				Utils.showError(
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
 						"You clicked part of a proximal and part of a distal wave. Wave can only be proximal or distal.",
 						this);
 				resetCurrWaveSelection();
@@ -460,7 +461,7 @@ public class SepWavePanel extends ChartPanel {
 			int index2 = Utils.getClosestIndex(currentBounds[1].xVal, time);
 
 			if (index1 == index2) {
-				Utils.showError("Start and end points of the wave are the same", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Start and end points of the wave are the same", this);
 				resetCurrWaveSelection();
 				return;
 			}
@@ -479,7 +480,7 @@ public class SepWavePanel extends ChartPanel {
 				} else if (selectedWaveType == WaveClassification.OTHER) {
 					abbrev = Utils.promptTextInput("Abbreviation for name of wave?", this);
 					if (abbrev == null) {
-						Utils.showError("You must select an abbreviation for the wave.", this);
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "You must select an abbreviation for the wave.", this);
 						return;
 					}
 				} else {
@@ -492,7 +493,7 @@ public class SepWavePanel extends ChartPanel {
 				if (currentBounds[0].isProx != selectedWaveType.isProximal()) {
 					String region1 = currentBounds[0].isProx ? "proximal" : "distal";
 					String region2 = selectedWaveType.isProximal() ? "PROXIMAL" : "DISTAL";
-					Utils.showError("<html><center>You tried to add a " + selectedWaveType.label() + " as a " + region1
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "<html><center>You tried to add a " + selectedWaveType.label() + " as a " + region1
 							+ " wave,<br>" + "but this wave is classically a " + region2 + " wave.</center></html>",
 							this);
 					resetCurrWaveSelection();
@@ -505,7 +506,7 @@ public class SepWavePanel extends ChartPanel {
 			wiaData.calculateWavePeaksAndSum(wave);
 
 			if (wiaData.containsMatchingWave(wave)) {
-				Utils.showError("There is already a wave with the name " + abbrev + ".", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There is already a wave with the name " + abbrev + ".", this);
 				return;
 			} // testing need to comment out
 			XYPlot plot = getChart().getXYPlot();
@@ -553,7 +554,7 @@ public class SepWavePanel extends ChartPanel {
 		// double[] validTime = time; // for testing
 
 		if (xy[0] < validTime[0] || xy[0] > validTime[validTime.length - 1]) {
-			Utils.showError("Selected point was outside of the acceptable range.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Selected point was outside of the acceptable range.", this);
 			return;
 		}
 

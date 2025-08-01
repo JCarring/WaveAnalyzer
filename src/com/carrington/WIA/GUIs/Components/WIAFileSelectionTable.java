@@ -129,7 +129,7 @@ public class WIAFileSelectionTable extends JTable {
 					WIAData data = (WIAData) model.getValueAt(row, 0);
 					String newName = model.getValueAt(row, column).toString();
 					if (newName.isEmpty()) {
-						Utils.showError("Treatment name cannot be empty!", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Treatment name cannot be empty!", ref.get());
 						model.setValueAt(data.getSelectionName(), row, column);
 
 					}

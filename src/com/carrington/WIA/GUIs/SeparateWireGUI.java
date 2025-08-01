@@ -32,6 +32,7 @@ import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -321,7 +322,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				try {
 					java.awt.Desktop.getDesktop().browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer"));
 				} catch (Exception ex) {
-					Utils.showError("Could not browse internet", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not browse internet", ref.get());
 				}
 
 			}
@@ -334,7 +335,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					java.awt.Desktop.getDesktop()
 							.browse(new java.net.URI("https://github.com/JCarring/WaveAnalyzer/issues"));
 				} catch (Exception ex) {
-					Utils.showError("Could not browse internet", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not browse internet", ref.get());
 				}
 
 			}
@@ -722,7 +723,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				try {
 					resampleRate = DataResampler.calculateReSampleFrequency(resampleFreq, domains[0], domains[1]);
 				} catch (ResampleException e1) {
-					Utils.showError(e1.getMessage(), ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, e1.getMessage(), ref.get());
 					return;
 				}
 				btnStartResamp.setEnabled(false);
@@ -739,7 +740,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 					if (resampledHD == null) {
 						btnStartResamp.setEnabled(true);
-						Utils.showError("Error occurred while resampling.", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error occurred while resampling.", ref.get());
 						return;
 					}
 
@@ -801,7 +802,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 						return;
 					} else if (!Utils.hasOkayExtension(file1, ".csv")) {
 						// filed HAD an extension and it was not .csv
-						Utils.showError("File must be saved as .csv", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
 						return;
 					}
 					file1 = Utils.appendExtensionIfDoesNotHaveExt(file1, ".csv");
@@ -814,7 +815,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 						return;
 					} else if (!Utils.hasOkayExtension(file2, ".csv")) {
 						// filed HAD an extension and it was not .csv
-						Utils.showError("File must be saved as .csv", ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
 						return;
 					}
 					file2 = Utils.appendExtensionIfDoesNotHaveExt(file2, ".csv");
@@ -822,7 +823,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					String errors1 = Saver.saveData(file1, HemoData.toSaveableStringArray(dataManager.resampled1));
 					String errors2 = Saver.saveData(file2, HemoData.toSaveableStringArray(dataManager.resampled2));
 					if (errors1 != null || errors2 != null) {
-						Utils.showError("There was an error in saving the resampled data: "
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There was an error in saving the resampled data: "
 								+ (errors1 == null ? errors2 : errors1), ref.get());
 						return;
 					}
@@ -915,7 +916,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					return;
 				} else if (!Utils.hasOkayExtension(file1, ".csv")) {
 					// filed HAD an extension and it was not .csv
-					Utils.showError("File must be saved as .csv", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
 					return;
 				}
 				file1 = Utils.appendExtensionIfDoesNotHaveExt(file1, ".csv");
@@ -924,7 +925,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 						RASData.applyTrim(dataManager.trimIndices1, dataManager.resampled1, true)));
 
 				if (errors1 != null) {
-					Utils.showError("There was an error in saving the resampled data: " + errors1, ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There was an error in saving the resampled data: " + errors1, ref.get());
 					return;
 				}
 			}
@@ -939,7 +940,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					return;
 				} else if (!Utils.hasOkayExtension(file2, ".csv")) {
 					// filed HAD an extension and it was not .csv
-					Utils.showError("File must be saved as .csv", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "File must be saved as .csv", ref.get());
 					return;
 				}
 				file2 = Utils.appendExtensionIfDoesNotHaveExt(file2, ".csv");
@@ -947,7 +948,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 						RASData.applyTrim(dataManager.trimIndices2, dataManager.resampled2, true)));
 
 				if (errors2 != null) {
-					Utils.showError("There was an error in saving the resampled data: " + errors2, ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "There was an error in saving the resampled data: " + errors2, ref.get());
 					return;
 				}
 			}
@@ -1056,7 +1057,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				// Saves the ensembled Beat HemoData in a separate folder for each selection
 				// (treatment)
 				if (alignResult == null || alignResult.getBeats().isEmpty()) {
-					Utils.showError("No selections to save!", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No selections to save!", ref.get());
 				}
 
 				if (ref.get().btnSaveSelectionEnsembledBeat.getIcon() == Utils.IconSuccess) {
@@ -1072,7 +1073,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				for (Beat beat : alignResult.getBeats()) {
 					String error = saveEnsembledBeatData(beat);
 					if (error != null) {
-						Utils.showError(error, ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, error, ref.get());
 						btnSaveSelectionEnsembledBeat.setIcon(Utils.IconFail);
 						// Don't keep trying to save, same error is likely going to occur
 						return;
@@ -1091,7 +1092,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				// Saves the ensembled Beat HemoData in a separate folder for each selection
 				// (treatment)
 				if (alignResult == null || alignResult.getBeats().isEmpty()) {
-					Utils.showError("No selections to save!", ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No selections to save!", ref.get());
 				}
 
 				if (ref.get().btnSaveIndividualBeatImages.getIcon() == Utils.IconSuccess) {
@@ -1107,7 +1108,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				for (Beat beat : alignResult.getBeats()) {
 					String error = saveBeatImages(beat, alignResult.getBeatImages(beat));
 					if (error != null) {
-						Utils.showError(error, ref.get());
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, error, ref.get());
 						btnSaveIndividualBeatImages.setIcon(Utils.IconFail);
 						// Don't keep trying to save, same error is likely going to occur
 						return;
@@ -1213,7 +1214,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					return;
 				String errors = Saver.saveData(fileToSave, data);
 				if (errors != null) {
-					Utils.showError("Error occurred while saving: " + errors, ref.get());
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error occurred while saving: " + errors, ref.get());
 					btnSaveMetrics.setIcon(Utils.IconFail);
 				} else {
 					btnSaveMetrics.setIcon(Utils.IconSuccess);
@@ -1507,7 +1508,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			return;
 
 		else if (!isFileOne && dataManager.data1.getFile().getPath().equals(file.getPath())) {
-			Utils.showError("Cannot select the same file twice.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Cannot select the same file twice.", this);
 			return;
 		}
 
@@ -1527,7 +1528,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					"Some files have data in the first few rows we want to ignore.\n\nNumber of rows to ignore:", this);
 
 			if (numRowsIgnoreObj == null) {
-				Utils.showError("Invalid number of rows to ignore.", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Invalid number of rows to ignore.", this);
 				return;
 			} else {
 				numRowsIgnore = Math.max(-1, numRowsIgnoreObj);
@@ -1543,14 +1544,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			HeaderResult hr = dataReader.readHeaders(progress);
 
 			if (!hr.isSuccess()) {
-				Utils.showError(hr.getErrors(), this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, hr.getErrors(), this);
 				return null;
 			}
 			if (hr.getHeaders().isEmpty()) {
-				Utils.showError("No headers found in file", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No headers found in file", this);
 				return null;
 			} else if (hr.getHeaders().size() < 2) {
-				Utils.showError("Must have at least two headers - one domain and at least one range.", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Must have at least two headers - one domain and at least one range.", this);
 				return null;
 			}
 
@@ -1579,7 +1580,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			ReadResult rr = dataReader.readData(options.selectedHeaders, progress);
 
 			if (rr.getErrors() != null) {
-				Utils.showError(rr.getErrors(), ref.get());
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, rr.getErrors(), ref.get());
 				return null;
 			}
 
@@ -1626,7 +1627,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 */
 	private void runTrimSelection(boolean isFile1) {
 		if (!areBothFilesSelected()) {
-			Utils.showError("Data not yet resampled.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Data not yet resampled.", this);
 			return;
 		}
 
@@ -1684,7 +1685,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				try {
 					filterParams = Savgol.generateSettings(txtSavWindow.getText(), txtSavPolynomialOrder.getText());
 				} catch (Exception e) {
-					Utils.showError(e.getMessage(), this);
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, e.getMessage(), this);
 					return;
 				}
 			}
@@ -1700,7 +1701,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 						dataManager.resampled2 = dataManager.resampled2.resampleAt(sampleRate);
 					} catch (ResampleException e) {
 						e.printStackTrace();
-						Utils.showError("Internal error. Could not resample.", this);
+						Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Internal error. Could not resample.", this);
 						return;
 					}
 				}
@@ -1745,11 +1746,11 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			alignGUI.display();
 		} catch (OutOfMemoryError e) {
 			// the input HemoData was too large
-			Utils.showError("Memory error. Data set too large. Try trimming.", null);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Memory error. Data set too large. Try trimming.", null);
 			reset(false);
 			return;
 		} catch (IllegalArgumentException e) {
-			Utils.showError("Error. " + e.getMessage(), null);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Error. " + e.getMessage(), null);
 			reset(false);
 		}
 
@@ -1859,7 +1860,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 					comma = ", ";
 				}
 			}
-			Utils.showError(sb.toString(), this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, sb.toString(), this);
 			previewResultData = null;
 
 			return false;
@@ -1955,7 +1956,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				}
 
 			} catch (Exception ex) {
-				Utils.showError(
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, 
 						"Unable to save the current WIA data state. This may be due to lack of permissions to save in the current "
 								+ "directory. You will not be able to re-edit wave selections at a later point. System error msg: "
 								+ ex.getMessage(),
@@ -2063,7 +2064,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		}
 
 		if (errors != null) {
-			Utils.showError(errors, this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, errors, this);
 		}
 		if (freq != null)
 			return text.trim();
@@ -2091,14 +2092,14 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				double[] range2 = Utils.getBounds(dataManager.resampled2.getXData());
 				double minRange = Math.max(range1[1] - range1[0], range2[1] - range2[0]);
 				if (resampleFreq > minRange) {
-					Utils.showError("Resample frequency too large", this);
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency too large", this);
 					return null;
 				} else if (resampleFreq <= 0) {
-					Utils.showError("Resample frequency must be positive", this);
+					Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency must be positive", this);
 					return null;
 				}
 			} catch (NumberFormatException e) {
-				Utils.showError("Resample frequency must be a (decimal) number", this);
+				Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Resample frequency must be a (decimal) number", this);
 				return null;
 			}
 
@@ -2126,7 +2127,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		String text = txtSelectionName.getText();
 		if (text.isBlank()) {
-			Utils.showError("The Selection Name cannot be blank!", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "The Selection Name cannot be blank!", this);
 			txtSelectionName.setText(data.getSelectionName());
 			return false;
 		}
@@ -2315,7 +2316,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	 */
 	private File getPrimaryDataWIASave(String fileNameForm, String fileNameReplace, boolean ignoreExisting) {
 		if (dataManager.data1 == null) {
-			Utils.showError("No file to save to.", null);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "No file to save to.", null);
 			return null;
 		}
 
@@ -2386,7 +2387,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 			}
 
 		} catch (Exception ex) {
-			Utils.showError("Could not create folder to save data.", this);
+			Utils.showMessage(JOptionPane.ERROR_MESSAGE, "Could not create folder to save data.", this);
 			return null;
 		}
 		return folder;
