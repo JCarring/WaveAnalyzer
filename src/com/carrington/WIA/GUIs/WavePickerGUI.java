@@ -1332,15 +1332,15 @@ public class WavePickerGUI extends JDialog implements WaveTableListener, WavePic
 	 */
 	private KeyActionReceiver getChartPanelAtPoint(Point p) {
 		
-		Rectangle chartBoundsPF = new Rectangle(pnlGraphPF.getLocationOnScreen(), pnlGraphPF.getSize());
-		Rectangle chartBoundsNet = new Rectangle(pnlGraphWIANet.getLocationOnScreen(), pnlGraphWIANet.getSize());
-		Rectangle chartBoundsSep = new Rectangle(pnlGraphWIASep.getLocationOnScreen(), pnlGraphWIASep.getSize());
+		Rectangle chartBoundsPF = pnlGraphPF.isDisplayable() ? new Rectangle(pnlGraphPF.getLocationOnScreen(), pnlGraphPF.getSize()) : null;
+		Rectangle chartBoundsNet = pnlGraphWIANet.isDisplayable() ? new Rectangle(pnlGraphWIANet.getLocationOnScreen(), pnlGraphWIANet.getSize()) : null;
+		Rectangle chartBoundsSep = pnlGraphWIASep.isDisplayable() ? new Rectangle(pnlGraphWIASep.getLocationOnScreen(), pnlGraphWIASep.getSize()) : null;
 
-		if (chartBoundsPF.contains(p)) {
+		if (chartBoundsPF != null && chartBoundsPF.contains(p)) {
 			return pnlGraphPF;
-		} else if (chartBoundsNet.contains(p)) {
+		} else if (chartBoundsNet != null && chartBoundsNet.contains(p)) {
 			return pnlGraphWIANet;
-		} else if (chartBoundsSep.contains(p)) {
+		} else if (chartBoundsSep != null && chartBoundsSep.contains(p)) {
 			return pnlGraphWIASep;
 		} else {
 			return null;

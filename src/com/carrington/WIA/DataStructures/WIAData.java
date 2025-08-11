@@ -653,7 +653,7 @@ public class WIAData implements Serializable {
 		}
 		cycleEndManual = getTime()[index];
 	}
-	
+
 	/**
 	 * Gets the cycle end by the index of the corresponding value in the time array.
 	 * 
@@ -759,153 +759,6 @@ public class WIAData implements Serializable {
 			return null;
 
 		return cycleLength;
-	}
-
-	/**
-	 * Returns a map of analysis parameters suitable for display.
-	 *
-	 * @return a {@link LinkedHashMap} where keys are parameter names and values are
-	 *         their string representations
-	 */
-	public LinkedHashMap<String, String> toPrintableMap() {
-		LinkedHashMap<String, String> paramValues = new LinkedHashMap<String, String>();
-
-		retryCalculations();
-
-		double maxPressure = Utils.convertPascalsToMMHG(Utils.max(getRawPressure()));
-		double minPressure = Utils.convertPascalsToMMHG(Utils.min(getRawPressure()));
-		double maxFlow = Utils.max(getRawFlow());
-		double minFlow = Utils.min(getRawFlow());
-
-		paramValues.put("File Name", rawData.getFile().getPath());
-		paramValues.put("Selection Name", this.selectionName == null ? "" : this.selectionName);
-		paramValues.put("Wave Speed (C) m/s", Double.toString(waveSpeedC));
-		paramValues.put("Avg Pressure (mmHg)", Double.toString(pressureAvg));
-		paramValues.put("Max Pressure (mmHg)", Double.toString(maxPressure));
-		paramValues.put("Min Pressure (mmHg)", Double.toString(minPressure));
-		paramValues.put("Avg Flow (m/s)", Double.toString(flowAvg));
-		paramValues.put("Max Flow (m/s)", Double.toString(maxFlow));
-		paramValues.put("Min Flow (m/s)", Double.toString(minFlow));
-		paramValues.put("Systole Time", Double.toString(systoleTime));
-		paramValues.put("Systole Pressure", Double.toString(systolePressure));
-		paramValues.put("Systole Flow", Double.toString(systoleFlow));
-		paramValues.put("Diastole Time", Double.toString(diastoleTime));
-		paramValues.put("Diastole Pressure", Double.toString(diastolePressure));
-		paramValues.put("Diastole Flow", Double.toString(diastoleFlow));
-		paramValues.put("Avg Resist (mmHg/cm/s)", Double.toString(resistCycle));
-		paramValues.put("Systole Resist (mmHg/cm/s)", Double.toString(resistSystole));
-		paramValues.put("Diastole Resist (mmHg/cm/s)", Double.toString(resistDiastole));
-		paramValues.put("Cumulative Net", Double.toString(cumulativeWINet));
-		paramValues.put("Cumulative Forw", Double.toString(cumulativeWIForward));
-		paramValues.put("Cumulative Back", Double.toString(cumulativeWIBackward));
-
-		if (cfr != null && hMR != null && percIncACh != null) {
-			paramValues.put("CFR", Double.toString(cfr));
-			paramValues.put("HMR (mmHg cm s)", Double.toString(hMR));
-			paramValues.put("Flow Increase with ACh (%)", Double.toString(percIncACh));
-			paramValues.put("CMD", Boolean.toString(isCMD()));
-			paramValues.put("Endothelium-dependent CMD", Boolean.toString(isCMDEndothelialDependent(false)));
-			paramValues.put("Endothelium-independent CMD", Boolean.toString(isCMDEndothelialIndependent(false)));
-			paramValues.put("Functional CMD (endothelium dependent)",
-					Boolean.toString(isCMDEndothelialDependent(false) && isCMDFunctional()));
-			paramValues.put("Functional CMD (endothelium independent)",
-					Boolean.toString(isCMDEndothelialIndependent(false) && isCMDFunctional()));
-			paramValues.put("Functional CMD", Boolean.toString(isCMDFunctional()));
-
-		}
-
-		for (WaveClassification waveType : WaveClassification.getWavesTypesOrdered()) {
-
-			if (waveType.equals(WaveClassification.OTHER)) {
-				List<Wave> otherWavesAlphabetize = new ArrayList<Wave>();
-
-				for (Wave wave : waves) {
-					if (wave.getType().equals(WaveClassification.OTHER)) {
-						otherWavesAlphabetize.add(wave);
-					}
-				}
-
-				otherWavesAlphabetize.sort(new Comparator<Wave>() {
-					@Override
-					public int compare(Wave o1, Wave o2) {
-						return o1.getAbbrev().compareTo(o2.getAbbrev());
-					}
-				});
-
-				// add ALL waves designated as OTHER
-
-				for (Wave wave : otherWavesAlphabetize) {
-					paramValues.put(wave.getAbbrev() + " Cumul", Double.toString(wave.getCumulativeIntensity()));
-
-					String ratio = null;
-					if (wave.isProximal()) {
-						if (!Double.isNaN(cumulativeWIForward)) {
-							ratio = (wave.getCumulativeIntensity() / cumulativeWIForward) + "";
-						} else {
-							ratio = "NaN";
-						}
-					} else {
-						if (!Double.isNaN(cumulativeWIBackward)) {
-							ratio = (wave.getCumulativeIntensity() / cumulativeWIBackward) + "";
-						} else {
-							ratio = "NaN";
-						}
-					}
-					paramValues.put(wave.getAbbrev() + " Cumul Ratio", ratio);
-					paramValues.put(wave.getAbbrev() + " Peak", Double.toString(wave.getPeak()));
-					paramValues.put(wave.getAbbrev() + " Peak Time", Double.toString(wave.getPeakTime()));
-
-				}
-			} else {
-
-				boolean foundWave = false;
-
-				for (Wave wave : waves) {
-
-					if (wave.getType().equals(waveType)) {
-
-						paramValues.put(waveType.abbrev() + " Cumul", Double.toString(wave.getCumulativeIntensity()));
-
-						String ratio = null;
-						if (wave.isProximal()) {
-							if (!Double.isNaN(cumulativeWIForward)) {
-								ratio = (wave.getCumulativeIntensity() / cumulativeWIForward) + "";
-							} else {
-								ratio = "NaN";
-							}
-						} else {
-							if (!Double.isNaN(cumulativeWIBackward)) {
-								ratio = (wave.getCumulativeIntensity() / cumulativeWIBackward) + "";
-							} else {
-								ratio = "NaN";
-							}
-						}
-						paramValues.put(waveType.abbrev() + " Cumul Ratio", ratio);
-						paramValues.put(waveType.abbrev() + " Peak", Double.toString(wave.getPeak()));
-						paramValues.put(waveType.abbrev() + " Peak Time", Double.toString(wave.getPeakTime()));
-
-						foundWave = true;
-						// we will only add data for the first wave designated by this type. Really
-						// there should only be one.
-						break;
-					}
-
-				}
-
-				if (!foundWave) {
-					// did not find the wave, enter empty data
-					paramValues.put(waveType.abbrev() + " Cumul", "");
-					paramValues.put(waveType.abbrev() + " Cumul Ratio", "");
-					paramValues.put(waveType.abbrev() + " Peak", "");
-					paramValues.put(waveType.abbrev() + " Peak Time", "");
-
-				}
-			}
-
-		}
-
-		return paramValues;
-
 	}
 
 	/**
@@ -1130,20 +983,6 @@ public class WIAData implements Serializable {
 	}
 
 	/**
-	 * Returns the string representation of this object.
-	 * <p>
-	 * This is defined as the file name of the underlying HemoData.
-	 * </p>
-	 *
-	 * @return the file name as a String
-	 */
-	@Override
-	public String toString() {
-
-		return getFileName();
-	}
-
-	/**
 	 * Returns the file from which this {@link WIAData} was deserialized.
 	 *
 	 * @return the source file if deserialized; null otherwise
@@ -1340,7 +1179,7 @@ public class WIAData implements Serializable {
 	 *                               missing data
 	 */
 	public void runAnalysis() throws IllegalStateException {
-		rawData.convertXUnits(HemoData.UNIT_SECONDS); // TODO: make this smaer
+		rawData.convertXUnits(HemoData.UNIT_SECONDS); // TODO: make this smarter
 		Header headerPressure = rawData.getHeaderByFlag(HemoData.TYPE_PRESSURE).get(0);
 		rawData.convertYUnits(headerPressure, HemoData.UNIT_PASCAL);
 		rawData.calculateDerivative(headerPressure, null);
@@ -1668,6 +1507,174 @@ public class WIAData implements Serializable {
 			return null;
 		}
 	}
+	
+
+	/**
+	 * Returns a map of analysis parameters suitable for display.
+	 *
+	 * @return a {@link LinkedHashMap} where keys are parameter names and values are
+	 *         their string representations
+	 */
+	public LinkedHashMap<String, String> toPrintableMap() {
+		LinkedHashMap<String, String> paramValues = new LinkedHashMap<String, String>();
+
+		retryCalculations();
+
+		double maxPressure = Utils.convertPascalsToMMHG(Utils.max(getRawPressure()));
+		double minPressure = Utils.convertPascalsToMMHG(Utils.min(getRawPressure()));
+		double maxFlow = Utils.max(getRawFlow());
+		double minFlow = Utils.min(getRawFlow());
+
+		paramValues.put("File Name", rawData.getFile().getPath());
+		paramValues.put("Selection Name", this.selectionName == null ? "" : this.selectionName);
+		paramValues.put("Wave Speed (C) m/s", Double.toString(waveSpeedC));
+		paramValues.put("Avg Pressure (mmHg)", Double.toString(pressureAvg));
+		paramValues.put("Max Pressure (mmHg)", Double.toString(maxPressure));
+		paramValues.put("Min Pressure (mmHg)", Double.toString(minPressure));
+		paramValues.put("Avg Flow (m/s)", Double.toString(flowAvg));
+		paramValues.put("Max Flow (m/s)", Double.toString(maxFlow));
+		paramValues.put("Min Flow (m/s)", Double.toString(minFlow));
+		paramValues.put("Systole Time", Double.toString(systoleTime));
+		paramValues.put("Systole Pressure", Double.toString(systolePressure));
+		paramValues.put("Systole Flow", Double.toString(systoleFlow));
+		paramValues.put("Diastole Time", Double.toString(diastoleTime));
+		paramValues.put("Diastole Pressure", Double.toString(diastolePressure));
+		paramValues.put("Diastole Flow", Double.toString(diastoleFlow));
+		paramValues.put("Avg Resist (mmHg/cm/s)", Double.toString(resistCycle));
+		paramValues.put("Systole Resist (mmHg/cm/s)", Double.toString(resistSystole));
+		paramValues.put("Diastole Resist (mmHg/cm/s)", Double.toString(resistDiastole));
+		paramValues.put("Cycle duration (ms)", convertDoubleToString(getCycleDuration()));
+		paramValues.put("Diastole duration (ms)", convertDoubleToString(getDiastoleDuration()));
+		paramValues.put("Diastole onset to peak velocity (ms)", convertDoubleToString(getDiastoleToFlowPeakDuration()));
+		paramValues.put("Cumulative Net", Double.toString(cumulativeWINet));
+		paramValues.put("Cumulative Forw", Double.toString(cumulativeWIForward));
+		paramValues.put("Cumulative Back", Double.toString(cumulativeWIBackward));
+
+		if (cfr != null && hMR != null && percIncACh != null) {
+			paramValues.put("CFR", Double.toString(cfr));
+			paramValues.put("HMR (mmHg cm s)", Double.toString(hMR));
+			paramValues.put("Flow Increase with ACh (%)", Double.toString(percIncACh));
+			paramValues.put("CMD", Boolean.toString(isCMD()));
+			paramValues.put("Endothelium-dependent CMD", Boolean.toString(isCMDEndothelialDependent(false)));
+			paramValues.put("Endothelium-independent CMD", Boolean.toString(isCMDEndothelialIndependent(false)));
+			paramValues.put("Functional CMD (endothelium dependent)",
+					Boolean.toString(isCMDEndothelialDependent(false) && isCMDFunctional()));
+			paramValues.put("Functional CMD (endothelium independent)",
+					Boolean.toString(isCMDEndothelialIndependent(false) && isCMDFunctional()));
+			paramValues.put("Functional CMD", Boolean.toString(isCMDFunctional()));
+
+		}
+
+		for (WaveClassification waveType : WaveClassification.getWavesTypesOrdered()) {
+
+			if (waveType.equals(WaveClassification.OTHER)) {
+				List<Wave> otherWavesAlphabetize = new ArrayList<Wave>();
+
+				for (Wave wave : waves) {
+					if (wave.getType().equals(WaveClassification.OTHER)) {
+						otherWavesAlphabetize.add(wave);
+					}
+				}
+
+				otherWavesAlphabetize.sort(new Comparator<Wave>() {
+					@Override
+					public int compare(Wave o1, Wave o2) {
+						return o1.getAbbrev().compareTo(o2.getAbbrev());
+					}
+				});
+
+				// add ALL waves designated as OTHER
+
+				for (Wave wave : otherWavesAlphabetize) {
+					paramValues.put(wave.getAbbrev() + " Cumul", Double.toString(wave.getCumulativeIntensity()));
+
+					String ratio = null;
+					if (wave.isProximal()) {
+						if (!Double.isNaN(cumulativeWIForward)) {
+							ratio = (wave.getCumulativeIntensity() / cumulativeWIForward) + "";
+						} else {
+							ratio = "NaN";
+						}
+					} else {
+						if (!Double.isNaN(cumulativeWIBackward)) {
+							ratio = (wave.getCumulativeIntensity() / cumulativeWIBackward) + "";
+						} else {
+							ratio = "NaN";
+						}
+					}
+					paramValues.put(wave.getAbbrev() + " Cumul Ratio", ratio);
+					paramValues.put(wave.getAbbrev() + " Peak", Double.toString(wave.getPeak()));
+					paramValues.put(wave.getAbbrev() + " Peak Time", Double.toString(wave.getPeakTime()));
+
+				}
+			} else {
+
+				boolean foundWave = false;
+
+				for (Wave wave : waves) {
+
+					if (wave.getType().equals(waveType)) {
+
+						paramValues.put(waveType.abbrev() + " Cumul", Double.toString(wave.getCumulativeIntensity()));
+
+						String ratio = null;
+						if (wave.isProximal()) {
+							if (!Double.isNaN(cumulativeWIForward)) {
+								ratio = (wave.getCumulativeIntensity() / cumulativeWIForward) + "";
+							} else {
+								ratio = "NaN";
+							}
+						} else {
+							if (!Double.isNaN(cumulativeWIBackward)) {
+								ratio = (wave.getCumulativeIntensity() / cumulativeWIBackward) + "";
+							} else {
+								ratio = "NaN";
+							}
+						}
+						paramValues.put(waveType.abbrev() + " Cumul Ratio", ratio);
+						paramValues.put(waveType.abbrev() + " Peak", Double.toString(wave.getPeak()));
+						paramValues.put(waveType.abbrev() + " Peak Time", Double.toString(wave.getPeakTime()));
+
+						foundWave = true;
+						// we will only add data for the first wave designated by this type. Really
+						// there should only be one.
+						break;
+					}
+
+				}
+
+				if (!foundWave) {
+					// did not find the wave, enter empty data
+					paramValues.put(waveType.abbrev() + " Cumul", "");
+					paramValues.put(waveType.abbrev() + " Cumul Ratio", "");
+					paramValues.put(waveType.abbrev() + " Peak", "");
+					paramValues.put(waveType.abbrev() + " Peak Time", "");
+
+				}
+			}
+
+		}
+
+		return paramValues;
+
+	}
+
+	
+
+	/**
+	 * Returns the string representation of this object.
+	 * <p>
+	 * This is defined as the file name of the underlying HemoData.
+	 * </p>
+	 *
+	 * @return the file name as a String
+	 */
+	@Override
+	public String toString() {
+
+		return getFileName();
+	}
+
 
 	/**
 	 * Checks validity of Double
@@ -1681,6 +1688,22 @@ public class WIAData implements Serializable {
 				return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Converts a double to string. If {@link Double#NaN} or {@code null} then
+	 * returns "NaN"
+	 * 
+	 * @param d the input
+	 * @return string as above
+	 */
+	public static String convertDoubleToString(Double d) {
+		if (d == null) {
+			return Double.toString(Double.NaN);
+		} else {
+			return Double.toString(d);
+		}
+		
 	}
 
 	/**

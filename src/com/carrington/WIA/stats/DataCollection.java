@@ -51,7 +51,9 @@ public class DataCollection {
 	 * 
 	 * @param value The double value to add.
 	 */
-	public void addValue(double value) {
+	public void addValue(Double value) {
+		if (value == null || Double.isNaN(value)) 
+			return;
 		this.valuesD.add(value);
 	}
 
@@ -60,7 +62,10 @@ public class DataCollection {
 	 * 
 	 * @param value The boolean value to add.
 	 */
-	public void addValue(boolean value) {
+	public void addValue(Boolean value) {
+		if (value == null) 
+			return;
+		
 		this.valuesB.add(value);
 	}
 

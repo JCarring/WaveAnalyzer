@@ -720,9 +720,11 @@ public class WIAStats {
 
 		// Now compared CMD vs non CMD within treatment. Same for endothelial dependent
 		// CMD and functional CMD
-		for (StandardTreatment tx : this.standardTreatments) {
-
-			// Multiple tx at once
+				
+		for (StandardTreatment tx : standardTreatments) {
+			
+			
+			// Multiple dx at once
 
 			LinkedHashMap<String, Collection<WIAData>> comparCMDMultiIndepDepNo = new LinkedHashMap<String, Collection<WIAData>>();
 			comparCMDMultiIndepDepNo.put("No CMD", _subsetCMD(tx.getSamples(), false));
@@ -777,7 +779,7 @@ public class WIAStats {
 							+ ", comparison of multiple subtype  (No CMD, all functional, all structural) comparison",
 					comparCMDStructFunc, false);
 
-			// pairwise treatments
+			// pairwise dx
 			LinkedHashMap<String, Collection<WIAData>> comparCMDvsNonCMD = new LinkedHashMap<String, Collection<WIAData>>();
 			LinkedHashMap<String, Collection<WIAData>> comparEndothDepVsNone = new LinkedHashMap<String, Collection<WIAData>>();
 			LinkedHashMap<String, Collection<WIAData>> comparEndothIndepVsNone = new LinkedHashMap<String, Collection<WIAData>>();
@@ -1780,6 +1782,22 @@ public class WIAStats {
 				(wiadata) -> {
 					return Math.abs(wiadata.getResistanceOverall());
 				});
+		
+		Outcome cycleLength = getOutcomeByFunctionDouble("Cycle length (ms)", groups, DataType.CONTINUOUS, false, 
+				(wiadata) -> {
+					return wiadata.getCycleDuration();
+				});
+				
+		Outcome diastoleDur = getOutcomeByFunctionDouble("Diastole duration (ms)", groups, DataType.CONTINUOUS, false, 
+				(wiadata) -> {
+					return wiadata.getDiastoleDuration();
+				});		
+		
+		Outcome diastoleToPeakFlow = getOutcomeByFunctionDouble("Diastole time to peak flow (ms)", groups, DataType.CONTINUOUS, false, 
+				(wiadata) -> {
+					return wiadata.getDiastoleToFlowPeakDuration();
+				});	
+		
 		Outcome cumNet = getOutcomeByFunctionDouble("Cumulative Net Intensity", groups, DataType.CONTINUOUS, false,
 				(wiadata) -> {
 					return wiadata.getCumWINet();
@@ -1794,7 +1812,7 @@ public class WIAStats {
 				});
 
 		comparison.addOutcome(sumWaveSpeed, avgPressure, maxPressure, minPressure, avgFlow, maxFlow, minFlow, resist,
-				cumNet, cumForw, cumBack);
+				cycleLength, diastoleDur, diastoleToPeakFlow, cumNet, cumForw, cumBack);
 
 		// add calculated fields
 		boolean hasCMDData = true;

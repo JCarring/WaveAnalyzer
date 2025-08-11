@@ -618,7 +618,7 @@ public class WIAStatsGUI extends JFrame
 		pnlOutput.setBorder(new LineBorder(Color.BLACK));
 
 		JCLabel lblOut = new JCLabel("Output", JCLabel.LABEL_SUBTITLE);
-		btnRunStats = new JCButton("Run Stats", JCButton.BUTTON_RUN);
+		btnRunStats = new JCButton("Run Stats", JCButton.BUTTON_STANDARD);
 		btnSaveCompiledData = new JCButton("Save Compiled Data", JCButton.BUTTON_STANDARD);
 		btnSaveStats = new JCButton("Save Stats", JCButton.BUTTON_STANDARD);
 
