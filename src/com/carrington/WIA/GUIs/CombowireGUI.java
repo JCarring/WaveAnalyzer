@@ -1199,7 +1199,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		String textFlowOffset = this.txtFlowOffset.getText();
 		int flowOffset;
-		if (textFlowOffset == null || textFlowOffset.isBlank()) {
+		if (textFlowOffset == null || textFlowOffset.length() == 0) {
 			flowOffset = 0;
 		} else {
 			try {
@@ -1537,7 +1537,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 
 		Double resampleFreq = null;
 		String resampleSavTxt = txtSampleRate.getText();
-		if (!resampleSavTxt.isBlank()) {
+		if (resampleSavTxt.length() > 0) {
 			try {
 				resampleFreq = Double.parseDouble(resampleSavTxt);
 
@@ -1577,7 +1577,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 		}
 
 		String text = txtSelectionName.getText();
-		if (text.isBlank()) {
+		if (text.length() == 0) {
 			Utils.showMessage(Utils.ERROR, "The Selection Name cannot be blank!", this);
 			txtSelectionName.setText(data.getSelectionName());
 			return false;
@@ -1657,7 +1657,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private String saveBeatImages(Beat beat, List<String> svgImages) {
 
 		String selectionName = beat.getData().getName();
-		if (selectionName == null || selectionName.isBlank())
+		if (selectionName == null || selectionName.length() == 0)
 			return "Blank name for beat, invalid.";
 
 		File folder = getSelectionDataFolder(selectionName);
@@ -1688,7 +1688,7 @@ public class CombowireGUI extends JFrame implements WIACaller {
 	private String saveEnsembledBeatData(Beat beat) {
 
 		String selectionName = beat.getData().getName();
-		if (selectionName == null || selectionName.isBlank())
+		if (selectionName == null || selectionName.length() == 0)
 			return "Blank name for beat, invalid.";
 
 		File folder = getSelectionDataFolder(selectionName);

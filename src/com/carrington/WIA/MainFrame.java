@@ -65,6 +65,8 @@ public class MainFrame implements BackListener {
 	 * 
 	 */
 	public static void main(String[] args) {
+		
+		
 		try {
 			UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
 		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
@@ -245,7 +247,7 @@ public class MainFrame implements BackListener {
 			}
 		});
 		
-		JLabel lblCopy = new JLabel("<html>&copy; " + Year.now().getValue() + " Justin Carrington, MD  |  <a href=\"\">GitHub</a></html>");
+		JLabel lblCopy = new JLabel("<html>&copy; " + Year.now().getValue() + " Justin Carrington & Claire Raphael |  <a href=\"\">GitHub</a></html>");
 		lblCopy.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		lblCopy.addMouseListener(new MouseAdapter() {
 			@Override

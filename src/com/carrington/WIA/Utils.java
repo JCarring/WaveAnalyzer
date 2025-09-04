@@ -321,16 +321,14 @@ public abstract class Utils {
 	 * Shows a properly sized and positioned popup message to the user with the
 	 * specified type and message
 	 * 
-	 * @param type   The type of message, one of
-	 *               {@link Utils#INFO},
+	 * @param type   The type of message, one of {@link Utils#INFO},
 	 *               {@link Utils#WARN}, or {@link Utils#ERROR}
 	 * @param msg    The message to display; can utilized HTML
 	 * @param parent component used to positioning this popup
 	 * @throws IllegalArgumentException if type is not valid
 	 */
 	public static void showMessage(int type, String msg, Component parent) throws IllegalArgumentException {
-
-		String title;
+		final String title;
 		switch (type) {
 		case Utils.INFO:
 			title = "Info";
@@ -434,8 +432,7 @@ public abstract class Utils {
 	 * Shows a properly sized and positioned popup message to the user with the
 	 * specified type and message. It expands vertically first.
 	 * 
-	 * @param type   The type of message, one of
-	 *               {@link Utils#INFO},
+	 * @param type   The type of message, one of {@link Utils#INFO},
 	 *               {@link Utils#WARN}, or {@link Utils#ERROR}
 	 * @param msg    The message to display; can utilized HTML
 	 * @param parent component used to positioning this popup
@@ -544,7 +541,7 @@ public abstract class Utils {
 	 */
 	public static Integer promptIntegerNumber(String msg, Component parent) {
 		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", Utils.INFO);
-		if (text == null || text.isBlank())
+		if (text == null || text.length() == 0)
 			return null;
 		try {
 			return Integer.parseInt(text);
@@ -559,7 +556,7 @@ public abstract class Utils {
 	 */
 	public static String promptTextInput(String msg, Component parent) {
 		String text = JOptionPane.showInputDialog(parent, msg, "Enter Number", Utils.INFO);
-		if (text == null || text.isBlank())
+		if (text == null || text.length() == 0)
 			return null;
 		else
 			return text;
@@ -702,8 +699,7 @@ public abstract class Utils {
 	 */
 	public static boolean confirmAction(String title, String msg, Component parent) {
 
-		int result = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.OK_CANCEL_OPTION,
-				Utils.WARN);
+		int result = JOptionPane.showConfirmDialog(parent, msg, title, JOptionPane.OK_CANCEL_OPTION, Utils.WARN);
 
 		if (result == JOptionPane.OK_OPTION) {
 			return true;
@@ -1523,7 +1519,7 @@ public abstract class Utils {
 	 *         otherwise, null.
 	 */
 	private static File getFileFromString(String input) {
-		if (input == null || input.isBlank())
+		if (input == null || input.length() == 0)
 			return null;
 
 		File dir = new File(input);
@@ -2359,7 +2355,7 @@ public abstract class Utils {
 	 * @return true if input is not black, and is alphanumeric.
 	 */
 	public static boolean isValidFileName(String input) {
-		if (input == null || input.isBlank())
+		if (input == null || input.length() == 0)
 			return false;
 
 		return StringUtils.isAlphanumericSpace(input);

@@ -251,7 +251,7 @@ public class SheetOptionsSelectionGUI extends JDialog {
 	private boolean validateSelections() {
 
 		String name = this.txtName.getText();
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			return false;
 
 		List<Header> selectedHeaders = new ArrayList<Header>(this.listCategories.getSelectedValuesList());

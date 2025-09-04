@@ -677,7 +677,7 @@ public class HemoData implements Serializable {
 	 */
 	public boolean containsHeaderByFlag(String flag) {
 		
-		if (flag == null || flag.isBlank())
+		if (flag == null || flag.length() == 0)
 			throw new IllegalArgumentException("Null flag");
 		
 		for (Entry<Header, Set<String>> flagsEn : this.flaggedHeaders.entrySet()) {
@@ -1220,7 +1220,7 @@ public class HemoData implements Serializable {
 	 * @throws IllegalArgumentException if name is null or blank
 	 */
 	public void setName(String name) throws IllegalArgumentException {
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			throw new IllegalArgumentException("Blank name for HemoData");
 		this.name = name;
 	}

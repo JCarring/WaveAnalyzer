@@ -1,6 +1,8 @@
 src/com/carrington/WIA/OtherTemporary/
 target/
 bin/
+test/
+package-mac.command
 RnD/*
 config_sep.properties
 config_combo.properties
@@ -10,3 +12,4 @@ config_combo.properties
 !ECGViewer/plugins/*.class
 data/*
 .DS_Store
+.settings/

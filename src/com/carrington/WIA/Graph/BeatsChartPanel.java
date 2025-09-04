@@ -21,6 +21,8 @@ import java.awt.geom.Rectangle2D;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -85,8 +87,13 @@ public class BeatsChartPanel extends ChartPanel {
 	 */
 	public static final String DISPLAY_TRACE_FLOW = "Flow trace only (R)";
 	/** An immutable list containing all available trace display options. */
-	public static final List<String> DISPLAY_TRACE_OPTIONS = List.of(DISPLAY_TRACE_ALL, DISPLAY_TRACE_ECG,
-			DISPLAY_TRACE_PRESSURE, DISPLAY_TRACE_FLOW); // immutable
+	public static final List<String> DISPLAY_TRACE_OPTIONS =
+	        Collections.unmodifiableList(Arrays.asList(
+	                DISPLAY_TRACE_ALL,
+	                DISPLAY_TRACE_ECG,
+	                DISPLAY_TRACE_PRESSURE,
+	                DISPLAY_TRACE_FLOW
+	        ));
 
 	private static final Color alignColor = new Color(105, 105, 105, 60);
 	private static final Color[] standardGraphColors = new Color[] { Color.GREEN.darker(), Color.BLUE.brighter(),
@@ -854,7 +861,7 @@ public class BeatsChartPanel extends ChartPanel {
 		// pick name
 		String name = Utils.promptTextInput("Selection name?", this);
 
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			return null; // user cancelled
 
 		name = name.trim();

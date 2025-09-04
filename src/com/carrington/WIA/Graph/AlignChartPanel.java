@@ -951,7 +951,7 @@ public class AlignChartPanel extends JPanel {
 		// pick name
 		String name = Utils.promptTextInput("Selection name?", this);
 
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			return null; // user cancelled
 
 		name = name.trim();

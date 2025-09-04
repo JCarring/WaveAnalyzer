@@ -24,7 +24,7 @@ public class JCHelpButton extends JButton {
 	 */
 	public JCHelpButton(String msg) {
 		super();
-		if (msg == null || msg.isBlank())
+		if (msg == null || msg.length() == 0)
 			throw new IllegalArgumentException("Message cannot be blank");
 		this.msg = msg;
 		setIcon(Utils.IconQuestionLarger);

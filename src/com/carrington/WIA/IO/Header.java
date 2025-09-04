@@ -40,7 +40,7 @@ public class Header implements Serializable {
 	 * @throws NullPointerException if name is blank or columnNumber < 0
 	 */
 	public Header(String name, int columnNumber, boolean isPrimaryX) {
-		if (name == null || name.isBlank() || columnNumber < 0)
+		if (name == null || name.length() == 0 || columnNumber < 0)
 			throw new NullPointerException("Some header data was null");
 		this.columnNumber = columnNumber;
 		this.name = name;

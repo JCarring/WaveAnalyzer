@@ -152,7 +152,7 @@ public class Reader {
 			if (column < this.mainData[row].length) {
 
 				String value = mainData[row][column];
-				if (value.isBlank())
+				if (value.length() == 0)
 					value = "0";
 
 				try {
@@ -417,7 +417,7 @@ public class Reader {
 				if (cell == null) {
 					allNumbers = false;
 					break;
-				} else if (cell.isBlank()) {
+				} else if (cell.length() == 0) {
 					cell = "0";
 				}
 				if (!NumberUtils.isCreatable(cell) && !Utils.isATimeStamp(cell)) {
@@ -452,7 +452,7 @@ public class Reader {
 			} else {
 				String[] headers = data[indexOfHeaders];
 				for (String header : headers) {
-					if (header == null || header.isBlank()) {
+					if (header == null || header.length() == 0) {
 						// where there were supposed to be headers, there was a blank cell. Invalid.
 						return -1;
 					}
@@ -492,7 +492,7 @@ public class Reader {
 
 		int meaningfulSize = array.length;
 		for (int i = array.length - 1; i > 0; i--) {
-			if (array[i] == null || array[i].isBlank()) {
+			if (array[i] == null || array[i].length() == 0) {
 				meaningfulSize--;
 			}
 		}

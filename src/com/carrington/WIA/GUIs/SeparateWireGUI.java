@@ -1593,10 +1593,10 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 				btnSelectFile.setEnabled(true);
 				return;
 			} else {
-				_setColumnList(list, result.options().selectedHeaders);
-				_setFileName(text, result.options().name + " (" + file.getName() + ")", file);
-				HemoData hd = result.read().getData();
-				OptionSelections op = result.options();
+				_setColumnList(list, result.getOptions().selectedHeaders);
+				_setFileName(text, result.getOptions().name + " (" + file.getName() + ")", file);
+				HemoData hd = result.getRead().getData();
+				OptionSelections op = result.getOptions();
 
 				hd.setName(op.name);
 				hd.addFlags(op.headerForAlign, HemoData.OTHER_ALIGN);
@@ -2035,7 +2035,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		Double freq = null;
 		String text = this.txtResampFreq.getText();
 		String errors = null;
-		if (text == null || text.isBlank()) {
+		if (text == null || text.length() == 0) {
 			errors = "Enter a number.";
 		} else {
 
@@ -2083,7 +2083,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 
 		Double resampleFreq = null;
 		String resampleSavTxt = txtSavSampleRate.getText();
-		if (!resampleSavTxt.isBlank()) {
+		if (resampleSavTxt.length() > 0) {
 			try {
 				resampleFreq = Double.parseDouble(resampleSavTxt);
 
@@ -2125,7 +2125,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		}
 
 		String text = txtSelectionName.getText();
-		if (text.isBlank()) {
+		if (text.length() == 0) {
 			Utils.showMessage(Utils.ERROR, "The Selection Name cannot be blank!", this);
 			txtSelectionName.setText(data.getSelectionName());
 			return false;
@@ -2208,7 +2208,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	private String saveBeatImages(Beat beat, List<String> svgImages) {
 
 		String selectionName = beat.getData().getName();
-		if (selectionName == null || selectionName.isBlank())
+		if (selectionName == null || selectionName.length() == 0)
 			return "Blank name for beat, invalid.";
 
 		File folder = getSelectionDataFolder(selectionName);
@@ -2239,7 +2239,7 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 	private String saveEnsembledBeatData(Beat beat) {
 
 		String selectionName = beat.getData().getName();
-		if (selectionName == null || selectionName.isBlank())
+		if (selectionName == null || selectionName.length() == 0)
 			return "Blank name for beat, invalid.";
 
 		File folder = getSelectionDataFolder(selectionName);
@@ -2392,7 +2392,22 @@ public class SeparateWireGUI extends JFrame implements WIACaller {
 		return folder;
 	}
 
-	private record AsyncFileSelectionResult(ReadResult read, OptionSelections options) {
+	private static final class AsyncFileSelectionResult {
+	    private final ReadResult read;
+	    private final OptionSelections options;
+
+	    AsyncFileSelectionResult(ReadResult read, OptionSelections options) {
+	        this.read = read;
+	        this.options = options;
+	    }
+
+	    public ReadResult getRead() {
+	        return read;
+	    }
+
+	    public OptionSelections getOptions() {
+	        return options;
+	    }
 	}
 
 	/**

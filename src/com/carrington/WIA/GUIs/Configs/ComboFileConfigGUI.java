@@ -708,7 +708,7 @@ public class ComboFileConfigGUI extends JDialog {
 		List<String> list = new ArrayList<String>();
 		String[] split = str.split(System.getProperty("line.separator"));
 		for (String s : split) {
-			if (!s.isBlank()) {
+			if (s.length() != 0) {
 				list.add(s);
 			}
 		}

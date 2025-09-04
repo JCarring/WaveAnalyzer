@@ -3,6 +3,7 @@ package com.carrington.WIA.stats;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,7 +112,9 @@ public class StatisticalComparison {
 	 */
 	public void write(SheetWriter sw) {
 		sw.writeMergedRow(nameOfComparison, 5, SheetWriter.FONT_TITLE_LARGE);
-		sw.setCurrentWidths(Map.of(0, 50));
+		Map<Integer, Integer> map = new HashMap<>();
+		map.put(0, 50);
+		sw.setCurrentWidths(map);
 		sw.setCurrentWidths(2, 26, 20);
 		sw.writeData(new Object[] { " " }); // print space
 

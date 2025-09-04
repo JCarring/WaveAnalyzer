@@ -427,7 +427,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 				String time2 = txtTimeSync2.getText();
 				Double time1d;
 				Double time2d;
-				if (!time1.isBlank()) {
+				if (time1.length() > 0) {
 					if (time1.contains(":")) {
 						time1 = parseTimeToSeconds(time1) + "";
 					}
@@ -440,7 +440,7 @@ public class AlignerGUI extends JDialog implements SelectionTableListener, Align
 				} else {
 					time1d = null;
 				}
-				if (!time2.isBlank()) {
+				if (time2.length() > 0) {
 					if (time2.contains(":")) {
 						time2 = parseTimeToSeconds(time1) + "";
 					}

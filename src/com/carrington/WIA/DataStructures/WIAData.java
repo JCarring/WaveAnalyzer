@@ -163,7 +163,7 @@ public class WIAData implements Serializable {
 	 * @throws IllegalArgumentException if the supplied name is null or blank
 	 */
 	public void setSelectionName(String name) throws IllegalArgumentException {
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			throw new IllegalArgumentException("Invalid name for WIAData - blank or null");
 
 		selectionName = name;

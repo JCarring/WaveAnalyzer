@@ -19,7 +19,7 @@ public class JCSaveButton extends JButton {
 	 */
 	public JCSaveButton(String toolTipMessage) {
 		super();
-		if (toolTipMessage == null || toolTipMessage.isBlank())
+		if (toolTipMessage == null || toolTipMessage.length() == 0)
 			throw new IllegalArgumentException("Tooltip message cannot be blank");
 		setIcon(Utils.IconSave);
 		setRolloverIcon(Utils.IconSaveHover);

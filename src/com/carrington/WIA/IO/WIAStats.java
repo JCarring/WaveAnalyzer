@@ -170,7 +170,7 @@ public class WIAStats {
 	 */
 	public boolean containsWave(String name) {
 
-		if (name == null || name.isBlank())
+		if (name == null || name.length() == 0)
 			return false;
 
 		return standardWaves.stream().filter(str -> name.equalsIgnoreCase(str.waveName)).findFirst().isPresent();
@@ -781,6 +781,8 @@ public class WIAStats {
 
 			// pairwise dx
 			LinkedHashMap<String, Collection<WIAData>> comparCMDvsNonCMD = new LinkedHashMap<String, Collection<WIAData>>();
+			LinkedHashMap<String, Collection<WIAData>> comparEndothDepOnlyVsNone = new LinkedHashMap<String, Collection<WIAData>>();
+			LinkedHashMap<String, Collection<WIAData>> comparEndothIndepOnlyVsNone = new LinkedHashMap<String, Collection<WIAData>>();
 			LinkedHashMap<String, Collection<WIAData>> comparEndothDepVsNone = new LinkedHashMap<String, Collection<WIAData>>();
 			LinkedHashMap<String, Collection<WIAData>> comparEndothIndepVsNone = new LinkedHashMap<String, Collection<WIAData>>();
 			LinkedHashMap<String, Collection<WIAData>> comparEndothBothVsNone = new LinkedHashMap<String, Collection<WIAData>>();
@@ -791,12 +793,19 @@ public class WIAStats {
 
 			comparCMDvsNonCMD.put(tx.getName() + " (CMD)", _subsetCMD(tx.getSamples(), true));
 			comparCMDvsNonCMD.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
-			comparEndothDepVsNone.put(tx.getName() + " (Endothelium-dependent only CMD)",
+			comparEndothDepOnlyVsNone.put(tx.getName() + " (Endothelium-dependent only CMD)",
 					_subsetCMDEndothelialDep(tx.getSamples(), TYPE_ENDO_DEP_ONLY));
-			comparEndothDepVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
-			comparEndothIndepVsNone.put(tx.getName() + " (Endothelium-independent only CMD)",
+			comparEndothDepOnlyVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
+			comparEndothIndepOnlyVsNone.put(tx.getName() + " (Endothelium-independent only CMD)",
 					_subsetCMDEndothelialDep(tx.getSamples(), TYPE_ENDO_INDEP_ONLY));
+			comparEndothIndepOnlyVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
+			comparEndothDepVsNone.put(tx.getName() + " (Endothelium-dependent CMD)",
+					_subsetCMDEndothelialDep(tx.getSamples(), TYPE_ENDO_DEP));
+			comparEndothDepVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
+			comparEndothIndepVsNone.put(tx.getName() + " (Endothelium-independent CMD)",
+					_subsetCMDEndothelialDep(tx.getSamples(), TYPE_ENDO_INDEP));
 			comparEndothIndepVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
+
 			comparEndothBothVsNone.put(tx.getName() + " (Endothelium-independent AND -dependent CMD)",
 					_subsetCMDEndothelialDep(tx.getSamples(), TYPE_ENDO_BOTH));
 			comparEndothBothVsNone.put(tx.getName() + " (Non-CMD)", _subsetCMD(tx.getSamples(), false));
@@ -819,11 +828,15 @@ public class WIAStats {
 			try {
 				_compareStats(tx.getName() + ", comparison of CMD vs non-CMD", comparCMDvsNonCMD, true);
 				_compareStats(tx.getName() + ", comparison of Endo-dependent only CMD vs non-CMD",
-						comparEndothDepVsNone, true);
+						comparEndothDepOnlyVsNone, true);
 				_compareStats(tx.getName() + ", comparison of Endo-independent only CMD vs non-CMD",
-						comparEndothIndepVsNone, true);
+						comparEndothIndepOnlyVsNone, true);
 				_compareStats(tx.getName() + ", comparison of both endo-indep and -dep vs non-CMD",
 						comparEndothBothVsNone, true);
+				_compareStats(tx.getName() + ", comparison of Endo-dependent (all) CMD vs non-CMD",
+						comparEndothDepVsNone, true);
+				_compareStats(tx.getName() + ", comparison of Endo-independent (all) CMD vs non-CMD",
+						comparEndothIndepVsNone, true);
 				_compareStats(
 						tx.getName()
 								+ ", comparison of only endothelium-dependent vs only endodothelium-independent CMD",
@@ -2192,7 +2205,7 @@ public class WIAStats {
 			inputField2.setText(secondMsgDefault.toString());
 		}
 		JCheckBox ignoreCheckBox = new JCheckBox(
-				skipMessage != null && !skipMessage.isBlank() ? skipMessage : "Do not show this prompt again");
+				skipMessage != null && skipMessage.length() > 0 ? skipMessage : "Do not show this prompt again");
 		ignoreCheckBox.setFont(Utils.getTextFont(false));
 		// Error label (always present but initially hidden)
 		JCLabel errorLabel = new JCLabel("Invalid input. Please enter two decimal numbers.", JCLabel.LABEL_TEXT_PLAIN);
@@ -2375,7 +2388,7 @@ public class WIAStats {
 		 */
 		public List<String> getSampleNames() {
 
-			List<String> list = samples.stream().map(data -> data.getFileName()).toList();
+			List<String> list = samples.stream().map(data -> data.getFileName()).collect(Collectors.toList());
 
 			return Collections.unmodifiableList(list);
 		}
@@ -2490,7 +2503,7 @@ public class WIAStats {
 		 * {@link IllegalArgumentException})
 		 */
 		public void setName(String name) {
-			if (name == null || name.isBlank())
+			if (name == null || name.length() == 0)
 				throw new IllegalArgumentException("Cannot set a blank name for a wave grouping");
 			this.groupName = name;
 		}
@@ -2631,8 +2644,9 @@ public class WIAStats {
 		 * @return An unmodifiable list of sample file names.
 		 */
 		public List<String> getSampleNames() {
-			List<String> list = samples.stream().map(data -> data.getFileName()).toList();
-
+			List<String> list = samples.stream()
+                    .map(data -> data.getFileName())
+                    .collect(Collectors.toList());
 			return Collections.unmodifiableList(list);
 		}
 

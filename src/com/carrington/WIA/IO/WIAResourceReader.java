@@ -1,6 +1,8 @@
 package com.carrington.WIA.IO;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import com.carrington.WIA.Utils;
@@ -32,16 +34,25 @@ public abstract class WIAResourceReader {
 	 */
 	public static String getContents(String fileName) {
 		
-		try {
-			byte[] bytes = WIAResourceReader.class.getResourceAsStream(PATH_PREFIX + fileName).readAllBytes();
+	
+		
+	    try (InputStream in = WIAResourceReader.class.getResourceAsStream(PATH_PREFIX + fileName);
+	            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
-			return new String(bytes, StandardCharsets.UTF_8).replaceAll(System.lineSeparator(), "");
+	           byte[] buffer = new byte[8192];
+	           int len;
+	           while ((len = in.read(buffer)) != -1) {
+	               out.write(buffer, 0, len);
+	           }
 
-		} catch (IOException e) {
-			Utils.showMessage(Utils.ERROR, "Resource error: " + fileName + " - contact developer", null);
-			e.printStackTrace();
-			return "Error";
-		}
+	           return new String(out.toByteArray(), StandardCharsets.UTF_8)
+	                   .replaceAll(System.lineSeparator(), "");
+
+	       } catch (IOException e) {
+	           Utils.showMessage(Utils.ERROR, "Resource error: " + fileName + " - contact developer", null);
+	           e.printStackTrace();
+	           return "Error";
+	       }
 		
 	}
 	

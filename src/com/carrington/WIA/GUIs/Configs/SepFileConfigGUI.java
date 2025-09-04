@@ -429,7 +429,7 @@ public class SepFileConfigGUI extends JDialog {
 
 		for (String s1 : inputColExclude) {
 			for (String s2 : inputColAlign) {
-				if (s1.equalsIgnoreCase(s2) && !s1.isBlank() && !s2.isBlank()) {
+				if (s1.equalsIgnoreCase(s2) && s1.length() != 0 && s2.length() != 0) {
 					return "Cannot exclude column " + s1 + " AND align based on it";
 				}
 			}
@@ -683,7 +683,7 @@ public class SepFileConfigGUI extends JDialog {
 		List<String> list = new ArrayList<String>();
 		String[] split = str.split(System.getProperty("line.separator"));
 		for (String s : split) {
-			if (!s.isBlank()) {
+			if (s.length() != 0) {
 				list.add(s);
 			}
 		}

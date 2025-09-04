@@ -68,7 +68,7 @@ public class SheetDataReader {
 			for (int i = 0; i < reader.getRow(0).length; i++) {
 				String str = reader.getText(0, i);
 
-				if (!str.isBlank()) {
+				if (str.length() > 0) {
 
 					if (!NumberUtils.isParsable(str)) {
 						notAllNumbers = true;
@@ -147,7 +147,7 @@ public class SheetDataReader {
 			for (int colI = 0; colI < reader.getRow(0).length; colI++) {
 				String possibHeader = reader.getText(0, colI);
 
-				if (possibHeader != null && !possibHeader.isBlank()) {
+				if (possibHeader != null && possibHeader.length() > 0) {
 					Header header = new Header(possibHeader, colI, primary);
 
 					if (Utils.isHeaderContained(columns, header)) {
